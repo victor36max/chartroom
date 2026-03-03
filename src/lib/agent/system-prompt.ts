@@ -16,7 +16,7 @@ You create charts by providing a JSON spec that maps to Observable Plot. The spe
 {
   "marks": [
     {
-      "type": "barY" | "barX" | "dot" | "line" | "lineY" | "areaY" | "cell" | "rect" | "rectX" | "rectY" | "text" | "tickX" | "tickY" | "ruleX" | "ruleY" | "frame" | "tip",
+      "type": "barY" | "barX" | "dot" | "line" | "lineY" | "areaY" | "cell" | "rect" | "rectX" | "rectY" | "text" | "tickX" | "tickY" | "ruleX" | "ruleY" | "frame" | "tip" | "arc",
       "data": "csv",  // always use "csv" to reference the uploaded data
       "options": {
         "x": "columnName",
