@@ -11,7 +11,12 @@ export function renderPieChart(
   const opts = arcSpec.options ?? {};
   const valueField = opts.value as string;
   const labelField = opts.label as string;
-  const innerRadius = (opts.innerRadius as number) ?? 0;
+
+  if (!valueField || !labelField) {
+    throw new Error('Arc mark requires options.value (numeric field) and options.label (category field)');
+  }
+
+  const innerRadius = Math.max(0, (opts.innerRadius as number) ?? 0);
 
   const width = (spec.width as number) ?? 500;
   const height = (spec.height as number) ?? 400;
@@ -21,7 +26,7 @@ export function renderPieChart(
 
   // Chart area dimensions
   const chartHeight = height - headerHeight;
-  const radius = Math.min(width, chartHeight) / 2 - 30;
+  const radius = Math.max(0, Math.min(width, chartHeight) / 2 - 30);
   const cx = width / 2;
   const cy = headerHeight + chartHeight / 2;
 
