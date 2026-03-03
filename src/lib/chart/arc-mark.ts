@@ -18,6 +18,11 @@ export function renderPieChart(
 
   const innerRadius = Math.max(0, (opts.innerRadius as number) ?? 0);
 
+  // Aggregate: group by labelField, sum valueField
+  const aggregated = Array.from(
+    d3.rollup(csvData, (rows) => d3.sum(rows, (r) => Number(r[valueField]) || 0), (r) => String(r[labelField] ?? ""))
+  ).map(([label, value]) => ({ [labelField]: label, [valueField]: value }));
+
   const width = (spec.width as number) ?? 500;
   const height = (spec.height as number) ?? 400;
   const titleHeight = spec.title ? 28 : 0;
@@ -87,8 +92,8 @@ export function renderPieChart(
     .innerRadius(radius * 0.65)
     .outerRadius(radius * 0.65);
 
-  const total = d3.sum(csvData, (d) => Number(d[valueField]) || 0);
-  const arcs = pie(csvData);
+  const total = d3.sum(aggregated, (d) => Number(d[valueField]) || 0);
+  const arcs = pie(aggregated);
 
   const g = svg.append("g").attr("transform", `translate(${cx},${cy})`);
 
