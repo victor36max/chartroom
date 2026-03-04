@@ -1,0 +1,8 @@
+{
+  "name": "grouped-bar-fx",
+  "description": "Grouped bar chart using fx faceting",
+  "csv": "sales.csv",
+  "messages": ["Create a grouped bar chart with products side by side for each region"],
+  "tags": ["bar", "single-turn", "grouped", "facet"],
+  "rubric": "Must use barY with fx for side-by-side grouping. fill by product (or region), fx by region (or product). Must NOT use stackY. Color legend required."
+}

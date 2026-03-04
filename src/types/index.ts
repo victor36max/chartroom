@@ -15,6 +15,7 @@ export interface ChartSpec {
   marginLeft?: number;
   style?: Record<string, unknown>;
   titleStyle?: Record<string, unknown>;
+  subtitleStyle?: Record<string, unknown>;
 }
 
 export interface MarkSpec {

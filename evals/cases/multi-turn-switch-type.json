@@ -1,0 +1,8 @@
+{
+  "name": "multi-turn-switch-type",
+  "description": "Multi-turn: switch from bar to line chart",
+  "csv": "monthly-temps.csv",
+  "messages": ["Bar chart of average temperature by city", "Actually, change it to a line chart showing monthly temperature trends for each city"],
+  "tags": ["line", "multi-turn", "refinement"],
+  "rubric": "Final chart must use line mark (not barY). stroke=city for multi-series. x=month, y=avg_temp."
+}

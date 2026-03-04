@@ -1,0 +1,8 @@
+{
+  "name": "bar-with-reference-line",
+  "description": "Bar chart with horizontal reference line",
+  "csv": "students.csv",
+  "messages": ["Bar chart of average score by subject, with a horizontal reference line at 75"],
+  "tags": ["bar", "rule", "single-turn", "composition"],
+  "rubric": "Must have a barY mark (with groupX mean) AND a ruleY mark. ruleY must be at value 75."
+}

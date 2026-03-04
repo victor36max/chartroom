@@ -71,7 +71,7 @@ function extractColumnName(query: string, data: Row[]): string | null {
     }
   }
 
-  return columns[0]; // fallback to first column
+  return null;
 }
 
 function computeStats(data: Row[]): Record<string, unknown> {
@@ -87,8 +87,8 @@ function computeStats(data: Row[]): Record<string, unknown> {
       stats[col] = {
         type: "numeric",
         count: nums.length,
-        min: Math.min(...nums),
-        max: Math.max(...nums),
+        min: nums.reduce((m, v) => (v < m ? v : m), Infinity),
+        max: nums.reduce((m, v) => (v > m ? v : m), -Infinity),
         mean: nums.reduce((a, b) => a + b, 0) / nums.length,
         median: median(nums),
       };
@@ -157,13 +157,13 @@ function computeCorrelations(data: Row[]): Record<string, unknown> {
   const correlations: Record<string, number> = {};
   for (let i = 0; i < numCols.length; i++) {
     for (let j = i + 1; j < numCols.length; j++) {
-      const a = data.map((r) => Number(r[numCols[i]])).filter((v) => !isNaN(v));
-      const b = data.map((r) => Number(r[numCols[j]])).filter((v) => !isNaN(v));
-      const len = Math.min(a.length, b.length);
-      if (len > 1) {
+      const pairs = data
+        .map((r) => ({ a: Number(r[numCols[i]]), b: Number(r[numCols[j]]) }))
+        .filter(({ a, b }) => !isNaN(a) && !isNaN(b));
+      if (pairs.length > 1) {
         correlations[`${numCols[i]} × ${numCols[j]}`] = pearson(
-          a.slice(0, len),
-          b.slice(0, len)
+          pairs.map((p) => p.a),
+          pairs.map((p) => p.b)
         );
       }
     }

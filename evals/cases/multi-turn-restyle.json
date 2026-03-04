@@ -1,0 +1,8 @@
+{
+  "name": "multi-turn-restyle",
+  "description": "Multi-turn: restyle pie to donut with pastel colors",
+  "csv": "sales.csv",
+  "messages": ["Pie chart of revenue by product", "Make it a donut chart and use a pastel color scheme"],
+  "tags": ["arc", "multi-turn", "refinement"],
+  "rubric": "Final chart must be arc with innerRadius > 0 (donut). Color scheme should be pastel (pastel1, pastel2, or similar)."
+}

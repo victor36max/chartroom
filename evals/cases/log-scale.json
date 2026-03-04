@@ -1,0 +1,8 @@
+{
+  "name": "log-scale",
+  "description": "Scatter plot with logarithmic x scale",
+  "csv": "countries.csv",
+  "messages": ["Scatter plot of GDP vs life expectancy with GDP on a logarithmic scale"],
+  "tags": ["dot", "single-turn", "scale"],
+  "rubric": "Must use dot mark. x scale must have type='log'. x=gdp_billions, y=life_expectancy."
+}

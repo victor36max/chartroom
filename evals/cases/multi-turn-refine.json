@@ -1,0 +1,11 @@
+{
+  "name": "multi-turn-refine",
+  "description": "Multi-turn: create chart then refine it",
+  "csv": "sales.csv",
+  "messages": [
+    "Show me a bar chart of units sold by product",
+    "Make it horizontal and sort by value descending"
+  ],
+  "tags": ["bar", "multi-turn", "refinement"],
+  "rubric": "Final chart should be a horizontal bar (barX) with products on y-axis sorted by units descending."
+}

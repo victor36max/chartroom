@@ -8,18 +8,24 @@ interface MessageInputProps {
   input: string;
   onInputChange: (value: string) => void;
   onSubmit: (e: FormEvent) => void;
+  onStop: () => void;
+  onClear: () => void;
   onFileSelected: (file: File) => void;
   isBusy: boolean;
   hasCSV: boolean;
+  hasMessages: boolean;
 }
 
 export function MessageInput({
   input,
   onInputChange,
   onSubmit,
+  onStop,
+  onClear,
   onFileSelected,
   isBusy,
   hasCSV,
+  hasMessages,
 }: MessageInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const replaceFileInputRef = useRef<HTMLInputElement>(null);
@@ -95,30 +101,53 @@ export function MessageInput({
           className="min-h-[44px] max-h-[120px] resize-none"
           rows={1}
         />
-        <Button
-          type="submit"
-          disabled={!hasCSV || isBusy || !input.trim()}
-          size="sm"
-          className="self-end"
-        >
-          Send
-        </Button>
+        {isBusy ? (
+          <Button
+            type="button"
+            onClick={onStop}
+            size="sm"
+            variant="destructive"
+            className="self-end"
+          >
+            ■ Stop
+          </Button>
+        ) : (
+          <Button
+            type="submit"
+            disabled={!hasCSV || !input.trim()}
+            size="sm"
+            className="self-end"
+          >
+            Send
+          </Button>
+        )}
       </form>
       {hasCSV && (
-        <button
-          type="button"
-          onClick={() => replaceFileInputRef.current?.click()}
-          className="mt-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          Replace CSV
-          <input
-            ref={replaceFileInputRef}
-            type="file"
-            accept=".csv"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-        </button>
+        <div className="mt-1 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => replaceFileInputRef.current?.click()}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Replace CSV
+            <input
+              ref={replaceFileInputRef}
+              type="file"
+              accept=".csv"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </button>
+          {hasMessages && !isBusy && (
+            <button
+              type="button"
+              onClick={onClear}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Clear chat
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

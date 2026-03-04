@@ -1,0 +1,8 @@
+{
+  "name": "heatmap",
+  "description": "Heatmap of activity by day and hour",
+  "csv": "activity.csv",
+  "messages": ["Create a heatmap of activity count by day of week and hour"],
+  "tags": ["cell", "single-turn"],
+  "rubric": "Must use cell mark. x=hour, y=day, fill=count. Should use a sequential color scheme."
+}

@@ -44,7 +44,7 @@ function inferType(values: unknown[]): ColumnMeta["type"] {
   return "string";
 }
 
-function extractMetadata(data: Record<string, unknown>[]): DataMetadata {
+export function extractMetadata(data: Record<string, unknown>[]): DataMetadata {
   if (data.length === 0) return { rowCount: 0, columns: [] };
 
   const columnNames = Object.keys(data[0]);
@@ -60,8 +60,8 @@ function extractMetadata(data: Record<string, unknown>[]): DataMetadata {
     if (type === "number") {
       const nums = nonNull.filter((v) => typeof v === "number") as number[];
       if (nums.length > 0) {
-        col.min = Math.min(...nums);
-        col.max = Math.max(...nums);
+        col.min = nums.reduce((m, v) => (v < m ? v : m), Infinity);
+        col.max = nums.reduce((m, v) => (v > m ? v : m), -Infinity);
       }
     }
 

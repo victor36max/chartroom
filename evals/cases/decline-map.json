@@ -1,0 +1,9 @@
+{
+  "name": "decline-map",
+  "description": "Should decline: map/geo chart request",
+  "csv": "countries.csv",
+  "messages": ["Create a world map showing GDP by country with colors"],
+  "tags": ["decline", "single-turn"],
+  "rubric": "Model must decline the request and explain that map/geo charts are not supported. Should suggest an alternative (e.g., bar chart).",
+  "expectDecline": true
+}

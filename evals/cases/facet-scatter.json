@@ -1,0 +1,8 @@
+{
+  "name": "facet-scatter",
+  "description": "Faceted scatter plot by continent",
+  "csv": "countries.csv",
+  "messages": ["Scatter plot of GDP vs life expectancy, with a separate panel for each continent"],
+  "tags": ["dot", "single-turn", "facet"],
+  "rubric": "Must use dot mark with fx=continent (or fy). x=gdp_billions, y=life_expectancy. Facet scale should be configured."
+}

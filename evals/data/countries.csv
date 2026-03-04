@@ -1,0 +1,26 @@
+country,continent,gdp_billions,population_millions,life_expectancy,co2_per_capita
+USA,North America,25462,331.9,77.2,14.7
+China,Asia,17963,1412.0,77.7,8.0
+Japan,Asia,4231,125.7,84.8,8.5
+Germany,Europe,4072,83.2,81.3,8.1
+UK,Europe,3070,67.5,81.0,5.2
+France,Europe,2783,67.8,82.5,4.7
+India,Asia,3385,1408.0,70.8,1.9
+Brazil,South America,1920,214.3,75.3,2.3
+Australia,Asia,1675,25.7,83.4,15.0
+Canada,North America,2139,38.9,82.3,14.3
+South Korea,Asia,1665,51.7,83.7,11.6
+Mexico,North America,1322,128.9,75.0,3.6
+Indonesia,Asia,1319,273.8,71.7,2.3
+Nigeria,Africa,477,218.5,52.7,0.6
+South Africa,Africa,405,59.4,64.9,7.5
+Egypt,Africa,476,104.3,72.0,2.4
+Saudi Arabia,Asia,1108,36.4,76.9,16.1
+Russia,Europe,2240,144.1,73.2,11.4
+Italy,Europe,2010,59.0,83.5,5.5
+Spain,Europe,1398,47.4,83.6,5.1
+Thailand,Asia,495,71.8,78.7,3.8
+Vietnam,Asia,409,98.2,75.4,3.5
+Argentina,South America,632,45.8,76.5,3.8
+Colombia,South America,343,51.9,77.3,1.8
+Kenya,Africa,113,54.0,61.4,0.4

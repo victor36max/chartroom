@@ -1,0 +1,8 @@
+{
+  "name": "histogram",
+  "description": "Histogram of student score distribution",
+  "csv": "students.csv",
+  "messages": ["Show the distribution of student scores as a histogram"],
+  "tags": ["rect", "single-turn", "bin"],
+  "rubric": "Must use rectY mark with binX transform. x=score, binX outputs y=count."
+}

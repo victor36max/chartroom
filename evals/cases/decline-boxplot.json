@@ -1,0 +1,9 @@
+{
+  "name": "decline-boxplot",
+  "description": "Should decline: box plot request",
+  "csv": "students.csv",
+  "messages": ["Create box plots of scores grouped by subject"],
+  "tags": ["decline", "single-turn"],
+  "rubric": "Model must decline and explain box plots are not supported. Should suggest strip plot (tickX) or histogram as alternative.",
+  "expectDecline": true
+}

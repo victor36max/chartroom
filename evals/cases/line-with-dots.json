@@ -1,0 +1,8 @@
+{
+  "name": "line-with-dots",
+  "description": "Line chart with dot markers",
+  "csv": "monthly-temps.csv",
+  "messages": ["Line chart of temperatures for all cities with dots at each data point"],
+  "tags": ["line", "dot", "single-turn", "composition"],
+  "rubric": "Must have a line mark AND either a dot mark or marker option. stroke=city for lines. Must show all three cities."
+}

@@ -1,0 +1,8 @@
+{
+  "name": "melt-grouped",
+  "description": "Grouped bar chart using melt and faceting",
+  "csv": "survey.csv",
+  "messages": ["Show q1, q2, q3 scores side by side for each department as grouped bars"],
+  "tags": ["bar", "single-turn", "melt", "grouped"],
+  "rubric": "Must use melt transform. Must use fx for side-by-side grouping (not stacked). Fill by melted key."
+}

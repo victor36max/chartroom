@@ -1,0 +1,8 @@
+{
+  "name": "area-simple",
+  "description": "Simple area chart for one city's temperature",
+  "csv": "monthly-temps.csv",
+  "messages": ["Show New York's temperature as a filled area chart across the months"],
+  "tags": ["area", "single-turn"],
+  "rubric": "Must use areaY mark. x=month, y=avg_temp. Should show only New York data or filter visually. Ordinal x-domain for months recommended."
+}
