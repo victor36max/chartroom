@@ -120,49 +120,7 @@ When a request is vague (e.g., "compare these items"):
 When the user asks you to MODIFY an existing chart:
 1. Start from your PREVIOUS chart spec — do NOT create a new spec from scratch
 2. Keep ALL existing marks, options, and styling intact — do not remove or simplify anything unless asked
-3. Look up docs for any mark types or transforms you're adding or changing
-
-### Flipping orientation (vertical ↔ horizontal)
-Swap ALL of these AT ONCE — a partial swap breaks the chart:
-- Mark type: barY → barX (or vice versa)
-- Group transform: groupX → groupY (and vice versa)
-- Group outputs key: \`{ outputs: { y: "sum" } }\` → \`{ outputs: { x: "sum" } }\`
-- Stack transform: stackY → stackX (and vice versa)
-- Position channels: x ↔ y in mark options
-- Facet channels: fx ↔ fy
-- Sort: \`{ "y": "-x" }\` → \`{ "x": "-y" }\` (and vice versa)
-Example: barY with \`x: "cat", y: "val", groupX: { outputs: { y: "sum" } }\` becomes barX with \`y: "cat", x: "val", groupY: { outputs: { x: "sum" } }\`.
-
-### Adding reference lines
-Use ruleY (horizontal) or ruleX (vertical) with \`data: null\`:
-\`{ "type": "ruleY", "data": null, "options": { "values": [75], "stroke": "red", "strokeDasharray": "4 2", "strokeWidth": 2 } }\`
-- ALWAYS set \`stroke\` to a visible color (e.g. \`"red"\`, \`"#e15759"\`) — without it the line is invisible against bars
-- ALWAYS set \`strokeDasharray\` so it's visually distinct from data marks
-- For "line at the average/mean": call \`analyze_data\` first to get the numeric value, then use it in \`"values": [computed_value]\`
-
-### Sorting
-- barY descending: \`"sort": { "x": "-y" }\` (sort the categorical x-axis by descending y values)
-- barX descending: \`"sort": { "y": "-x" }\` (sort the categorical y-axis by descending x values)
-- The sort key is ALWAYS the CATEGORICAL axis letter. For barY categories are on x → key is \`"x"\`. For barX categories are on y → key is \`"y"\`.
-- When flipping orientation, swap the sort key and value too (see above).
-
-### Filtering to top/bottom N
-There is NO built-in "top N" — you must identify the values first:
-1. Call \`analyze_data\` to find e.g. the top 5 category names by revenue
-2. Add \`"filter": { "column": ["Value1", "Value2", "Value3", "Value4", "Value5"] }\` to the mark options
-This is the ONLY way to show a subset — the \`filter\` option supports multi-value arrays for inclusion.
-
-### Adding text labels on bars
-Add a \`text\` mark with the SAME position channels and aggregation as the bar mark:
-- Use the same \`groupX\`/\`groupY\` but add \`"text": "same_reducer"\` to outputs
-- Add \`"dy": -8\` (barY) or \`"dx": 4\` (barX) to offset labels from the bar edge
-- Add \`"fontSize": 11\` to prevent overlap on dense charts
-
-### Simplifying a chart
-Reduce the number of encoded dimensions (drop color, remove faceting, focus on one metric). Do NOT strip the chart to a bare minimum — keep the core structure and data readable.
-
-### Changing colors
-Update \`fill\` and/or \`stroke\` on existing marks. When adding \`fill: "columnName"\` for color-by-group, also add top-level \`"color": { "legend": true }\`.`,
+3. Call \`lookup_docs\` with topic \`editing-charts\` for patterns (flipping, sorting, labels, reference lines, etc.)`,
 
     dataContext
       ? `\n## Dataset\n${dataContext}`
