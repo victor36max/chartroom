@@ -33,7 +33,10 @@ function pruneOldCharts(messages: any[]): any[] {
 
   if (chartCallIds.length <= 1) return messages;
 
-  const staleIds = new Set(chartCallIds.slice(0, -1));
+  // Keep last 5 specs, prune older ones
+  const staleSpecIds = new Set(chartCallIds.slice(0, -5));
+  // Keep only the latest image, prune all others
+  const staleImageIds = new Set(chartCallIds.slice(0, -1));
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return messages.map((msg: any) => {
@@ -45,7 +48,7 @@ function pruneOldCharts(messages: any[]): any[] {
           if (
             part.type === "tool-call" &&
             part.toolName === "render_chart" &&
-            staleIds.has(part.toolCallId)
+            staleSpecIds.has(part.toolCallId)
           ) {
             return { ...part, input: { spec: "(pruned)" } };
           }
@@ -59,7 +62,7 @@ function pruneOldCharts(messages: any[]): any[] {
         ...msg,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         content: msg.content.map((part: any) => {
-          if (part.type === "tool-result" && staleIds.has(part.toolCallId)) {
+          if (part.type === "tool-result" && staleImageIds.has(part.toolCallId)) {
             return { ...part, output: { type: "text", value: "Older chart — pruned to save context." } };
           }
           return part;

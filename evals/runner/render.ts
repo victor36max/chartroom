@@ -26,14 +26,39 @@ export async function buildBundle(): Promise<void> {
   console.log("Bundle built successfully.");
 }
 
-export async function initRenderer(): Promise<{ browser: Browser; page: Page }> {
-  if (!fs.existsSync(BUNDLE_PATH)) {
+function bundleIsStale(): boolean {
+  if (!fs.existsSync(BUNDLE_PATH)) return true;
+  const bundleMtime = fs.statSync(BUNDLE_PATH).mtimeMs;
+  // Check if any source file is newer than the bundle
+  const srcDirs = [
+    path.resolve(ROOT, "src/lib/chart"),
+    path.resolve(ROOT, "src/types"),
+    path.resolve(__dirname),
+  ];
+  for (const dir of srcDirs) {
+    if (!fs.existsSync(dir)) continue;
+    for (const file of fs.readdirSync(dir)) {
+      if (!file.endsWith(".ts")) continue;
+      const fileMtime = fs.statSync(path.join(dir, file)).mtimeMs;
+      if (fileMtime > bundleMtime) return true;
+    }
+  }
+  return false;
+}
+
+export async function initRenderer(pageCount = 1): Promise<{ browser: Browser; pages: Page[] }> {
+  if (bundleIsStale()) {
     await buildBundle();
   }
   const browser = await chromium.launch();
-  const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
-  await page.goto(`file://${HTML_PAGE}`);
-  return { browser, page };
+  const pages = await Promise.all(
+    Array.from({ length: pageCount }, async () => {
+      const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
+      await page.goto(`file://${HTML_PAGE}`);
+      return page;
+    })
+  );
+  return { browser, pages };
 }
 
 export async function renderChart(

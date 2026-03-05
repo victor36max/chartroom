@@ -2,7 +2,7 @@ import { initRenderer, buildBundle, closeRenderer } from "./render";
 import { runCase } from "./run-case";
 import { judgeChart } from "./judge";
 import { writeReport } from "./report";
-import type { EvalCase, CaseResult } from "./types";
+import type { EvalCase } from "./types";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -15,13 +15,34 @@ function parseArgs() {
     const i = args.indexOf(flag);
     return i !== -1 && i + 1 < args.length ? args[i + 1] : null;
   };
+  const getAll = (flag: string) => {
+    const values: string[] = [];
+    for (let i = 0; i < args.length; i++) {
+      if (args[i] === flag && i + 1 < args.length) values.push(args[++i]);
+    }
+    return values;
+  };
   return {
-    tag: get("--tag"),
+    tags: getAll("--tag"),
     caseName: get("--case"),
     skipJudge: args.includes("--no-judge"),
     rebuildBundle: args.includes("--rebuild-bundle"),
     modelId: get("--model") ?? process.env.MODEL_ID ?? "anthropic/claude-sonnet-4",
+    concurrency: Number(get("--concurrency") ?? 5),
   };
+}
+
+async function pMap<T, R>(items: T[], fn: (item: T, workerIndex: number) => Promise<R>, concurrency: number): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let nextIndex = 0;
+  async function worker(workerIndex: number) {
+    while (nextIndex < items.length) {
+      const i = nextIndex++;
+      results[i] = await fn(items[i], workerIndex);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, (_, wi) => worker(wi)));
+  return results;
 }
 
 async function main() {
@@ -44,7 +65,7 @@ async function main() {
     JSON.parse(fs.readFileSync(path.join(casesDir, f), "utf8"))
   );
 
-  if (opts.tag) cases = cases.filter((c) => c.tags?.includes(opts.tag!));
+  if (opts.tags.length > 0) cases = cases.filter((c) => opts.tags.some((t) => c.tags?.includes(t)));
   if (opts.caseName) cases = cases.filter((c) => c.name === opts.caseName);
 
   if (cases.length === 0) {
@@ -52,7 +73,8 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`Running ${cases.length} eval case(s) with model: ${opts.modelId}\n`);
+  const concurrency = Math.max(1, opts.concurrency);
+  console.log(`Running ${cases.length} eval case(s) with model: ${opts.modelId} (concurrency: ${concurrency})\n`);
 
   // Build bundle if needed
   if (opts.rebuildBundle) await buildBundle();
@@ -62,12 +84,12 @@ async function main() {
   const outputDir = path.resolve(__dirname, "../results", timestamp);
   fs.mkdirSync(outputDir, { recursive: true });
 
-  // Init Playwright
-  const { browser, page } = await initRenderer();
+  // Init Playwright with page pool
+  const { browser, pages } = await initRenderer(concurrency);
 
-  const results: CaseResult[] = [];
-  for (const evalCase of cases) {
-    process.stdout.write(`  ${evalCase.name}...`);
+  // Run cases in parallel
+  const results = await pMap(cases, async (evalCase, workerIndex) => {
+    const page = pages[workerIndex];
     const result = await runCase(evalCase, page, outputDir, opts.modelId);
 
     if (!opts.skipJudge && result.screenshotBase64) {
@@ -78,11 +100,11 @@ async function main() {
       );
     }
 
-    results.push(result);
     const score = result.judgeScores ? ` [${result.judgeScores.total}/25]` : "";
     const status = result.success ? "PASS" : "FAIL";
-    console.log(` ${status}${score} (${(result.durationMs / 1000).toFixed(1)}s)`);
-  }
+    console.log(`  ${evalCase.name}... ${status}${score} (${(result.durationMs / 1000).toFixed(1)}s)`);
+    return result;
+  }, concurrency);
 
   await closeRenderer(browser);
   writeReport(results, outputDir, opts.modelId);

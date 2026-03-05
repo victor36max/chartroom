@@ -94,7 +94,20 @@ const DOC_CHUNKS: Record<TopicId, DocChunk> = {
 }
 \`\`\`
 
-**Gotcha:** For grouped/stacked bars, combine with \`groupX\`/\`groupY\` and \`stackY\`/\`stackX\` transforms (see group and stack topics).`,
+**Rotated x-axis labels:** When labels overlap or user asks for rotation, add an \`axisX\` mark:
+\`\`\`json
+{
+  "marks": [
+    { "type": "barY", "data": "csv", "options": { "x": "country", "y": "gdp_billions", "fill": "steelblue", "tip": true } },
+    { "type": "axisX", "options": { "tickRotate": -45, "fontSize": 11, "labelAnchor": "right" } }
+  ],
+  "x": { "axis": null },
+  "marginBottom": 80
+}
+\`\`\`
+Set \`"x": { "axis": null }\` to hide the default axis (the axisX mark replaces it). Set \`"marginBottom": 80\` to make room for angled labels.
+
+**Gotcha:** For bar aggregation, use \`groupX\`/\`groupY\` transforms (see group topic). For stacked bars, add \`stackY\` (see stack topic). For grouped/side-by-side bars, use \`fx\` faceting instead of \`stackY\` (see faceting topic). Do NOT confuse \`groupX\` (an aggregation transform) with "grouped bars" (a visual side-by-side layout using \`fx\`).`,
   },
 
   dot: {
@@ -186,6 +199,17 @@ const DOC_CHUNKS: Record<TopicId, DocChunk> = {
 }
 \`\`\`
 
+**Example -- single-series area chart (filtered to one category):**
+\`\`\`json
+{
+  "marks": [
+    { "type": "areaY", "data": "csv", "options": { "x": "month", "y": "temperature", "fill": "steelblue", "filter": { "city": "New York" }, "curve": "monotone-x", "tip": true } }
+  ],
+  "x": { "domain": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] }
+}
+\`\`\`
+Use a constant \`fill\` color (e.g. \`"steelblue"\`) for single-series area charts. Use \`filter\` to select one category from multi-category data.
+
 **Gotcha:** For area marks, \`fill\` is correct (unlike line marks which use \`stroke\`). When \`fill\` is a field, areas are automatically stacked.`,
   },
 
@@ -210,7 +234,13 @@ const DOC_CHUNKS: Record<TopicId, DocChunk> = {
 }
 \`\`\`
 
-**Gotcha:** Cell marks expect both x and y to be ordinal. For continuous x or y, use \`rect\` with \`binX\`/\`binY\` instead.`,
+**Aggregated heatmap:** When multiple rows map to the same cell (e.g., multiple buildings per hour×weekday), use \`group\` to aggregate:
+\`\`\`json
+{ "type": "cell", "data": "csv", "options": { "x": "hour", "y": "weekday", "fill": "consumption_kwh", "group": { "outputs": { "fill": "mean" } }, "tip": true } }
+\`\`\`
+Use \`group\` (NOT \`groupX\`) — \`group\` aggregates by ALL position channels (both x and y). \`groupX\` only groups by x, which drops the y dimension and produces empty cells.
+
+**Gotcha:** Cell marks expect both x and y to be ordinal. For continuous x or y, use \`rect\` with \`binX\`/\`binY\` instead. Numeric values (like hour 0-23) are auto-converted to band scales.`,
   },
 
   rect: {
@@ -412,6 +442,7 @@ The frame mark does not take data. Omit \`data\` or set it to null.`,
     content: `Groups data by a discrete channel and computes an aggregate (count, sum, mean, etc.) for each group. This is how you make bar charts from raw data.
 
 **Variants:**
+- \`group\`: groups on ALL position channels (x and y) — use for heatmaps/cells where you need to aggregate by both dimensions
 - \`groupX\`: groups on x, outputs to y (and optionally other channels)
 - \`groupY\`: groups on y, outputs to x
 - \`groupZ\`: groups on z/fill/stroke (no position output)
@@ -446,7 +477,13 @@ The \`outputs\` object maps output channel names to reducer names.
 Using groupX with barX will collapse all data into a single bar.
 
 **Example — horizontal bar chart (barX + groupY):**
-\`"y": "product", "x": "revenue", "groupY": { "outputs": { "x": "sum" } }, "sort": { "y": "-x" }\``,
+\`"y": "product", "x": "revenue", "groupY": { "outputs": { "x": "sum" } }, "sort": { "y": "-x" }\`
+
+**Example — heatmap aggregation (cell + group):**
+\`"x": "hour", "y": "weekday", "fill": "consumption", "group": { "outputs": { "fill": "mean" } }\`
+Use \`group\` (not \`groupX\`) for cell/heatmap marks — \`group\` aggregates by ALL position channels. \`groupX\` only groups by x, which drops y and produces empty cells.
+
+**IMPORTANT:** \`groupX\`/\`groupY\` is an AGGREGATION transform — it computes sums, counts, means. It does NOT create side-by-side (grouped) bar layouts. For side-by-side bars, use \`fx\` faceting (see faceting topic). The name "group" in \`groupX\` refers to grouping data for aggregation, not visual grouping of bars.`,
   },
 
   bin: {
@@ -519,7 +556,15 @@ Using groupX with barX will collapse all data into a single bar.
 }
 \`\`\`
 
-**Gotcha:** Stack transforms are typically combined with group transforms. The group computes the aggregate values, and stack arranges them.`,
+**Example — horizontal stacked bar chart:**
+Use \`stackX\` (not \`stackY\`) with \`barX\`, and \`groupY\` (not \`groupX\`):
+\`\`\`json
+{ "type": "barX", "data": "csv", "options": { "y": "product", "x": "revenue", "fill": "region", "groupY": { "outputs": { "x": "sum" } }, "stackX": {}, "tip": true } }
+\`\`\`
+
+**Gotcha:** Stack transforms are typically combined with group transforms. The group computes the aggregate values, and stack arranges them.
+
+**Want side-by-side (grouped) bars instead of stacked?** Do NOT use \`stackY\`/\`stackX\` — remove it entirely and use \`fx\`/\`fy\` (faceting) instead. See the faceting topic.`,
   },
 
   "color-scale": {
@@ -612,7 +657,44 @@ Using groupX with barX will collapse all data into a single bar.
 }
 \`\`\`
 
-**Common mistake:** Putting \`fx\` only at the top level but NOT in mark options. The top-level \`"fx": { ... }\` configures the facet scale (label, padding), but the mark's \`options.fx\` is what splits data into panels. You MUST include \`"fx": "fieldName"\` inside the mark's \`options\`.
+**Example — grouped bar chart ("products side by side for each region"):**
+\`\`\`json
+{
+  "marks": [
+    { "type": "barY", "data": "csv", "options": { "x": "product", "y": "revenue", "fill": "product", "fx": "region", "groupX": { "outputs": { "y": "sum" } }, "tip": true } }
+  ],
+  "fx": { "padding": 0.1 }, "x": { "axis": null }, "color": { "legend": true }
+}
+\`\`\`
+Think: "for each ___" = fx. \`fx\` = outer grouping (one panel per value), \`x\` = inner grouping (bars within each panel). Don't reverse them.
+
+**Example — horizontal grouped bar chart ("regions side by side for each product"):**
+\`\`\`json
+{
+  "marks": [
+    { "type": "barX", "data": "csv", "options": { "y": "region", "x": "revenue", "fill": "region", "fy": "product", "groupY": { "outputs": { "x": "sum" } }, "tip": true } }
+  ],
+  "fy": { "padding": 0.1 }, "y": { "axis": null }, "color": { "legend": true }
+}
+\`\`\`
+For horizontal grouped bars: use \`fy\` (not \`fx\`) and \`groupY\` (not \`groupX\`). \`fy\` = outer grouping (one row per value), \`y\` = inner grouping (bars within each row).
+
+**Example — faceted histogram (rectY + binX + fx):**
+\`\`\`json
+{
+  "marks": [
+    { "type": "rectY", "data": "csv", "options": { "x": "income", "fx": "state", "fill": "state", "binX": { "outputs": { "y": "count" } }, "tip": true } }
+  ],
+  "fx": { "label": "State", "padding": 0.1 }, "color": { "legend": true }
+}
+\`\`\`
+Use \`rectY\` (not \`barY\`) for histograms of continuous data. \`fx\` MUST be in the mark's \`options\`.
+
+**Grouped bars vs. stacked bars:** Use \`fx\`/\`fy\` (faceting) for side-by-side grouped bars. Use \`stackY\`/\`stackX\` for stacked bars. These are mutually exclusive — if the user asks for "grouped" or "side-by-side", use faceting and do NOT include stack.
+
+**Horizontal vs. vertical faceting:** \`fx\` creates columns (left to right) — use with \`barY\`. \`fy\` creates rows (top to bottom) — use with \`barX\`.
+
+**Common mistake:** Putting \`fx\`/\`fy\` only at the top level but NOT in mark options. The top-level \`"fx": { ... }\` configures the facet scale (label, padding), but the mark's \`options.fx\` is what splits data into panels. You MUST include \`"fx": "fieldName"\` inside the mark's \`options\`.
 
 **Gotcha:** You can use both fx and fy together for a grid layout. All panels share the same x/y scales for easy comparison.`,
   },

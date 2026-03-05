@@ -1,0 +1,301 @@
+county,state,population,median_income,poverty_rate,unemployment_rate,pct_bachelors,median_age
+Greenridge,California,426585,79034,19.4,5.7,40,31.1
+Mapleford,California,476552,67276,21.3,6.7,31.6,33.1
+Cedarburg,California,228981,59073,19.1,6.8,29,38.6
+Cedarville,California,418432,48607,22.8,4.9,23.3,39.5
+Blueville,California,428281,46977,17.1,5.5,14.1,31.4
+Silverhill,California,277876,48633,18.4,8.2,20.9,35.2
+Westford,California,51311,55869,17,4.4,28.1,38.3
+Royalcreek,California,368697,74844,18.8,7,39.3,37
+Redvale,California,117364,57096,25.1,5.7,18.7,39.8
+Maplevale,California,124971,66974,14.7,7.1,34.5,40.5
+Royalland,California,175738,72830,21.7,3.5,39.2,38.3
+Pinedale,California,60930,66468,16.7,3.2,27.5,35.6
+Royalhill,California,477428,92798,13.2,3.7,51.7,34.4
+Unionport,California,279885,68427,12.8,7.9,37.8,34.9
+Redridge,California,405707,89189,12.8,8.9,45.3,39
+Redville,California,279274,79825,17.1,4.7,32.4,33.7
+Oldfield,California,479199,54576,15.6,3.7,20.4,39.3
+Clearwood,California,96007,59073,16.3,3.9,19.9,30.1
+Westcreek,California,486162,66849,18.9,7.9,20.6,34.5
+Clearton,California,81345,49135,20,8.6,20.2,41
+Pleasantwood,California,391631,62876,19.2,7.1,29.9,34
+Westview,California,457401,94572,14.3,8.6,49.6,34.8
+Westton,California,199904,51921,17.5,5.8,22.7,36.6
+Silverville,California,90013,55246,16.1,3.7,24.4,31.5
+Royalvale,California,135948,68932,22.6,4.2,24.7,33.8
+Goldenview,California,129346,86195,14.6,8.8,47.4,37.7
+Unioncreek,California,381157,67781,18.4,5,28.7,33.7
+Blueburg,California,423688,88961,18.6,3.6,43.7,39.9
+Whiteview,California,320150,45381,22.1,3.8,19,40.2
+Whitecreek,California,401090,52196,23.3,4.1,23.4,36.1
+Lowerville,California,341157,69283,13.7,6.2,26.1,35.7
+Oakridge,California,425464,85836,16.6,7.9,35,36.7
+Clearcreek,California,130768,59023,17,5.2,19.9,34.4
+Whitehill,California,95395,76105,15.5,7.1,37.7,37.4
+Lakeburg,California,187576,61944,19.8,7.5,28.1,34.6
+Westwood,California,398426,56894,22.4,5.2,24,33.3
+Silverburg,California,268345,49869,23.6,7.2,17.6,39.4
+Easthill,California,209729,85411,13.3,3.5,31.5,38.5
+Eastland,California,460849,55779,20.2,6.2,20.6,41.1
+Springvale,California,60380,84041,16.2,4.7,27.6,38.8
+Uppervale,California,146275,74115,14.8,8.4,34.1,30.6
+Lowerfield,California,412325,45464,18.4,7.1,18.5,34.1
+Oldcreek,California,87937,87066,13.9,6.2,40.2,35.3
+Upperhill,California,276891,47737,16.9,5.6,20.4,34.9
+Northland,California,75642,68775,18.3,4.9,29.3,40.6
+Grandridge,California,224751,79105,16,6.8,29.7,31.1
+Springhill,California,218364,71846,17.2,5.2,38.7,39.1
+Upperridge,California,449092,63183,16.8,3.9,30.4,36.1
+Lowervale,California,440222,67269,22.5,5.7,26.1,38.7
+Pleasantport,California,189378,65895,21,7.8,22.9,35
+Pleasantton,Texas,219967,75708,18.8,7.4,28.5,31.7
+Westford,Texas,87768,43291,24.9,6.8,11.8,36.4
+Grandvale,Texas,309353,40960,21.5,4.8,16.1,33.2
+Blackwood,Texas,298705,68712,23.6,4,22.3,30
+Mountbrook,Texas,363164,49667,16.4,4.4,15.2,32.9
+Royalbrook,Texas,72600,63729,19.7,5.7,19.7,34.4
+Westport,Texas,249888,80042,19.5,4.9,33.9,30.7
+Goldenview,Texas,363325,71147,19.4,7.1,28.4,30.2
+Blackdale,Texas,117341,40860,31.4,4.5,19.7,32.3
+Oakwood,Texas,88822,48681,22.3,4.9,22.9,32.7
+Royalton,Texas,140304,76906,22.5,6.6,29.4,31.1
+Whiteridge,Texas,336804,54134,23.1,6.6,21.8,34.9
+Westton,Texas,201904,57935,25.8,3.7,25.4,36.8
+Lakeview,Texas,388370,65441,21.8,6.9,21.3,33
+Clearcreek,Texas,278870,73880,21.1,4.2,35,29.7
+Lakeville,Texas,34299,40923,26.8,5.5,19.8,37
+Whiteburg,Texas,131439,44643,26.1,5,14.6,38.3
+Lakedale,Texas,351882,81235,12,5.8,30.3,39.4
+Eastton,Texas,166880,51798,20.2,3.3,21.6,36.6
+Whiteville,Texas,166434,47235,20.5,4.2,14.7,36.6
+Upperburg,Texas,372022,40266,32.1,7.6,18.6,39.9
+Westridge,Texas,185468,58700,25.7,5.7,24.2,31.4
+Northville,Texas,370389,60900,15.3,6.4,21.1,37.2
+Easthill,Texas,167162,42644,24.4,5,16.8,39.3
+Libertyburg,Texas,130694,54071,26.6,3.7,21,32.2
+Goldenbrook,Texas,278262,46528,27,8,13.4,39.3
+Goldenhill,Texas,231318,52376,23.3,5.4,19.9,28.9
+Oldvale,Texas,125275,68094,25.1,5.3,28.1,32
+Whiteport,Texas,119358,65594,23,4.9,22.9,32.5
+Riverridge,Texas,208095,52772,28.2,4.7,26,28.7
+Royaldale,Texas,129285,76379,17,4.2,34.5,32.9
+Bluehill,Texas,317614,64091,22.7,4.8,32.6,38.1
+Faircreek,Texas,283221,77054,21.6,3.8,37,28.1
+Fairvale,Texas,92355,81692,12.1,4.2,29.2,29.3
+Uppervale,Texas,217320,81286,12.3,7.9,31.7,37.4
+Westview,Texas,92190,47656,20.3,4.6,20.5,29.3
+Newvale,Texas,373752,66691,22.8,7.1,31.2,38
+Mapledale,Texas,169935,41180,31,4.1,16.4,37
+Riverview,Texas,375944,61803,16.6,4.4,29.3,37.7
+Westvale,Texas,393381,82493,12.7,3.2,26.1,29.3
+Southview,Texas,393531,58007,18.2,3.3,19.1,30.8
+Cedardale,Texas,270041,78673,16.9,3.5,27,35.2
+Grandbrook,Texas,39941,40250,20.5,7.5,11.3,32.7
+Upperton,Texas,283768,59226,26.7,3.5,23.8,32.3
+Silverdale,Texas,240133,56230,20,5.4,18.1,33.2
+Royalport,New York,155991,71452,12.8,4,30.7,43.9
+Silverwood,New York,259514,55053,22.7,7.3,24.7,34.6
+Royalcreek,New York,260526,56359,22,3.2,20.7,38.8
+Mapledale,New York,145197,69423,19.1,3.7,25.2,32.4
+Greenview,New York,159559,75840,15.5,6.8,39.5,32.8
+Greenville,New York,279702,84405,16.9,5.3,34.6,41.5
+Oakburg,New York,320646,57653,24.7,7.4,19.7,39.4
+Southwood,New York,163823,61699,19.5,6.8,25.4,40.6
+Whitehill,New York,85415,73053,21.3,7,41.6,35.9
+Springbrook,New York,271696,42452,28.5,3.8,20.7,39
+Cedarhill,New York,256820,86331,12.8,5.3,47,43.3
+Blackport,New York,194814,89343,12,6.7,44.7,40.5
+Libertydale,New York,112367,89758,12.4,3.4,42.5,34.7
+Goldenvale,New York,305534,84396,13.3,7.4,39.3,43.4
+Granddale,New York,249140,85608,11.8,7,39.4,39.2
+Oldcreek,New York,161949,42568,29.5,6.3,19.2,42.1
+Oakcreek,New York,136626,78877,19.8,6.4,45.9,41.6
+Blackcreek,New York,229277,71822,13.1,8,37.7,42.9
+Libertyport,New York,309535,79035,13.3,7.3,31.4,40.1
+Southview,New York,251582,75614,15.3,6,35.6,42.4
+Pineport,New York,261313,76706,21.4,6.1,40.4,40.1
+Cedarcreek,New York,215694,58262,20.9,3.1,19.6,38.5
+Pinewood,New York,101220,44756,27.1,6.7,23.5,33.8
+Libertybrook,New York,320440,63840,17.5,3.8,30.7,37.4
+Mapleburg,New York,280976,87687,16.8,7.4,35.9,35.1
+Cedardale,New York,210316,64391,20.2,3.1,24.8,38.4
+Pleasantburg,New York,24568,86633,10.8,5.8,37.5,40.1
+Fairford,New York,270385,70762,22.7,6.6,41.2,40.7
+Unionridge,New York,331180,57575,17.3,3.2,29.4,32.3
+Pinedale,New York,68648,89604,10.5,7.7,36.6,43.7
+Cedarford,New York,69011,46366,21.2,6,21.7,40.5
+Oldfield,New York,280119,75132,20.1,5.5,35.9,34.6
+Eastville,New York,202902,68365,15.4,5.8,26.2,34.7
+Southton,New York,26682,69329,18.4,3.2,36.7,37
+Lowerfield,New York,214315,84108,20.1,6.8,36.4,36.4
+Fairton,New York,75890,89423,13.3,6.7,43.8,43.2
+Greencreek,New York,186731,52057,16.9,7.5,20.3,44
+Pinefield,New York,151612,58352,22.4,7.8,33.3,38.9
+Libertyhill,New York,186432,76242,12.2,4.1,37.8,32.9
+Unionville,New York,76367,61976,18.9,3.7,32,35.3
+Royalford,Florida,233815,55174,18.3,6.2,29,40
+Fairburg,Florida,166731,48555,19.4,6.9,16.5,44
+Southton,Florida,339426,47074,23.4,8.3,21.9,35.5
+Greenburg,Florida,358484,65978,23.2,7.8,30.8,42.3
+Northfield,Florida,139955,40007,20.1,3.7,11.8,41.3
+Upperport,Florida,296695,70371,12.4,5.8,26.8,39.1
+Mountburg,Florida,228705,67181,16.8,7,25.8,45.7
+Mountland,Florida,411974,49614,22.6,8.9,16.5,39.2
+Pineford,Florida,393643,75725,17.6,5.9,34.8,34.5
+Goldendale,Florida,173547,60498,24.1,5.3,21.9,41.3
+Eastport,Florida,222572,47412,26.3,7.1,17.1,35.6
+Westview,Florida,41391,47095,27.5,5.5,17,46.7
+Southford,Florida,160755,45350,18.5,3.9,16.9,36.1
+Fairview,Florida,89439,43784,23.5,4.3,23.4,45.5
+Redridge,Florida,121562,63368,17.2,6.3,28.9,37.2
+Uniondale,Florida,381572,66069,21.7,6.7,23.9,35.6
+Southridge,Florida,115479,79722,19.7,6.4,35.1,45.5
+Lakeland,Florida,318034,59315,19.8,4.6,25.5,38.4
+Eastwood,Florida,302803,68237,23.1,4.5,28.9,44.6
+Riverhill,Florida,214277,65518,13.1,3.5,27.5,35.8
+Lowerburg,Florida,377407,47114,19.1,6.9,18.3,39.6
+Eastdale,Florida,414009,71412,20.2,3.2,25.7,42
+Clearcreek,Florida,239271,47756,16.4,8.6,23.5,38.5
+Southfield,Florida,282460,40672,23.5,6.9,17,47.9
+Mountridge,Florida,324670,58196,16.3,7.7,29,44.3
+Redburg,Florida,314246,77957,11.3,3.4,25.7,34.1
+Springcreek,Florida,185171,41280,27.8,4.8,20.7,43
+Oldton,Florida,287612,63803,16.3,7.7,19.7,46.4
+Westport,Florida,71431,50123,20.6,3.6,15.7,44.6
+Greenvale,Florida,181183,78657,15.8,8.8,31.2,44.2
+Pinedale,Florida,442833,50601,19.9,4.4,24.9,44.7
+Goldenland,Florida,61595,45887,24.3,4.4,15.1,41.4
+Oakcreek,Florida,247275,39794,18.1,8.5,13,46.5
+Unionhill,Florida,87975,70536,17.5,4.1,25.6,45.2
+Grandland,Florida,290039,58335,18.1,8.2,21.4,44.3
+Pleasantport,Florida,201185,38838,18,4.6,18.1,36.7
+Royalville,Florida,182382,53849,24.8,6.4,15.6,41.6
+Redton,Florida,409205,48649,27.3,4.1,24.9,42.4
+Rivercreek,Florida,34300,59168,15.7,3.2,22.9,35.5
+Westfield,Florida,442192,79963,16.6,8.7,24.8,35.8
+Blackvale,Illinois,81032,83686,16.4,8,34.1,36.5
+Greenton,Illinois,31782,72924,15.5,3.4,30.9,32.3
+Pineport,Illinois,278601,60107,13,3.9,30.7,35.1
+Lowerburg,Illinois,185405,68440,13,5.7,29.1,39.7
+Riverland,Illinois,29600,85088,11.2,6.1,41,30.8
+Lakeford,Illinois,289070,43427,18.3,5.7,19,39.8
+Lakedale,Illinois,22032,45541,24.9,4.8,18.9,40.8
+Southfield,Illinois,231518,70897,16.5,7.1,23.4,33.2
+Lakewood,Illinois,162589,52859,15.8,8,23.3,35.2
+Newhill,Illinois,146303,53445,24.8,4.5,17.4,39.5
+Springport,Illinois,290724,42238,21.8,6.7,21.4,36.8
+Pinewood,Illinois,119589,42056,26.6,4.8,14.5,31.5
+Pleasantton,Illinois,73454,87807,14.7,4.5,37.1,32.9
+Riverburg,Illinois,184894,76747,18.6,5,24.1,36.3
+Libertyhill,Illinois,23113,80071,19,4.9,32.1,36.6
+Uppervale,Illinois,289858,87949,13.9,5.8,36.4,39.2
+Pineridge,Illinois,205832,73147,13.2,6,37.2,40.8
+Oakport,Illinois,148683,79584,16.7,7.1,37.1,36.6
+Cedarton,Illinois,54344,62536,21.1,4.2,20.4,41.5
+Oldcreek,Illinois,242537,64014,20.7,3.3,34.7,33.1
+Libertyland,Illinois,29374,47883,25.6,3.9,15.1,31.9
+Blueville,Illinois,185004,63801,19.6,5.5,22.7,35.9
+Newton,Illinois,103731,76777,16.9,7.4,37.4,36.3
+Pinevale,Illinois,122745,56427,18.6,5.9,22.8,33.4
+Pineview,Illinois,203919,72858,12.6,7.8,25.7,40.8
+Redvale,Illinois,194037,87069,14.1,7,46.2,36.1
+Clearridge,Illinois,212848,44828,21.6,6.3,16.9,36.1
+Redfield,Illinois,109515,75237,14.9,6.5,35,34.4
+Southwood,Illinois,18571,78858,19.4,3.7,31.7,34
+Goldenville,Illinois,269718,57304,13.4,6.1,32.2,33.3
+Upperdale,Illinois,163664,59899,15.8,5.7,30.1,36
+Silverland,Illinois,31178,81456,11,6.3,36.2,38.9
+Faircreek,Illinois,236212,69644,20.3,5.5,33.1,40.6
+Pineville,Illinois,198779,40700,26.9,4.8,14,30.4
+Whiteton,Illinois,49662,56579,23.4,5.5,24,37.8
+Silvercreek,Ohio,18600,73878,12.5,6.7,30.1,40.7
+Unionhill,Ohio,159652,43750,27.8,4.5,18.7,34.6
+Southcreek,Ohio,36863,37127,22.1,7.4,17.9,33.9
+Riverport,Ohio,136258,63632,14.3,8.5,22.7,40.2
+Fairview,Ohio,113126,39677,25,6.3,16.4,41.9
+Royalhill,Ohio,105433,46588,29.7,3.6,20.7,33.8
+Springton,Ohio,183335,56191,21.1,5.7,24.2,39.8
+Westhill,Ohio,240640,55675,26.7,4.2,27.6,41.9
+Upperport,Ohio,158812,41012,23.1,4.9,16,42.3
+Unionburg,Ohio,100246,73518,19.5,8.6,32.3,36.2
+Cedarport,Ohio,26988,56111,16.1,7.5,25.9,34.2
+Blackland,Ohio,109258,51540,21.9,4.9,24.3,42.5
+Pinevale,Ohio,236094,63684,22.5,4,29.3,37.5
+Blackton,Ohio,140922,60688,15,3.7,18.2,39.2
+Whiteport,Ohio,96359,35994,27.3,6.5,13,43.2
+Upperbrook,Ohio,198558,35074,32.6,4.9,15.9,41.5
+Grandview,Ohio,193723,72752,17.5,6.6,31.6,34.1
+Northport,Ohio,31962,37881,22.2,8,16.1,42.6
+Whiteford,Ohio,193469,40804,22.3,6.5,11.9,39.1
+Northbrook,Ohio,151323,39553,27.3,8.3,14.5,38.4
+Springford,Ohio,64287,70687,20.9,3.4,27.4,42.7
+Springhill,Ohio,194182,69247,18.6,8.9,33.9,34.1
+Lowervale,Ohio,241166,56898,25.2,7.4,19.3,42.2
+Mountport,Ohio,74668,41881,23.7,8.6,14.8,32.6
+Southwood,Ohio,239700,45472,21.6,5.8,14.4,43
+Mapleton,Ohio,62962,57226,26.9,8.9,18.5,35.2
+Southvale,Ohio,66409,65984,19.2,7.8,33.4,35
+Eastton,Ohio,76756,53721,19.7,7.4,24.6,35.6
+Libertywood,Ohio,207244,74039,20.1,7.6,24,34.2
+Southview,Ohio,22633,59066,23.4,8.4,30.6,36.8
+Redfield,Ohio,230121,72271,20.8,5.9,37.4,36
+Riverwood,Ohio,57964,42575,19.1,8.8,13.7,42.3
+Blackburg,Ohio,146812,71000,22.5,3.7,21.4,35.2
+Oakhill,Ohio,16048,64060,20.1,6.9,19.4,42.8
+Fairport,Ohio,189977,67027,14.7,6.6,26.8,39.6
+Goldenport,Georgia,178799,44423,24.5,4.5,18.7,32.8
+Eastwood,Georgia,328074,59382,19.3,6.4,25.4,41.9
+Libertyland,Georgia,335341,78324,13.9,7.7,32.1,33.4
+Fairville,Georgia,203979,41226,19.8,6.3,17.5,28.8
+Grandport,Georgia,209942,48451,17.8,8.5,16.2,34
+Springwood,Georgia,283566,60633,26.7,8.6,20.4,38.2
+Redport,Georgia,64713,49846,22.2,7.8,21.5,39.5
+Cedarview,Georgia,280984,51642,24.9,8.1,15.1,36.7
+Goldenhill,Georgia,272422,63194,20.5,9.1,18.9,28.7
+Southport,Georgia,55886,77840,17.9,5.8,24.7,29.9
+Libertydale,Georgia,216401,71410,16.9,5.2,28.3,41.6
+Bluefield,Georgia,272487,39009,21.7,3.5,16.8,35.1
+Springhill,Georgia,329135,58327,18.3,4.1,28.9,29.8
+Pinedale,Georgia,17907,52315,23.3,9.9,21.3,39
+Silverridge,Georgia,305398,68292,18.3,3.2,26.1,42
+Goldenwood,Georgia,272573,75631,16.3,9,30.4,38.9
+Westland,Georgia,273479,78075,16.4,9,35.9,38.4
+Cedarfield,Georgia,335938,65597,24,6.5,35.1,33.4
+Grandridge,Georgia,189110,61858,17,7.2,28.5,40.9
+Greenbrook,Georgia,343292,77391,19.5,3.5,34.1,28.9
+Oakdale,Georgia,320514,39362,18.8,3.7,18.8,40.3
+Lakeville,Georgia,282082,41173,22.7,5.6,20.8,39.5
+Riverville,Georgia,316694,53486,23.8,5.6,27.7,41
+Cedarland,Georgia,222610,76130,21.7,9.2,37.6,28.6
+Grandton,Georgia,122496,70858,17.5,7,35.1,38.5
+Libertyhill,Georgia,278181,40614,19.5,6.6,19.2,32.2
+Whiteridge,Georgia,220313,46309,27,8.9,16,35.8
+Lowerbrook,Georgia,216911,71496,18,6.1,36.8,30.9
+Pinebrook,Georgia,179505,78374,21.1,6.7,25.9,31.8
+Fairfield,Georgia,140407,40553,23.4,8,20.7,38.3
+Royalville,Colorado,197949,58514,13.3,5,28.5,34.8
+Lakeview,Colorado,50459,92645,10.4,2.3,46.4,37.6
+Northview,Colorado,139790,93484,13.4,4.6,57.6,34.3
+Cedarhill,Colorado,104713,82611,11.5,2.8,28,35.3
+Eastbrook,Colorado,142571,87154,14.5,4.8,45.3,36.6
+Fairford,Colorado,203590,88514,8.4,6.7,41.8,39.2
+Libertyridge,Colorado,33544,59024,11.5,6.4,35.4,35.2
+Goldencreek,Colorado,87259,92269,14.5,2.8,50.5,38.9
+Newhill,Colorado,41404,80568,15.4,5.8,38.4,35.3
+Oakburg,Colorado,135724,52389,18.5,2.8,27.1,38.5
+Fairville,Colorado,87647,62571,14.7,4.5,32.3,38.4
+Oakland,Colorado,149914,51834,15.2,4.2,18.6,39.9
+Greenview,Colorado,236730,67649,17.2,3.3,26.2,30.3
+Whitecreek,Colorado,145774,79031,15,6.7,48.3,35.6
+Unionford,Colorado,238472,59658,12.5,3.8,31.7,37.6
+Blackwood,Colorado,226334,93590,11.8,3,55.3,30.5
+Springview,Colorado,130861,85958,11,5.9,36.6,38.7
+Blueton,Colorado,79118,93098,8.3,6,40.6,37.8
+Libertyview,Colorado,202101,91715,9,4.6,36.4,33.7
+Southton,Colorado,97483,73373,11.9,4.7,41.9,30.5
+Cedarvale,Colorado,15207,53234,17.7,6.9,20,34.4
+Fairvale,Colorado,148955,87597,11.6,3.7,47.8,37.3
+Oldford,Colorado,73632,93637,11.5,5.7,34.6,32.4
+Fairbrook,Colorado,246542,83286,10.8,3.8,48.2,32.6
+Pleasantfield,Colorado,204141,56723,13.4,6.6,30.9,40

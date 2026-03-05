@@ -1,0 +1,8 @@
+{
+  "name": "trap-overspecification",
+  "description": "Trap: 8+ requirements in one message — tests attention to every detail",
+  "csv": "countries.csv",
+  "messages": ["Create a horizontal bar chart of CO2 per capita by country, sorted descending, with the bars colored in a red-to-green gradient based on value (high CO2 = red, low = green), add a vertical reference line at the global average, label the x-axis 'CO2 Emissions (metric tons per capita)', use the title 'Carbon Footprint by Country', and make sure tooltips are enabled"],
+  "tags": ["trap-case", "overspecification", "horizontal", "composition", "rule", "single-turn"],
+  "rubric": "The user specifies 7+ distinct requirements. All must be addressed: (1) barX horizontal, (2) y=country sorted descending by co2_per_capita, (3) fill/color mapped to co2_per_capita with red-green scheme, (4) ruleX reference line at average, (5) x-axis label, (6) title, (7) tip:true. FAIL if any requirement is dropped. Most common failures: forgetting the reference line, ignoring the color gradient, or losing the sort."
+}

@@ -1,0 +1,8 @@
+{
+  "name": "multi-turn-make-horizontal",
+  "description": "Create vertical bar chart then flip to horizontal",
+  "csv": "students.csv",
+  "messages": ["Bar chart of average score by subject", "Make it horizontal"],
+  "tags": ["bar", "multi-turn", "horizontal"],
+  "rubric": "First response should be barY. After 'make it horizontal', must switch to barX with groupY. Data and aggregation should be preserved."
+}

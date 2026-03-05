@@ -1,0 +1,9 @@
+{
+  "name": "trap-decline-funnel",
+  "description": "Trap: funnel chart is unsupported and not in the explicit decline list",
+  "csv": "orders.csv",
+  "messages": ["Create a funnel chart showing the conversion from orders to revenue across categories"],
+  "tags": ["trap-case", "decline", "single-turn"],
+  "rubric": "Funnel charts are not supported and not in the mark types. The model must decline. FAIL if model renders a bar chart and calls it a funnel. FAIL if model attempts any workaround without clearly stating it is not a funnel chart. BEST: decline and suggest a horizontal bar chart sorted by value as a simpler alternative.",
+  "expectDecline": true
+}

@@ -123,33 +123,43 @@ export async function runCase(
   for (const userContent of evalCase.messages) {
     conversationMessages.push({ role: "user", content: [{ type: "text", text: userContent }] });
 
-    try {
-      const result = await Promise.race([
-        generateText({
-          model,
-          system,
-          messages: conversationMessages,
-          tools: evalTools as ToolSet,
-          stopWhen: stepCountIs(MAX_STEPS),
-        }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Timeout after 2 minutes")), TIMEOUT_MS)
-        ),
-      ]);
+    let succeeded = false;
+    for (let attempt = 0; attempt < 3 && !succeeded; attempt++) {
+      try {
+        const result = await Promise.race([
+          generateText({
+            model,
+            system,
+            messages: conversationMessages,
+            tools: evalTools as ToolSet,
+            stopWhen: stepCountIs(MAX_STEPS),
+          }),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Timeout after 2 minutes")), TIMEOUT_MS)
+          ),
+        ]);
 
-      totalSteps += result.steps.length;
-      for (const step of result.steps) {
-        for (const tc of step.toolCalls) {
-          allToolCallNames.push(tc.toolName);
+        totalSteps += result.steps.length;
+        for (const step of result.steps) {
+          for (const tc of step.toolCalls) {
+            allToolCallNames.push(tc.toolName);
+          }
         }
-      }
 
-      // Append assistant messages to conversation for multi-turn
-      conversationMessages.push(...result.response.messages);
-    } catch (err) {
-      lastError = err instanceof Error ? err.message : String(err);
-      break;
+        // Append assistant messages to conversation for multi-turn
+        conversationMessages.push(...result.response.messages);
+        succeeded = true;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        const isTransient = /timeout|5\d\d|ECONNRESET|fetch failed|Internal Server Error/i.test(msg);
+        if (!isTransient || attempt === 2) {
+          lastError = msg;
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, attempt)));
+      }
     }
+    if (lastError) break;
   }
 
   // Save screenshot

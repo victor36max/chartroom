@@ -1,8 +1,8 @@
 {
   "name": "area-stacked",
-  "description": "Stacked area chart of stock prices",
-  "csv": "stocks.csv",
-  "messages": ["Create a stacked area chart of closing prices over time, colored by stock symbol"],
+  "description": "Stacked area chart of revenue by product over quarters",
+  "csv": "sales.csv",
+  "messages": ["Create a stacked area chart showing revenue over quarters, colored by product"],
   "tags": ["area", "single-turn", "stacked"],
-  "rubric": "Must use areaY mark with fill=symbol. x=date, y=close. Color legend required."
+  "rubric": "Must use areaY mark with fill=product. x=quarter, y=revenue. Stacking must be applied. Color legend required."
 }

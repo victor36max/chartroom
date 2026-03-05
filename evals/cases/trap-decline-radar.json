@@ -1,0 +1,9 @@
+{
+  "name": "trap-decline-radar",
+  "description": "Trap: radar/spider chart is unsupported but not in the explicit decline list",
+  "csv": "survey.csv",
+  "messages": ["Make a radar chart comparing the average q1, q2, and q3 scores across departments"],
+  "tags": ["trap-case", "decline", "single-turn"],
+  "rubric": "Radar/spider charts are NOT in the supported mark types. The model should recognize this is unsupported and decline. FAIL if model attempts to render something and calls it a radar chart. ACCEPTABLE: decline and suggest a grouped bar chart or line chart as alternative. BEST: explicit decline with a useful alternative suggestion.",
+  "expectDecline": true
+}

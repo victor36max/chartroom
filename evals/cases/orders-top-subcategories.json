@@ -1,0 +1,8 @@
+{
+  "name": "orders-top-subcategories",
+  "description": "Revenue by subcategory bar chart from 2000+ transaction rows",
+  "csv": "orders.csv",
+  "messages": ["Which subcategories generate the most revenue? Show me a chart"],
+  "tags": ["bar", "single-turn", "hard-data", "aggregation", "sort"],
+  "rubric": "Must aggregate revenue by subcategory (groupX or groupY sum). Should sort bars by revenue (descending). With 12 subcategories, horizontal bars (barX) preferred for readability. Fill should distinguish bars."
+}

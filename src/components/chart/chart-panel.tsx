@@ -6,9 +6,10 @@ import { ChartRenderer } from "@/components/chart/chart-renderer";
 import { DataTable } from "@/components/data/data-table";
 import { exportChartAsPng, exportChartAsSvg } from "@/lib/chart/export-chart";
 import { specToPlot } from "@/lib/chart/spec-to-plot";
-import { Download, Image, Check, Code, X } from "lucide-react";
+import { Download, Image, Check, Code, X, SlidersHorizontal } from "lucide-react";
 import CodeMirror from "@uiw/react-codemirror";
 import { json } from "@codemirror/lang-json";
+import { VisualSpecEditor } from "./visual-spec-editor";
 import type { ParsedCSV, ChartSpec } from "@/types";
 
 interface ChartPanelProps {
@@ -25,6 +26,7 @@ export function ChartPanel({ csvData, chartSpec, onChartSpecEdited }: ChartPanel
 
   const [activeTab, setActiveTab] = useState("chart");
   const [jsonPanelOpen, setJsonPanelOpen] = useState(false);
+  const [editorTab, setEditorTab] = useState<"visual" | "json">("visual");
   const [editorValue, setEditorValue] = useState("");
   const [editorError, setEditorError] = useState<string | null>(null);
   const [previewSpec, setPreviewSpec] = useState<ChartSpec | null>(null);
@@ -152,7 +154,30 @@ export function ChartPanel({ csvData, chartSpec, onChartSpecEdited }: ChartPanel
         {jsonPanelOpen && hasChart && (
           <div className="w-1/2 border-l flex flex-col overflow-hidden">
             <div className="border-b px-3 py-1.5 flex items-center justify-between shrink-0">
-              <span className="text-xs font-medium text-muted-foreground">Spec Editor</span>
+              <div className="flex items-center gap-0.5">
+                <button
+                  onClick={() => setEditorTab("visual")}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-colors ${
+                    editorTab === "visual"
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  }`}
+                >
+                  <SlidersHorizontal className="h-3 w-3" />
+                  Visual
+                </button>
+                <button
+                  onClick={() => setEditorTab("json")}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-colors ${
+                    editorTab === "json"
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  }`}
+                >
+                  <Code className="h-3 w-3" />
+                  JSON
+                </button>
+              </div>
               <div className="flex items-center gap-1">
                 <button
                   onClick={handleApply}
@@ -172,21 +197,29 @@ export function ChartPanel({ csvData, chartSpec, onChartSpecEdited }: ChartPanel
               </div>
             </div>
             <div className="flex-1 overflow-auto">
-              <CodeMirror
-                value={editorValue}
-                onChange={handleEditorChange}
-                extensions={jsonExtensions}
-                basicSetup={{
-                  lineNumbers: true,
-                  foldGutter: true,
-                  bracketMatching: true,
-                  closeBrackets: true,
-                  indentOnInput: true,
-                  tabSize: 2,
-                }}
-                height="100%"
-                style={{ height: "100%" }}
-              />
+              {editorTab === "visual" ? (
+                <VisualSpecEditor
+                  editorValue={editorValue}
+                  onChange={handleEditorChange}
+                  columns={csvData?.metadata.columns ?? []}
+                />
+              ) : (
+                <CodeMirror
+                  value={editorValue}
+                  onChange={handleEditorChange}
+                  extensions={jsonExtensions}
+                  basicSetup={{
+                    lineNumbers: true,
+                    foldGutter: true,
+                    bracketMatching: true,
+                    closeBrackets: true,
+                    indentOnInput: true,
+                    tabSize: 2,
+                  }}
+                  height="100%"
+                  style={{ height: "100%" }}
+                />
+              )}
             </div>
             {editorError && (
               <div className="px-3 py-2 border-t bg-destructive/10 text-destructive text-xs font-mono shrink-0">

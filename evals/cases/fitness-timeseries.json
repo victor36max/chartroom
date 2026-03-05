@@ -1,0 +1,8 @@
+{
+  "name": "fitness-timeseries",
+  "description": "Daily step count time series for 5 users over 300 days",
+  "csv": "fitness.csv",
+  "messages": ["Plot each user's daily step count over time as a line chart"],
+  "tags": ["line", "single-turn", "hard-data"],
+  "rubric": "Must use line mark with x=date, y=steps, stroke=user. Should handle 5 series × 300 points (1500 total data points). Color legend required. Chart should remain readable despite density."
+}

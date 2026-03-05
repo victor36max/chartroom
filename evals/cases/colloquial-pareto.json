@@ -1,0 +1,8 @@
+{
+  "name": "colloquial-pareto",
+  "description": "Edge case: Pareto chart — partially unsupported (no cumulative %)",
+  "csv": "orders.csv",
+  "messages": ["Create a Pareto chart of revenue by subcategory"],
+  "tags": ["edge-case", "colloquial", "composition", "aggregation", "single-turn"],
+  "rubric": "A Pareto chart is bars sorted descending + a cumulative percentage line. The system cannot compute running cumulative percentages. Model should either: (a) render a sorted descending bar chart and explain it cannot do the cumulative line, or (b) decline and explain why. FAIL if model claims to render a Pareto but only shows unsorted bars. FAIL if model fabricates a cumulative line without transform support. A sorted descending bar chart with an honest explanation is the best outcome."
+}
