@@ -36,26 +36,42 @@ const SUBTITLE_STYLE_DEFAULTS: Record<string, string> = {
   margin: "0 0 8px 0",
 };
 
+// Marks that take no data argument (options-only constructors)
+const NO_DATA_MARKS = new Set(["frame", "axisX", "axisY", "axisFx", "axisFy"]);
+
+// Marks that should default to the first tableau10 color when no fill is specified
+const FILL_MARKS = new Set(["barX", "barY", "areaY", "areaX", "rect", "rectX", "rectY", "cell"]);
+
+// Marks that auto-enable tooltips when the model omits tip: true
+const TIP_MARKS = new Set(["barX", "barY", "dot", "line", "lineY", "lineX", "areaY", "areaX", "cell", "rect", "rectX", "rectY", "tickX", "tickY"]);
+
+// Marks that require x/y position channels
+const NEEDS_XY = new Set([
+  "barX", "barY", "dot", "line", "lineY", "lineX",
+  "areaY", "areaX", "cell", "rect", "rectX", "rectY", "text",
+  "tickX", "tickY",
+]);
+const X_OPTIONAL = new Set(["lineY", "tickY", "areaY"]);
+const Y_OPTIONAL = new Set(["lineX", "tickX", "areaX"]);
+
+// Build MARK_CONSTRUCTORS programmatically — most marks share the same (data, opts) signature
+const DATA_MARK_NAMES = [
+  "barX", "barY", "dot", "line", "lineY", "lineX",
+  "areaY", "areaX", "cell", "rect", "rectX", "rectY",
+  "text", "tickX", "tickY", "ruleX", "ruleY", "tip",
+] as const;
+
 const MARK_CONSTRUCTORS: Record<string, (data: unknown, options: Record<string, unknown>) => Plot.Mark> = {
-  barX: (data, opts) => Plot.barX(data as Plot.Data, opts),
-  barY: (data, opts) => Plot.barY(data as Plot.Data, opts),
-  dot: (data, opts) => Plot.dot(data as Plot.Data, opts),
-  line: (data, opts) => Plot.line(data as Plot.Data, opts),
-  lineY: (data, opts) => Plot.lineY(data as Plot.Data, opts),
-  lineX: (data, opts) => Plot.lineX(data as Plot.Data, opts),
-  areaY: (data, opts) => Plot.areaY(data as Plot.Data, opts),
-  areaX: (data, opts) => Plot.areaX(data as Plot.Data, opts),
-  cell: (data, opts) => Plot.cell(data as Plot.Data, opts),
-  rect: (data, opts) => Plot.rect(data as Plot.Data, opts),
-  rectX: (data, opts) => Plot.rectX(data as Plot.Data, opts),
-  rectY: (data, opts) => Plot.rectY(data as Plot.Data, opts),
-  text: (data, opts) => Plot.text(data as Plot.Data, opts),
-  tickX: (data, opts) => Plot.tickX(data as Plot.Data, opts),
-  tickY: (data, opts) => Plot.tickY(data as Plot.Data, opts),
-  ruleX: (data, opts) => Plot.ruleX(data as Plot.Data, opts),
-  ruleY: (data, opts) => Plot.ruleY(data as Plot.Data, opts),
+  // Data marks — all follow the same pattern
+  ...Object.fromEntries(
+    DATA_MARK_NAMES.map((name) => [
+      name,
+      (data: unknown, opts: Record<string, unknown>) =>
+        (Plot[name] as (data: Plot.Data, options: Record<string, unknown>) => Plot.Mark)(data as Plot.Data, opts),
+    ]),
+  ),
+  // Options-only marks (no data argument)
   frame: (_data, opts) => Plot.frame(opts),
-  tip: (data, opts) => Plot.tip(data as Plot.Data, opts),
   axisX: (_data, opts) => Plot.axisX(opts),
   axisY: (_data, opts) => Plot.axisY(opts),
   axisFx: (_data, opts) => Plot.axisFx(opts),
@@ -166,6 +182,27 @@ function matchesFilter(rowValue: unknown, filterValue: unknown): boolean {
   return rowValue === filterValue;
 }
 
+/** barY ALWAYS needs groupX; barX ALWAYS needs groupY. Auto-swap if the model got it backwards. */
+function fixGroupDirection(markType: string, options: Record<string, unknown>): Record<string, unknown> {
+  if (markType === "barY" && options.groupY && !options.groupX) {
+    const groupY = options.groupY as Record<string, unknown>;
+    const outputs = (groupY.outputs ?? groupY) as Record<string, unknown>;
+    const fixed = { ...options };
+    fixed.groupX = { outputs };
+    delete fixed.groupY;
+    return fixed;
+  }
+  if (markType === "barX" && options.groupX && !options.groupY) {
+    const groupX = options.groupX as Record<string, unknown>;
+    const outputs = (groupX.outputs ?? groupX) as Record<string, unknown>;
+    const fixed = { ...options };
+    fixed.groupY = { outputs };
+    delete fixed.groupX;
+    return fixed;
+  }
+  return options;
+}
+
 function buildMark(markSpec: MarkSpec, csvData: Record<string, unknown>[]): Plot.Mark {
   const { type, data, options = {} } = markSpec;
 
@@ -175,7 +212,6 @@ function buildMark(markSpec: MarkSpec, csvData: Record<string, unknown>[]): Plot
   }
 
   // Resolve data source
-  const NO_DATA_MARKS = new Set(["frame", "axisX", "axisY", "axisFx", "axisFy"]);
   let markData: unknown;
   if (NO_DATA_MARKS.has(type)) {
     markData = undefined;
@@ -212,38 +248,49 @@ function buildMark(markSpec: MarkSpec, csvData: Record<string, unknown>[]): Plot
     delete resolvedOptions.filter;
   }
 
-  // Auto-parse date strings in position channels so Plot creates temporal scales
+  // Auto-parse date strings in position channels so Plot creates temporal scales.
+  // Collect all date columns first, then do a single pass to avoid multiple .map() copies.
   if (Array.isArray(markData) && markData.length > 0) {
     const first = markData[0] as Record<string, unknown>;
+    const dateCols: string[] = [];
     for (const ch of ["x", "y", "x1", "x2"]) {
       const col = resolvedOptions[ch];
       if (typeof col === "string" && col in first) {
         const sample = first[col];
         if (typeof sample === "string" && /^\d{4}-\d{2}(-\d{2})?/.test(sample)) {
-          markData = (markData as Record<string, unknown>[]).map((row) => {
-            const raw = row[col] as string;
-            // YYYY-MM → YYYY-MM-01 so Date constructor works correctly
-            const dateStr = /^\d{4}-\d{2}$/.test(raw) ? raw + "-01" : raw;
-            return { ...row, [col]: new Date(dateStr) };
-          });
+          dateCols.push(col);
         }
       }
+    }
+    if (dateCols.length > 0) {
+      markData = (markData as Record<string, unknown>[]).map((row) => {
+        const updated = { ...row };
+        for (const col of dateCols) {
+          const raw = updated[col] as string;
+          // YYYY-MM → YYYY-MM-01 so Date constructor works correctly
+          const dateStr = /^\d{4}-\d{2}$/.test(raw) ? raw + "-01" : raw;
+          updated[col] = new Date(dateStr);
+        }
+        return updated;
+      });
     }
   }
 
   // Apply default fill for marks that would otherwise render as plain black
-  const FILL_MARKS = new Set(["barX", "barY", "areaY", "areaX", "rect", "rectX", "rectY", "cell"]);
   if (FILL_MARKS.has(type) && !resolvedOptions.fill) {
     resolvedOptions.fill = DEFAULT_FILL;
   }
 
   // Auto-enable tooltips on data marks when the model omits tip: true
-  const TIP_MARKS = new Set(["barX", "barY", "dot", "line", "lineY", "lineX", "areaY", "areaX", "cell", "rect", "rectX", "rectY", "tickX", "tickY"]);
   if (TIP_MARKS.has(type) && resolvedOptions.tip === undefined) {
     resolvedOptions.tip = true;
   }
 
-  return constructor(markData, resolveTransform(resolvedOptions));
+  // Fix group direction: barY ALWAYS uses groupX, barX ALWAYS uses groupY.
+  // Using the wrong direction (e.g. groupY on barY) renders stacked bars.
+  const directionFixed = fixGroupDirection(type, resolvedOptions);
+
+  return constructor(markData, resolveTransform(directionFixed));
 }
 
 // The class prefix must match Plot's built-in prefix so legends share the same styling.
@@ -367,15 +414,6 @@ function validatePositionChannels(spec: ChartSpec, csvData: Record<string, unkno
   const numericCols = columns.filter((c) => typeof csvData[0][c] === "number");
   const categoricalCols = columns.filter((c) => typeof csvData[0][c] !== "number");
 
-  const NEEDS_XY = new Set([
-    "barX", "barY", "dot", "line", "lineY", "lineX",
-    "areaY", "areaX", "cell", "rect", "rectX", "rectY", "text",
-    "tickX", "tickY",
-  ]);
-  // Marks where one axis is optional
-  const X_OPTIONAL = new Set(["lineY", "tickY", "areaY"]);
-  const Y_OPTIONAL = new Set(["lineX", "tickX", "areaX"]);
-
   const errors: string[] = [];
 
   for (const mark of spec.marks) {
@@ -447,7 +485,6 @@ function validateColumns(spec: ChartSpec, csvData: Record<string, unknown>[]): v
 
 /** Check that fx/fy faceting is in mark options, not only at top level. */
 function validateFaceting(spec: ChartSpec): void {
-  const NO_DATA_MARKS = new Set(["frame", "axisX", "axisY", "axisFx", "axisFy"]);
   for (const ch of ["fx", "fy"] as const) {
     const topLevel = spec[ch] as Record<string, unknown> | undefined;
     if (!topLevel) continue;
@@ -544,16 +581,43 @@ export function specToPlot(spec: ChartSpec, csvData: Record<string, unknown>[]):
     }
   }
 
-  // Safety: don't suppress axes unless explicit axis marks or fx faceting replace them
+  // Auto-suppress default axis when an explicit axis mark replaces it
   const hasAxisX = spec.marks.some((m) => m.type === "axisX");
   const hasAxisY = spec.marks.some((m) => m.type === "axisY");
   const hasFx = spec.marks.some((m) => m.options?.fx) || !!spec.fx;
   const hasFy = spec.marks.some((m) => m.options?.fy) || !!spec.fy;
+
+  if (hasAxisX) {
+    if (!plotOptions.x) plotOptions.x = {};
+    if ((plotOptions.x as Record<string, unknown>).axis === undefined) {
+      (plotOptions.x as Record<string, unknown>).axis = null;
+    }
+  }
+  if (hasAxisY) {
+    if (!plotOptions.y) plotOptions.y = {};
+    if ((plotOptions.y as Record<string, unknown>).axis === undefined) {
+      (plotOptions.y as Record<string, unknown>).axis = null;
+    }
+  }
+
+  // Safety: don't suppress axes unless explicit axis marks or fx faceting replace them
   if (plotOptions.x && (plotOptions.x as Record<string, unknown>).axis === null && !hasAxisX && !hasFx) {
     delete (plotOptions.x as Record<string, unknown>).axis;
   }
   if (plotOptions.y && (plotOptions.y as Record<string, unknown>).axis === null && !hasAxisY && !hasFy) {
     delete (plotOptions.y as Record<string, unknown>).axis;
+  }
+
+  // Auto-increase marginBottom when axisX has rotated ticks
+  if (hasAxisX && !spec.marginBottom) {
+    const axisXMark = spec.marks.find((m) => m.type === "axisX");
+    const tickRotate = axisXMark?.options?.tickRotate;
+    if (typeof tickRotate === "number" && Math.abs(tickRotate) >= 20) {
+      plotOptions.marginBottom = Math.max(
+        (plotOptions.marginBottom as number) ?? 45,
+        80,
+      );
+    }
   }
 
   // Auto-limit ticks for temporal axes to prevent date label overlap

@@ -61,7 +61,13 @@ export function createTools(csvData: Record<string, unknown>[] | undefined) {
         "Look up Observable Plot documentation for specific topics. " +
         "Use when you need details about a mark type, transform, scale, or styling option. " +
         "Available topics: " +
-        TOPIC_IDS.join(", "),
+        "arc (pie/donut), bar (barX/barY), dot (scatter/bubble), line, area, " +
+        "cell (heatmap), rect (histogram), text (labels), tick (strip plot), rule (reference lines), " +
+        "frame, tip (tooltips), axis (custom axes), group (groupX/groupY aggregation), " +
+        "bin (histogram binning), stack (stackY/stackX), color-scale, position-scales (x/y), " +
+        "faceting (fx/fy small multiples), styling, melt (wide-to-long reshape), " +
+        "filter (row selection), layout-patterns (stacked vs grouped vs horizontal), " +
+        "composite-patterns (lollipop, value labels, Pareto, strip plot, rotated labels)",
       inputSchema: z.object({
         topics: z
           .array(z.enum(TOPIC_IDS))

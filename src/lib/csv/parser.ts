@@ -1,6 +1,9 @@
 import Papa from "papaparse";
 import type { ParsedCSV, ColumnMeta, DataMetadata } from "@/types";
 
+// Matches common date formats: YYYY-MM-DD, YYYY-MM, YYYY-MM-DDTHH:mm, YYYY/MM/DD, MM/DD/YYYY
+const ISO_DATE_RE = /^(\d{4}[-/]\d{2}([-/]\d{2})?(T\d{2}:\d{2}(:\d{2})?)?|\d{1,2}\/\d{1,2}\/\d{4})$/;
+
 export function parseCSV(file: File): Promise<ParsedCSV> {
   return new Promise((resolve) => {
     Papa.parse(file, {
@@ -36,8 +39,9 @@ function inferType(values: unknown[]): ColumnMeta["type"] {
     return "boolean";
   }
 
-  // Check for dates
-  if (sample.every((v) => typeof v === "string" && !isNaN(Date.parse(v as string)))) {
+  // Check for dates — use explicit patterns to avoid false positives from Date.parse
+  // (e.g. Date.parse("1") is valid but "1" is not a date)
+  if (sample.every((v) => typeof v === "string" && ISO_DATE_RE.test(v as string))) {
     return "date";
   }
 
@@ -48,8 +52,16 @@ export function extractMetadata(data: Record<string, unknown>[]): DataMetadata {
   if (data.length === 0) return { rowCount: 0, columns: [] };
 
   const columnNames = Object.keys(data[0]);
+
+  // Single pass: collect per-column values instead of iterating all rows once per column
+  const colValues = new Map<string, unknown[]>();
+  for (const name of columnNames) colValues.set(name, []);
+  for (const row of data) {
+    for (const name of columnNames) colValues.get(name)!.push(row[name]);
+  }
+
   const columns: ColumnMeta[] = columnNames.map((name) => {
-    const values = data.map((row) => row[name]);
+    const values = colValues.get(name)!;
     const type = inferType(values);
     const nonNull = values.filter((v) => v != null && v !== "");
     const unique = new Set(nonNull).size;
@@ -58,10 +70,17 @@ export function extractMetadata(data: Record<string, unknown>[]): DataMetadata {
     const col: ColumnMeta = { name, type, sample, unique };
 
     if (type === "number") {
-      const nums = nonNull.filter((v) => typeof v === "number") as number[];
-      if (nums.length > 0) {
-        col.min = nums.reduce((m, v) => (v < m ? v : m), Infinity);
-        col.max = nums.reduce((m, v) => (v > m ? v : m), -Infinity);
+      let min = Infinity;
+      let max = -Infinity;
+      for (const v of nonNull) {
+        if (typeof v === "number") {
+          if (v < min) min = v;
+          if (v > max) max = v;
+        }
+      }
+      if (min !== Infinity) {
+        col.min = min;
+        col.max = max;
       }
     }
 

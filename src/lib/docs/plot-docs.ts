@@ -19,6 +19,10 @@ export const TOPIC_IDS = [
   "position-scales",
   "faceting",
   "styling",
+  "melt",
+  "filter",
+  "layout-patterns",
+  "composite-patterns",
 ] as const;
 
 export type TopicId = (typeof TOPIC_IDS)[number];
@@ -58,6 +62,8 @@ const DOC_CHUNKS: Record<TopicId, DocChunk> = {
 - Use \`"fill": ["#e41a1c","#377eb8"]\` in mark \`options\` for explicit per-slice colors (overrides scheme)
 
 **Sizing:** Always set top-level \`"width"\` and \`"height"\` for arc charts (e.g., 640×400). Without explicit dimensions, the chart may render too small.
+
+**When to use arc:** Use arc for "percentage of total", "share of", "proportion", or "breakdown" requests. Arc inherently shows part-of-whole without needing percentage computation. Do NOT attempt to compute percentages with bar charts — use arc instead.
 
 **Example — donut chart:**
 \`\`\`json
@@ -107,7 +113,11 @@ const DOC_CHUNKS: Record<TopicId, DocChunk> = {
 \`\`\`
 Set \`"x": { "axis": null }\` to hide the default axis (the axisX mark replaces it). Set \`"marginBottom": 80\` to make room for angled labels.
 
-**Gotcha:** For bar aggregation, use \`groupX\`/\`groupY\` transforms (see group topic). For stacked bars, add \`stackY\` (see stack topic). For grouped/side-by-side bars, use \`fx\` faceting instead of \`stackY\` (see faceting topic). Do NOT confuse \`groupX\` (an aggregation transform) with "grouped bars" (a visual side-by-side layout using \`fx\`).`,
+**Gotcha:** For bar aggregation, use \`groupX\`/\`groupY\` transforms (see group topic). For stacked bars, add \`stackY\` (see stack topic). For grouped/side-by-side bars, use \`fx\` faceting instead of \`stackY\` (see faceting topic). Do NOT confuse \`groupX\` (an aggregation transform) with "grouped bars" (a visual side-by-side layout using \`fx\`).
+
+**Gotcha:** Setting \`fill\` to a numeric column creates one color per unique value (potentially dozens of legend entries). Use a categorical column for \`fill\`, or a constant color string like \`"steelblue"\`.
+
+**Gotcha:** When the user says "average" or "mean", use \`groupX: { outputs: { y: "mean" } }\` — NOT \`"sum"\`. Using \`sum\` when the user asked for an average produces values orders of magnitude too large (e.g., sum of 50 test scores ≈ 3750, but mean ≈ 75). Always match the reducer to the user's intent.`,
   },
 
   dot: {
@@ -210,7 +220,15 @@ Set \`"x": { "axis": null }\` to hide the default axis (the axisX mark replaces 
 \`\`\`
 Use a constant \`fill\` color (e.g. \`"steelblue"\`) for single-series area charts. Use \`filter\` to select one category from multi-category data.
 
-**Gotcha:** For area marks, \`fill\` is correct (unlike line marks which use \`stroke\`). When \`fill\` is a field, areas are automatically stacked.`,
+**Multi-series area (non-stacked):** areaY implicitly stacks when \`fill\` is a data field — even without explicit \`stackY\`. To create truly overlapping areas, use \`y1: 0\` and \`y2\` to force a shared zero baseline:
+\`\`\`json
+{ "type": "areaY", "data": "csv", "options": { "x": "month", "y1": 0, "y2": "temperature", "fill": "city", "fillOpacity": 0.3, "stroke": "city", "curve": "monotone-x", "tip": true } }
+\`\`\`
+For non-summable values (temperature, prices, rates), prefer a **line chart** with \`stroke\` instead — it's clearer and avoids stacking confusion entirely.
+
+**CRITICAL — implicit stacking:** When \`fill\` is a field name (not a CSS color), Observable Plot applies implicit \`stackY\` to areaY. This means \`areaY\` with \`fill: "city"\` and \`fillOpacity: 0.3\` does NOT produce overlapping areas — it produces stacked areas that merely look semi-transparent. The y-values are cumulative.
+
+**Gotcha:** For area marks, \`fill\` is correct (unlike line marks which use \`stroke\`). But beware: when \`fill\` is a field, areas are automatically stacked unless you use explicit \`y1\`/\`y2\`.`,
   },
 
   cell: {
@@ -301,7 +319,18 @@ Use \`group\` (NOT \`groupX\`) — \`group\` aggregates by ALL position channels
     { "type": "text", "data": "csv", "options": { "x": "gdp", "y": "life_exp", "text": "country", "dy": -8, "fontSize": 10 } }
   ]
 }
-\`\`\``,
+\`\`\`
+
+**Value labels on aggregated bars:** When adding data labels to a bar chart that uses groupX, the text mark needs the SAME groupX with an extra \`"text"\` output:
+\`\`\`json
+{
+  "marks": [
+    { "type": "barY", "data": "csv", "options": { "x": "product", "y": "revenue", "fill": "steelblue", "groupX": { "outputs": { "y": "sum" } }, "tip": true } },
+    { "type": "text", "data": "csv", "options": { "x": "product", "y": "revenue", "text": "revenue", "dy": -8, "groupX": { "outputs": { "y": "sum", "text": "sum" } } } }
+  ]
+}
+\`\`\`
+CRITICAL: the text mark's \`groupX.outputs\` must include \`"text": "sum"\` (or same reducer as y) so labels show aggregated values, not raw row values.`,
   },
 
   tick: {
@@ -355,7 +384,9 @@ Use \`group\` (NOT \`groupX\`) — \`group\` aggregates by ALL position channels
 { "type": "ruleY", "data": null, "options": { "values": [100], "stroke": "red", "strokeDasharray": "4 2", "strokeWidth": 2 } }
 \`\`\`
 
-**IMPORTANT:** For static reference lines, \`data\` MUST be \`null\` (not \`"csv"\`). Pass values via \`options.values\` array. Using \`"data": "csv"\` will draw lines from the CSV data, not at your specified values.`,
+**IMPORTANT:** For static reference lines, \`data\` MUST be \`null\` (not \`"csv"\`). Pass values via \`options.values\` array. Using \`"data": "csv"\` will draw lines from the CSV data, not at your specified values.
+
+**Styling tip:** When users ask for colored or dashed reference lines, always include \`"stroke"\` and \`"strokeDasharray"\` on the rule mark. Don't drop these options when iterating on a chart — preserve all styling from previous iterations.`,
   },
 
   frame: {
@@ -483,7 +514,20 @@ Using groupX with barX will collapse all data into a single bar.
 \`"x": "hour", "y": "weekday", "fill": "consumption", "group": { "outputs": { "fill": "mean" } }\`
 Use \`group\` (not \`groupX\`) for cell/heatmap marks — \`group\` aggregates by ALL position channels. \`groupX\` only groups by x, which drops y and produces empty cells.
 
-**IMPORTANT:** \`groupX\`/\`groupY\` is an AGGREGATION transform — it computes sums, counts, means. It does NOT create side-by-side (grouped) bar layouts. For side-by-side bars, use \`fx\` faceting (see faceting topic). The name "group" in \`groupX\` refers to grouping data for aggregation, not visual grouping of bars.`,
+**Available reducers:** "count", "sum", "mean", "median", "min", "max", "mode", "first", "last", "deviation", "variance", "proportion", "proportion-facet".
+NEVER use a column name (e.g. "revenue") as a reducer — that is always wrong.
+
+**Choosing the right reducer:** Use \`"sum"\` when values should be added (e.g. revenue, counts). Use \`"mean"\` for averages (e.g. average price by region). Use \`"first"\` when each group has exactly one value and you just need to pass it through (common after melt, where each row is already unique per group combo).
+
+**IMPORTANT:** \`groupX\`/\`groupY\` is an AGGREGATION transform — it computes sums, counts, means. It does NOT create side-by-side (grouped) bar layouts. For side-by-side bars, use \`fx\` faceting (see faceting topic). The name "group" in \`groupX\` refers to grouping data for aggregation, not visual grouping of bars.
+
+**WARNING:** Using \`groupY\` on \`barY\` is the #1 cause of broken bar charts — it renders STACKED bars instead of the intended layout. This rule is absolute:
+- barY → groupX (ALWAYS)
+- barX → groupY (ALWAYS)
+
+**Lines and areas with many data points:** When plotting trends from transactional data (e.g., orders, events, logs), use \`groupX\` to aggregate by the x-axis value. Without aggregation, each raw row becomes a separate point, creating noisy spikes instead of a clean trend.
+Example — monthly revenue trend from order-level data:
+\`"type": "line", "options": { "x": "year_month", "y": "revenue", "stroke": "category", "groupX": { "outputs": { "y": "sum" } } }\``,
   },
 
   bin: {
@@ -563,6 +607,8 @@ Use \`stackX\` (not \`stackY\`) with \`barX\`, and \`groupY\` (not \`groupX\`):
 \`\`\`
 
 **Gotcha:** Stack transforms are typically combined with group transforms. The group computes the aggregate values, and stack arranges them.
+
+**WARNING — offset:normalize on single-category stacks:** If you use \`stackY\` with \`offset: "normalize"\` but each x-value has only ONE fill category, every bar becomes 100%. This is useless. Normalize only works when each stack has MULTIPLE segments (multiple fill values per x position). For single-category proportions, use an \`arc\` (pie) chart instead.
 
 **Want side-by-side (grouped) bars instead of stacked?** Do NOT use \`stackY\`/\`stackX\` — remove it entirely and use \`fx\`/\`fy\` (faceting) instead. See the faceting topic.`,
   },
@@ -736,6 +782,203 @@ Use \`rectY\` (not \`barY\`) for histograms of continuous data. \`fx\` MUST be i
 **Global style (top-level):**
 \`"style": { "fontFamily": "serif", "fontSize": "14px", "background": "#f5f5f5" }\`
 Applies CSS to the entire SVG container.`,
+  },
+
+  melt: {
+    title: "Melt Transform (wide-to-long reshaping)",
+    content: `Reshapes wide-format data (one column per series) into long format (one row per observation). Required when column names represent categories you want to plot.
+
+**When to use:** If the CSV has multiple columns for the SAME kind of measure (like \`q1_score\`, \`q2_score\`, \`q3_score\`, or \`revenue_2020\`, \`revenue_2021\`), you MUST melt them first. Do NOT invent column names that don't exist — melt creates new \`key\`/\`value\` columns from the original column names and their values.
+
+**Spec format:**
+\`\`\`json
+"melt": { "columns": ["col1", "col2", "col3"], "key": "metric", "value": "amount" }
+\`\`\`
+- \`columns\` (required): which columns to unpivot into rows
+- \`key\` (default: "variable"): name for the new column holding the original column names
+- \`value\` (default: "value"): name for the new column holding the values
+- All columns NOT listed in \`columns\` are kept as-is (they become id columns repeated for each melted row)
+
+After melt, the \`key\` column works as a categorical series — use it with \`fill\` for stacking or \`fx\` for side-by-side grouping.
+
+**Stacked bar chart with melt** (wide data → stacked bars):
+\`\`\`json
+{
+  "marks": [{ "type": "barY", "data": "csv", "options": {
+    "melt": { "columns": ["q1_score", "q2_score", "q3_score"], "key": "quarter", "value": "score" },
+    "x": "department", "y": "score", "fill": "quarter",
+    "groupX": { "outputs": { "y": "first" } }, "stackY": {}, "tip": true
+  }}],
+  "color": { "legend": true }
+}
+\`\`\`
+NOTE: Use \`"first"\` reducer (not \`"sum"\`) when melt already produces one row per group combo — summing would be wrong if values shouldn't be added together (e.g. returns, percentages, scores).
+
+**Grouped bar chart with melt** (wide data → side-by-side bars):
+\`\`\`json
+{
+  "marks": [{ "type": "barY", "data": "csv", "options": {
+    "melt": { "columns": ["q1_score", "q2_score", "q3_score"], "key": "quarter", "value": "score" },
+    "x": "quarter", "y": "score", "fill": "quarter", "fx": "department", "tip": true
+  }}],
+  "fx": { "label": "Department", "padding": 0.1 }, "x": { "axis": null }, "color": { "legend": true }
+}
+\`\`\`
+Set \`"x": { "axis": null }\` to hide the redundant x-axis labels — the color legend already identifies each bar.`,
+  },
+
+  filter: {
+    title: "Filter Transform (row selection)",
+    content: `Filters CSV rows before plotting. Use \`filter\` in mark options to select a subset of data.
+
+**Spec format — in mark options:**
+\`\`\`json
+"filter": { "column": "value" }
+\`\`\`
+
+**Match types:**
+- **Exact match:** \`"filter": { "city": "New York" }\`
+- **String prefix:** \`"filter": { "year_month": "2024" }\` — matches "2024-01", "2024-06", etc.
+- **Range:** \`"filter": { "revenue": { "$gte": 100, "$lte": 500 } }\` — supports \`$gte\`, \`$gt\`, \`$lte\`, \`$lt\`
+- **Multi-value:** \`"filter": { "region": ["East", "West"] }\` — matches any listed value
+- **Combined:** \`"filter": { "region": "East", "revenue": { "$gte": 100 } }\` — all conditions must match (AND)
+
+**Combining filter + groupX + stackY** (stacked bar chart of a data subset):
+\`\`\`json
+{ "options": { "x": "category", "y": "revenue", "fill": "region",
+  "filter": { "year_month": "2024" },
+  "groupX": { "outputs": { "y": "sum" } }, "stackY": {}, "tip": true } }
+\`\`\`
+All three work together: filter narrows raw data first, then groupX aggregates, then stackY stacks. Order in JSON doesn't matter — they are applied in the correct sequence automatically.
+
+**Single-series from multi-category data:** Use filter to isolate one category, then use a constant \`fill\` color:
+\`\`\`json
+{ "options": { "x": "month", "y": "temperature", "fill": "steelblue",
+  "filter": { "city": "New York" }, "tip": true } }
+\`\`\``,
+  },
+
+  "layout-patterns": {
+    title: "Layout Patterns (stacked, grouped, horizontal)",
+    content: `How to arrange bars in different visual layouts. \`groupX\`/\`groupY\` is the AGGREGATION transform. \`stackY\`/\`stackX\` vs \`fx\`/\`fy\` controls the VISUAL LAYOUT.
+
+## Stacked vs. Grouped (side-by-side) bars
+| User says | Orientation | Layout | Mechanism |
+|-----------|-------------|--------|-----------|
+| "stacked" | Vertical | Bars ON TOP | \`fill\` for color + \`stackY: {}\` |
+| "grouped" / "side-by-side" | Vertical | Bars NEXT TO each other | \`fx\` in mark options — NO \`stackY\` |
+| "horizontal stacked" | Horizontal | Bars END TO END | \`fill\` for color + \`stackX: {}\` |
+| "horizontal grouped" | Horizontal | Bars in rows | \`fy\` in mark options — NO \`stackX\` |
+
+## Converting between layouts
+**Stacked → grouped:** Remove \`stackY: {}\`. Move the \`fill\` field to \`fx\`. Set \`x\` to the old \`fill\` field, set \`fill\` to match \`x\`. Add top-level \`"fx": { "padding": 0.1 }\`, \`"x": { "axis": null }\`, \`"color": { "legend": true }\`.
+**Grouped → stacked:** Remove \`fx\` from mark options. Move the \`fx\` field to \`fill\`. Add \`stackY: {}\`. Remove top-level \`"fx"\` and \`"x": { "axis": null }\`.
+
+## Flipping vertical ↔ horizontal
+Swap ALL of these together:
+| Vertical | Horizontal |
+|----------|------------|
+| barY | barX |
+| groupX | groupY |
+| stackY | stackX |
+| fx | fy |
+| x (categorical) | y (categorical) |
+| y (quantitative) | x (quantitative) |
+Partial swaps (e.g. barX with groupX, or barX with fx) = broken chart. Always swap ALL pairs.
+
+## Examples
+
+**Stacked bar chart** (sum revenue by category, colored by region):
+\`\`\`json
+{ "options": { "x": "category", "y": "revenue", "fill": "region",
+  "groupX": { "outputs": { "y": "sum" } }, "stackY": {}, "tip": true } }
+\`\`\`
+
+**Grouped bar chart** ("products side by side for each region"):
+\`\`\`json
+{
+  "marks": [{ "type": "barY", "data": "csv", "options": {
+    "x": "product", "y": "revenue", "fill": "product", "fx": "region",
+    "groupX": { "outputs": { "y": "sum" } }, "tip": true
+  }}],
+  "fx": { "padding": 0.1 }, "x": { "axis": null }, "color": { "legend": true }
+}
+\`\`\`
+Think: "for each ___" = fx. \`fx\` = outer grouping (panels), \`x\` = inner grouping (bars within panel).
+
+**Horizontal bar chart with aggregation** — for barX, use \`groupY\` (NOT \`groupX\`):
+\`\`\`json
+{ "options": { "y": "product", "x": "revenue",
+  "groupY": { "outputs": { "x": "sum" } }, "sort": { "y": "-x" }, "tip": true } }
+\`\`\`
+
+**Horizontal grouped bar chart** ("regions side by side for each product"):
+\`\`\`json
+{
+  "marks": [{ "type": "barX", "data": "csv", "options": {
+    "y": "region", "x": "revenue", "fill": "region", "fy": "product",
+    "groupY": { "outputs": { "x": "sum" } }, "tip": true
+  }}],
+  "fy": { "padding": 0.1 }, "y": { "axis": null }, "color": { "legend": true }
+}
+\`\`\`
+For horizontal grouped bars: use \`fy\` (NOT \`fx\`) and \`groupY\` (NOT \`groupX\`).`,
+  },
+
+  "composite-patterns": {
+    title: "Composite Patterns (lollipop, labels, Pareto, strip plot)",
+    content: `Multi-mark compositions that combine two or more mark types.
+
+## Lollipop charts
+Compose using ruleX (stems from 0 to value) + dot (circles at value):
+\`\`\`json
+{
+  "marks": [
+    { "type": "ruleX", "data": "csv", "options": { "y": "category", "x": "value", "groupY": { "outputs": { "x": "mean" } } } },
+    { "type": "dot", "data": "csv", "options": { "y": "category", "x": "value", "r": 6, "fill": "steelblue", "groupY": { "outputs": { "x": "mean" } } } }
+  ]
+}
+\`\`\`
+Both marks need the same aggregation. For vertical lollipops, use ruleY + dot with groupX instead.
+
+## Value labels on bars
+Add a \`text\` mark with the same position and aggregation as the bar. The \`text\` channel should reference the same column as the quantitative axis:
+\`\`\`json
+{
+  "marks": [
+    { "type": "barY", "data": "csv", "options": { "x": "product", "y": "revenue", "fill": "steelblue", "groupX": { "outputs": { "y": "sum" } }, "tip": true } },
+    { "type": "text", "data": "csv", "options": { "x": "product", "y": "revenue", "text": "revenue", "dy": -8, "groupX": { "outputs": { "y": "sum", "text": "sum" } } } }
+  ]
+}
+\`\`\`
+CRITICAL: the text mark's \`groupX.outputs\` must include \`"text": "sum"\` (or the same reducer as y) so labels show the aggregated value, not raw row values.
+
+## Pareto charts
+The system CANNOT compute running cumulative percentages. When asked for a Pareto chart:
+1. Render a bar chart sorted DESCENDING by value
+2. In your text response, you MUST explicitly tell the user: "I've rendered the bars sorted by value. Observable Plot doesn't support cumulative percentage lines, so the Pareto overlay cannot be included."
+3. Do NOT title the chart "Pareto Chart" — title it descriptively (e.g. "Revenue by Subcategory, Sorted Descending")
+4. Do NOT attempt to fake a cumulative line or invent a "cumulative" transform
+
+## Strip plots
+Use \`tickX\` (not \`dot\`) for strip plots. tickX draws vertical line segments:
+\`\`\`json
+{ "type": "tickX", "data": "csv", "options": { "x": "score", "y": "subject", "stroke": "subject", "strokeOpacity": 0.5, "tip": true } }
+\`\`\`
+
+## Rotated axis labels
+When the user asks for rotated labels, add an \`axisX\` mark AND hide the default axis:
+\`\`\`json
+{
+  "marks": [
+    { "type": "barY", "data": "csv", "options": { "x": "country", "y": "gdp", "fill": "steelblue", "tip": true } },
+    { "type": "axisX", "options": { "tickRotate": -45, "labelAnchor": "right", "fontSize": 10 } }
+  ],
+  "x": { "axis": null },
+  "marginBottom": 80
+}
+\`\`\`
+When there are 20+ categories, prefer \`barX\` (horizontal bars) instead — it's always more readable.`,
   },
 };
 
