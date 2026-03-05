@@ -1,0 +1,8 @@
+{
+  "name": "vague-visualize-this",
+  "description": "Completely open-ended request with small dataset",
+  "csv": "sales.csv",
+  "messages": ["Visualize this data"],
+  "tags": ["vague", "single-turn"],
+  "rubric": "Must render a valid chart using at least one meaningful dimension from the dataset (region, product, revenue, units, or quarter). Any reasonable chart type is acceptable. FAIL if model asks for clarification without rendering anything."
+}

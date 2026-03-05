@@ -1,0 +1,11 @@
+{
+  "name": "multi-turn-scale-change",
+  "description": "Multi-turn: change axis scales to log",
+  "csv": "countries.csv",
+  "messages": [
+    "Scatter plot of GDP vs population",
+    "Use a log scale for both axes"
+  ],
+  "tags": ["dot", "multi-turn", "refinement", "scale"],
+  "rubric": "Final chart must be a scatter/dot plot with gdp_billions on one axis and population_millions on the other. Both axes must use log scale (type: 'log'). Data points should be spread out (not clustered in corner as with linear scale)."
+}

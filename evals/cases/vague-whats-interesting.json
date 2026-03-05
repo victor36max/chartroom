@@ -1,0 +1,8 @@
+{
+  "name": "vague-whats-interesting",
+  "description": "Exploratory request requiring model to pick a dimension",
+  "csv": "countries.csv",
+  "messages": ["What's interesting in this data?"],
+  "tags": ["vague", "single-turn"],
+  "rubric": "Must render a valid chart highlighting at least one meaningful relationship or distribution (e.g., GDP vs life expectancy, CO2 by continent, population distribution). Any chart type acceptable. FAIL if model asks for clarification without rendering anything."
+}

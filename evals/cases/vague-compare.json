@@ -1,0 +1,8 @@
+{
+  "name": "vague-compare",
+  "description": "Vague comparison request with no metric specified",
+  "csv": "students.csv",
+  "messages": ["How do the students compare?"],
+  "tags": ["vague", "single-turn"],
+  "rubric": "Must render a chart comparing students using at least one metric (score, age, etc.). Should distinguish students visually. Acceptable types: bar, dot, grouped bar by subject, etc. FAIL if model asks for clarification without rendering."
+}
