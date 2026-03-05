@@ -67,7 +67,8 @@ export function createTools(csvData: Record<string, unknown>[] | undefined) {
         "bin (histogram binning), stack (stackY/stackX), color-scale, position-scales (x/y), " +
         "faceting (fx/fy small multiples), styling, melt (wide-to-long reshape), " +
         "filter (row selection), layout-patterns (stacked vs grouped vs horizontal), " +
-        "composite-patterns (lollipop, value labels, Pareto, strip plot, rotated labels)",
+        "composite-patterns (lollipop, value labels, Pareto, strip plot, rotated labels), " +
+        "editing-charts (multi-turn modifications: flipping, sorting, labels, reference lines)",
       inputSchema: z.object({
         topics: z
           .array(z.enum(TOPIC_IDS))
