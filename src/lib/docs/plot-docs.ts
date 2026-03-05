@@ -23,6 +23,7 @@ export const TOPIC_IDS = [
   "filter",
   "layout-patterns",
   "composite-patterns",
+  "editing-charts",
 ] as const;
 
 export type TopicId = (typeof TOPIC_IDS)[number];
@@ -831,9 +832,9 @@ Set \`"x": { "axis": null }\` to hide the redundant x-axis labels — the color 
     title: "Filter Transform (row selection)",
     content: `Filters CSV rows before plotting. Use \`filter\` in mark options to select a subset of data.
 
-**Spec format — in mark options:**
+**Spec format — in mark options (key = actual CSV column name):**
 \`\`\`json
-"filter": { "column": "value" }
+"filter": { "region": "East" }
 \`\`\`
 
 **Match types:**
@@ -855,7 +856,20 @@ All three work together: filter narrows raw data first, then groupX aggregates, 
 \`\`\`json
 { "options": { "x": "month", "y": "temperature", "fill": "steelblue",
   "filter": { "city": "New York" }, "tip": true } }
-\`\`\``,
+\`\`\`
+
+**Filtering to top/bottom N values:**
+There is no built-in "top N". Follow this two-step workflow:
+1. Call \`analyze_data\` to find the top values (e.g. top 5 subcategories by revenue)
+2. Add \`"filter"\` to the mark options using the discovered values — the key is the ACTUAL CSV column name
+
+Example — after \`analyze_data\` reveals Laptops, Furniture, and Phones are the top 3 by revenue:
+\`\`\`json
+{ "options": { "x": "subcategory", "y": "revenue", "fill": "subcategory",
+  "filter": { "subcategory": ["Laptops", "Furniture", "Phones"] },
+  "groupX": { "outputs": { "y": "sum" } }, "tip": true } }
+\`\`\`
+After calling \`analyze_data\`, you MUST re-render the chart with the filter added — do not stop at analysis. Apply the filter to EVERY mark in the chart (bars, text labels, etc.).`,
   },
 
   "layout-patterns": {
@@ -979,6 +993,59 @@ When the user asks for rotated labels, add an \`axisX\` mark AND hide the defaul
 }
 \`\`\`
 When there are 20+ categories, prefer \`barX\` (horizontal bars) instead — it's always more readable.`,
+  },
+
+  "editing-charts": {
+    title: "Editing Charts (multi-turn modifications)",
+    content: `Patterns for modifying an existing chart when the user asks for changes.
+
+**Core rules:**
+1. Start from your PREVIOUS chart spec — do NOT create a new spec from scratch
+2. Keep ALL existing marks, options, and styling intact — do not remove or simplify anything unless asked
+3. Look up docs for any mark types or transforms you're adding or changing
+
+## Flipping orientation (vertical ↔ horizontal)
+Swap ALL of these AT ONCE — a partial swap breaks the chart:
+- Mark type: barY → barX (or vice versa)
+- Group transform: groupX → groupY (and vice versa)
+- Group outputs key: \`{ outputs: { y: "sum" } }\` → \`{ outputs: { x: "sum" } }\`
+- Stack transform: stackY → stackX (and vice versa)
+- Position channels: x ↔ y in mark options
+- Facet channels: fx ↔ fy
+- Sort: \`{ "y": "-x" }\` → \`{ "x": "-y" }\` (and vice versa)
+Example: barY with \`x: "cat", y: "val", groupX: { outputs: { y: "sum" } }\` becomes barX with \`y: "cat", x: "val", groupY: { outputs: { x: "sum" } }\`.
+
+## Adding reference lines
+Use ruleY (horizontal) or ruleX (vertical) with \`data: null\`:
+\`{ "type": "ruleY", "data": null, "options": { "values": [75], "stroke": "red", "strokeDasharray": "4 2", "strokeWidth": 2 } }\`
+- ALWAYS set \`stroke\` to a visible color (e.g. \`"red"\`, \`"#e15759"\`) — without it the line is invisible against bars
+- ALWAYS set \`strokeDasharray\` so it's visually distinct from data marks
+- For "line at the average/mean": call \`analyze_data\` first to get the numeric value, then use it in \`"values": [computed_value]\`
+See also: \`rule\` topic for full ruleX/ruleY options.
+
+## Sorting
+- barY descending: \`"sort": { "x": "-y" }\` (sort the categorical x-axis by descending y values)
+- barX descending: \`"sort": { "y": "-x" }\` (sort the categorical y-axis by descending x values)
+- The sort key is ALWAYS the CATEGORICAL axis letter. For barY categories are on x → key is \`"x"\`. For barX categories are on y → key is \`"y"\`.
+- When flipping orientation, swap the sort key and value too (see above).
+
+## Filtering to top/bottom N
+There is NO built-in "top N" — you must call \`analyze_data\` first to find the values, then add a \`"filter"\` to your mark options with the discovered values. Do NOT just analyze — you MUST re-render with the filter applied.
+See also: \`filter\` topic for full filter syntax and examples.
+
+## Adding text labels on bars
+Add a \`text\` mark with the SAME position channels and aggregation as the bar mark.
+barY example (revenue by product):
+\`{ "type": "text", "data": "csv", "options": { "x": "product", "y": "revenue", "text": "revenue", "groupX": { "outputs": { "y": "sum", "text": "sum" } }, "dy": -8, "fontSize": 11, "fill": "black" } }\`
+CRITICAL: the \`"text"\` option in mark options must be the DATA COLUMN NAME (e.g. \`"revenue"\`), NOT the reducer name. The reducer goes only inside \`outputs\`: \`"text": "sum"\`.
+Add \`"dy": -8\` (barY) or \`"dx": 4\` (barX) to offset labels from the bar edge.
+See also: \`composite-patterns\` topic for more label examples.
+
+## Simplifying a chart
+Reduce the number of encoded dimensions (drop color, remove faceting, focus on one metric). Do NOT strip the chart to a bare minimum — keep the core structure and data readable.
+
+## Changing colors
+Update \`fill\` and/or \`stroke\` on existing marks. When adding \`fill: "columnName"\` for color-by-group, also add top-level \`"color": { "legend": true }\`.`,
   },
 };
 
