@@ -228,6 +228,15 @@ Interpolation options: linear, monotone, step, step-before, step-after, basis, c
 ] }
 \`\`\`
 
+**Labels on horizontal bars:**
+\`\`\`json
+{ "layer": [
+  { "mark": "bar", "encoding": { "x": { "aggregate": "sum", "field": "revenue", "type": "quantitative" }, "y": { "field": "product", "type": "nominal" } } },
+  { "mark": { "type": "text", "dx": 5, "align": "left" }, "encoding": { "x": { "aggregate": "sum", "field": "revenue", "type": "quantitative" }, "y": { "field": "product", "type": "nominal" }, "text": { "aggregate": "sum", "field": "revenue", "type": "quantitative" } } }
+] }
+\`\`\`
+For horizontal bars use \`dx\` (not \`dy\`) and \`align: "left"\` to place labels after bar ends.
+
 **Mark properties:** \`{ "type": "text", "fontSize": 12, "fontWeight": "bold", "dx": 0, "dy": -8, "align": "center", "baseline": "bottom" }\`
 - \`dx\`/\`dy\`: pixel offset from position
 - \`align\`: left, center, right
@@ -254,10 +263,14 @@ Interpolation options: linear, monotone, step, step-before, step-after, basis, c
 
 **Mark properties:** \`{ "type": "tick", "thickness": 2 }\`
 
-**Use cases:**
-- Strip plots (distribution of values within categories)
-- Rug plots (marginal distributions)
-- Dot plots (alternative to bar for small datasets)`,
+**Colored strip plot (distribution by group):**
+\`\`\`json
+{ "mark": { "type": "tick", "thickness": 2 }, "encoding": { "x": { "field": "score", "type": "quantitative" }, "y": { "field": "subject", "type": "nominal" }, "color": { "field": "subject", "type": "nominal" } } }
+\`\`\`
+
+**Gotchas:**
+- Use \`tick\` not \`point\` for strip/rug plots — ticks show distribution density better
+- Tick orientation follows the quantitative axis automatically`,
   },
 
   arc: {
@@ -711,7 +724,17 @@ Schemes: redblue, blueorange, redgrey, redyellowgreen, redyellowblue, spectral, 
 
 **Reverse:** \`"sort": "descending"\` or \`"scale": { "reverse": true }\`
 
-**D3 format strings:** $, = currency prefix; , = thousands separator; .2f = 2 decimal; .0% = percentage; .2s = SI prefix`,
+**D3 format strings:** $, = currency prefix; , = thousands separator; .2f = 2 decimal; .0% = percentage; .2s = SI prefix
+
+**Month/weekday ordering:**
+Ordinal months and weekdays sort alphabetically by default. Always provide explicit sort:
+\`\`\`json
+"x": { "field": "month", "type": "ordinal", "sort": ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"] }
+\`\`\`
+For weekdays:
+\`\`\`json
+"y": { "field": "day", "type": "ordinal", "sort": ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"] }
+\`\`\``,
   },
 
   styling: {
