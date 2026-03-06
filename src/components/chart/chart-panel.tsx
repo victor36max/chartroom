@@ -4,23 +4,39 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartRenderer } from "@/components/chart/chart-renderer";
 import { DataTable } from "@/components/data/data-table";
-import { exportChartAsPng } from "@/lib/chart/export-chart";
-import { specToPlot } from "@/lib/chart/spec-to-plot";
-import { Download, Check, Code, X, SlidersHorizontal } from "lucide-react";
+import { exportChartAsPng, exportChartAsSvg } from "@/lib/chart/export-chart";
+import { validateSpec } from "@/lib/chart/validate-spec";
+import { Download, Check, Code, X, SlidersHorizontal, Palette } from "lucide-react";
 import CodeMirror from "@uiw/react-codemirror";
 import { json } from "@codemirror/lang-json";
 import { VisualSpecEditor } from "./visual-spec-editor";
-import type { ParsedCSV, ChartSpec } from "@/types";
+import type { ParsedCSV, ChartSpec, ThemeId } from "@/types";
 
 interface ChartPanelProps {
   csvData: ParsedCSV | null;
   chartSpec: ChartSpec | null;
   onChartSpecEdited?: (spec: ChartSpec) => void;
+  themeId: ThemeId;
+  onThemeChange?: (themeId: ThemeId) => void;
 }
+
+const THEME_OPTIONS: { value: ThemeId; label: string }[] = [
+  { value: "default", label: "Default" },
+  { value: "dark", label: "Dark" },
+  { value: "fivethirtyeight", label: "FiveThirtyEight" },
+  { value: "latimes", label: "LA Times" },
+  { value: "vox", label: "Vox" },
+  { value: "urbaninstitute", label: "Urban Institute" },
+  { value: "googlecharts", label: "Google Charts" },
+  { value: "powerbi", label: "Power BI" },
+  { value: "quartz", label: "Quartz" },
+  { value: "excel", label: "Excel" },
+  { value: "ggplot2", label: "ggplot2" },
+];
 
 const jsonExtensions = [json()];
 
-export function ChartPanel({ csvData, chartSpec, onChartSpecEdited }: ChartPanelProps) {
+export function ChartPanel({ csvData, chartSpec, onChartSpecEdited, themeId, onThemeChange }: ChartPanelProps) {
   const hasData = csvData && csvData.data.length > 0;
   const hasChart = chartSpec && hasData;
 
@@ -48,8 +64,10 @@ export function ChartPanel({ csvData, chartSpec, onChartSpecEdited }: ChartPanel
     const timer = setTimeout(() => {
       try {
         const parsed = JSON.parse(editorValue);
-        specToPlot(parsed, csvData.data);
-        setPreviewSpec(parsed);
+        const result = validateSpec(parsed as Record<string, unknown>, csvData.data);
+        if (result.valid) {
+          setPreviewSpec(parsed as ChartSpec);
+        }
       } catch {
         // silently ignore — keep showing last valid spec
       }
@@ -73,10 +91,9 @@ export function ChartPanel({ csvData, chartSpec, onChartSpecEdited }: ChartPanel
       return;
     }
 
-    try {
-      specToPlot(parsed, csvData.data);
-    } catch (err) {
-      setEditorError(`Render error: ${err instanceof Error ? err.message : String(err)}`);
+    const result = validateSpec(parsed as unknown as Record<string, unknown>, csvData.data);
+    if (!result.valid) {
+      setEditorError(`Spec error: ${result.error}`);
       return;
     }
 
@@ -91,7 +108,6 @@ export function ChartPanel({ csvData, chartSpec, onChartSpecEdited }: ChartPanel
 
   const [exportOpen, setExportOpen] = useState(false);
   const [exportScale, setExportScale] = useState(2);
-  const [exportBg, setExportBg] = useState(true);
   const exportRef = useRef<HTMLDivElement>(null);
 
   // Close popover on outside click or Escape
@@ -126,6 +142,22 @@ export function ChartPanel({ csvData, chartSpec, onChartSpecEdited }: ChartPanel
         </TabsList>
         <div className="flex items-center gap-1">
           {hasChart && (
+            <div className="flex items-center gap-1 mr-1">
+              <Palette className="h-3.5 w-3.5 text-muted-foreground" />
+              <select
+                value={themeId}
+                onChange={(e) => onThemeChange?.(e.target.value as ThemeId)}
+                className="text-xs border rounded px-1.5 py-1 bg-background"
+              >
+                {THEME_OPTIONS.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {hasChart && (
             <button
               onClick={() => setJsonPanelOpen(!jsonPanelOpen)}
               className={`p-1.5 rounded-md transition-colors ${
@@ -147,7 +179,7 @@ export function ChartPanel({ csvData, chartSpec, onChartSpecEdited }: ChartPanel
                     ? "bg-muted text-foreground"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 }`}
-                title="Download PNG"
+                title="Export chart"
               >
                 <Download className="h-4 w-4" />
               </button>
@@ -171,29 +203,23 @@ export function ChartPanel({ csvData, chartSpec, onChartSpecEdited }: ChartPanel
                       ))}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="export-bg"
-                      checked={exportBg}
-                      onChange={(e) => setExportBg(e.target.checked)}
-                      className="rounded border-input"
-                    />
-                    <label htmlFor="export-bg" className="text-xs cursor-pointer">
-                      White background
-                    </label>
-                  </div>
                   <button
                     onClick={() => {
-                      exportChartAsPng({
-                        pixelRatio: exportScale,
-                        backgroundColor: exportBg ? "#ffffff" : null,
-                      });
+                      exportChartAsPng({ pixelRatio: exportScale });
                       setExportOpen(false);
                     }}
                     className="w-full h-7 rounded text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                   >
                     Export PNG
+                  </button>
+                  <button
+                    onClick={() => {
+                      exportChartAsSvg();
+                      setExportOpen(false);
+                    }}
+                    className="w-full h-7 rounded text-xs font-medium bg-muted text-foreground hover:bg-muted/80 transition-colors"
+                  >
+                    Export SVG
                   </button>
                 </div>
               )}
@@ -205,7 +231,7 @@ export function ChartPanel({ csvData, chartSpec, onChartSpecEdited }: ChartPanel
         <div className={`${jsonPanelOpen ? "w-1/2" : "w-full"} flex flex-col overflow-hidden transition-all`}>
           <TabsContent value="chart" className="flex-1 m-0 overflow-auto">
             {hasChart ? (
-              <ChartRenderer spec={displaySpec!} data={csvData.data} />
+              <ChartRenderer spec={displaySpec!} data={csvData.data} themeId={themeId} />
             ) : (
               <div className="flex items-center justify-center h-full text-muted-foreground">
                 <p className="text-sm">
