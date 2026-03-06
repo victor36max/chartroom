@@ -569,6 +569,15 @@ This creates two new columns:
 - Area + line (area with stroke)
 - Point + rule (scatter with mean line)
 
+**Reference line with dashed style:**
+\`\`\`json
+{ "layer": [
+  { "mark": "bar", "encoding": { "x": { "field": "cat", "type": "nominal" }, "y": { "aggregate": "mean", "field": "score", "type": "quantitative" } } },
+  { "mark": { "type": "rule", "strokeDash": [4, 4] }, "encoding": { "y": { "datum": 75 }, "color": { "value": "red" } } }
+] }
+\`\`\`
+Key: use \`datum\` (not \`field\`) for constant-value reference lines. Use \`strokeDash: [4, 4]\` for dashed style.
+
 **Gotchas:**
 - Each layer can have its own mark, encoding, and transform
 - Encoding in outer spec is inherited by all layers
@@ -641,19 +650,21 @@ This creates two new columns:
 \`\`\`json
 "color": { "field": "category", "type": "nominal", "scale": { "scheme": "category10" } }
 \`\`\`
-Schemes: category10, category20, tableau10, tableau20, set1, set2, set3, paired, dark2, accent
+Schemes: category10, category20, tableau10, tableau20, set1, set2, set3, paired, pastel1, pastel2, dark2, accent
 
 **Sequential (quantitative):**
 \`\`\`json
 "color": { "field": "value", "type": "quantitative", "scale": { "scheme": "blues" } }
 \`\`\`
-Schemes: blues, greens, reds, oranges, purples, viridis, inferno, magma, plasma, turbo
+Schemes: blues, greens, reds, oranges, purples, greys, viridis, inferno, magma, plasma, cividis, turbo, yelloworangered, yelloworangebrown, yellowgreen, yellowgreenblue, bluegreen, bluepurple, orangered, purpleblue, purplered, redpurple, greenblue
 
 **Diverging:**
 \`\`\`json
 "color": { "field": "change", "type": "quantitative", "scale": { "scheme": "redblue", "domainMid": 0 } }
 \`\`\`
-Schemes: redblue, blueorange, redgrey, spectral
+Schemes: redblue, blueorange, redgrey, redyellowgreen, redyellowblue, spectral, purplegreen, pinkyellowgreen, brownbluegreen, purpleorange
+
+**WARNING:** D3 shorthand names (YlOrRd, RdBu, PuBu, etc.) are NOT valid in Vega-Lite. Use full names: yelloworangered, redblue, purpleblue, etc.
 
 **Domain mapping (specific colors per value):**
 \`\`\`json
