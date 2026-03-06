@@ -1,0 +1,8 @@
+{
+  "name": "ordinal-month-sort",
+  "description": "Line chart with months sorted chronologically",
+  "csv": "weather.csv",
+  "messages": ["Line chart of average temperature by month for each city"],
+  "tags": ["line", "single-turn", "ordinal"],
+  "rubric": "Must use line mark with x=month (ordinal), y=avg_temp (aggregate mean), color=city. Months MUST be in chronological order (Jan-Dec), NOT alphabetical. FAIL if months appear as Apr, Aug, Dec, Feb... Explicit sort array required."
+}
