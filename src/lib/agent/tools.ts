@@ -1,41 +1,51 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { filterData } from "./data-filter";
-import { TOPIC_IDS, lookupDocs, type TopicId } from "@/lib/docs/plot-docs";
+import { TOPIC_IDS, lookupDocs, type TopicId } from "@/lib/docs/vl-docs";
 
-const markSpecSchema = z.object({
-  type: z.string().describe("The mark type: arc, barY, barX, dot, line, lineY, lineX, areaY, areaX, cell, rect, rectX, rectY, text, tickX, tickY, ruleX, ruleY, frame, tip, axisX, axisY, axisFx, axisFy"),
-  data: z.string().optional().describe('Use "csv" to reference the uploaded dataset'),
-  options: z.record(z.string(), z.unknown()).optional().describe("Mark options: x, y, fill, stroke, tip, filter, transforms (groupX, binX, stackY, melt), etc."),
-});
+// Encoding channel schema — field, type, aggregate, bin, etc.
+const encodingChannelSchema = z.record(z.string(), z.unknown())
+  .describe("Vega-Lite encoding channel: { field, type (quantitative/nominal/ordinal/temporal), aggregate, bin, timeUnit, scale, axis, legend, sort, stack, title, tooltip, ... }");
 
-const chartSpecSchema = z.object({
-  marks: z.array(markSpecSchema).describe("Array of mark specifications"),
-  title: z.string().optional(),
-  subtitle: z.string().optional(),
-  width: z.number().optional(),
-  height: z.number().optional(),
-  color: z.record(z.string(), z.unknown()).optional(),
-  x: z.record(z.string(), z.unknown()).optional(),
-  y: z.record(z.string(), z.unknown()).optional(),
-  fx: z.record(z.string(), z.unknown()).optional(),
-  fy: z.record(z.string(), z.unknown()).optional(),
-  marginTop: z.number().optional(),
-  marginRight: z.number().optional(),
-  marginBottom: z.number().optional(),
-  marginLeft: z.number().optional(),
-  style: z.record(z.string(), z.unknown()).optional().describe("Global CSS styles for the SVG, e.g. { fontFamily: 'sans-serif', background: '#f5f5f5' }. For font size use axisX/axisY marks instead."),
-  titleStyle: z.record(z.string(), z.unknown()).optional().describe("Inline CSS styles applied only to the title element, e.g. { fontWeight: 'bold', fontSize: '20px', color: '#333' }"),
-  subtitleStyle: z.record(z.string(), z.unknown()).optional().describe("Inline CSS styles applied only to the subtitle element, e.g. { fontSize: '14px', color: '#666' }"),
+const vlMarkSchema = z.union([
+  z.string().describe("Mark type: bar, line, area, point, rect, rule, text, tick, arc, boxplot, errorbar, errorband, trail, square, circle"),
+  z.object({ type: z.string() }).passthrough().describe("Mark with properties: { type, tooltip, opacity, ... }"),
+]);
+
+const vlUnitSchema: z.ZodType = z.lazy(() => z.object({
+  data: z.object({ name: z.literal("csv") }).optional(),
+  mark: vlMarkSchema.optional(),
+  encoding: z.record(z.string(), encodingChannelSchema).optional(),
+  transform: z.array(z.record(z.string(), z.unknown())).optional(),
+  layer: z.array(vlUnitSchema).optional(),
+  title: z.union([z.string(), z.object({ text: z.string() }).passthrough()]).optional(),
+  width: z.union([z.number(), z.literal("container")]).optional(),
+  height: z.union([z.number(), z.literal("container")]).optional(),
+}));
+
+const vlSpecSchema = z.object({
+  data: z.object({ name: z.literal("csv") }).optional().describe('Use { name: "csv" } to reference the uploaded dataset'),
+  mark: vlMarkSchema.optional(),
+  encoding: z.record(z.string(), encodingChannelSchema).optional().describe("Encoding channels: x, y, color, size, shape, opacity, theta, radius, text, tooltip, row, column, facet, detail, order"),
+  transform: z.array(z.record(z.string(), z.unknown())).optional().describe("Array of transforms: filter, calculate, fold, aggregate, bin, window, lookup, flatten, pivot, regression, loess, density"),
+  layer: z.array(vlUnitSchema).optional().describe("Array of layered specs (each with mark + encoding)"),
+  facet: z.record(z.string(), z.unknown()).optional().describe("Facet field for small multiples"),
+  repeat: z.unknown().optional().describe("Repeat spec for repeated views"),
+  spec: vlUnitSchema.optional().describe("Inner spec for facet/repeat"),
+  resolve: z.record(z.string(), z.unknown()).optional().describe("Resolve shared/independent scales across layers/facets"),
+  title: z.union([z.string(), z.object({ text: z.string() }).passthrough()]).optional(),
+  width: z.union([z.number(), z.literal("container")]).optional(),
+  height: z.union([z.number(), z.literal("container")]).optional(),
+  // NO config, NO $schema, NO background, NO padding, NO autosize
 });
 
 export function createTools(csvData: Record<string, unknown>[] | undefined) {
   return {
     render_chart: tool({
       description:
-        "Render a chart using Observable Plot. The chart will be displayed to the user and a screenshot will be returned for you to evaluate. Always use this tool to create or update charts.",
+        "Render a chart using Vega-Lite. The chart will be displayed to the user and a screenshot will be returned for you to evaluate. Always use this tool to create or update charts.",
       inputSchema: z.object({
-        spec: chartSpecSchema.describe("The Observable Plot chart specification"),
+        spec: vlSpecSchema.describe("The Vega-Lite chart specification"),
         title: z.string().optional().describe("Chart title"),
         description: z.string().optional().describe("Brief description of the chart for the user"),
       }),
@@ -44,7 +54,7 @@ export function createTools(csvData: Record<string, unknown>[] | undefined) {
 
     filter_data: tool({
       description:
-        "Filter CSV data to top/bottom N entries by a column. Can aggregate first (e.g., top 5 products by total revenue). Use before render_chart when you need to limit which rows or categories appear — Observable Plot cannot slice or limit data.",
+        "Filter CSV data to top/bottom N entries by a column. Can aggregate first (e.g., top 5 products by total revenue). Use before render_chart when you need to limit which rows or categories appear.",
       inputSchema: z.object({
         column: z.string().describe("Column to sort by (or value column when using groupBy)"),
         direction: z.enum(["top", "bottom"]).describe("Whether to get highest or lowest values"),
@@ -62,17 +72,15 @@ export function createTools(csvData: Record<string, unknown>[] | undefined) {
 
     lookup_docs: tool({
       description:
-        "Look up Observable Plot documentation for specific topics. " +
-        "Use when you need details about a mark type, transform, scale, or styling option. " +
+        "Look up Vega-Lite documentation for specific topics. " +
+        "Use when you need details about a mark type, encoding, transform, or composition. " +
         "Available topics: " +
-        "arc (pie/donut), bar (barX/barY), dot (scatter/bubble), line, area, " +
-        "cell (heatmap), rect (histogram), text (labels), tick (strip plot), rule (reference lines), " +
-        "frame, tip (tooltips), axis (custom axes), group (groupX/groupY aggregation), " +
-        "bin (histogram binning), stack (stackY/stackX), color-scale, position-scales (x/y), " +
-        "faceting (fx/fy small multiples), styling, melt (wide-to-long reshape), " +
-        "filter (row selection), layout-patterns (stacked vs grouped vs horizontal), " +
-        "composite-patterns (lollipop, value labels, Pareto, strip plot, rotated labels), " +
-        "editing-charts (multi-turn modifications: flipping, sorting, labels, reference lines)",
+        "bar, line, area, point, rect, rule, text, tick, arc, boxplot, " +
+        "encoding (channels and types), aggregate (aggregate/bin/timeUnit), " +
+        "stack, fold (wide-to-long reshape), filter, calculate, " +
+        "layer (multi-mark), facet (small multiples), repeat, " +
+        "color-scale, position-scales, styling, " +
+        "layout-patterns (stacked/grouped/horizontal), composite-patterns, editing-charts",
       inputSchema: z.object({
         topics: z
           .array(z.enum(TOPIC_IDS))
