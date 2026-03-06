@@ -179,7 +179,12 @@ Set \`"x": { "axis": null }\` to hide the default axis (the axisX mark replaces 
 }
 \`\`\`
 
-**CRITICAL: Use \`stroke\`, not \`fill\`, for line color.** Using \`fill\` on a line mark creates filled polygons/triangles.`,
+**CRITICAL: Use \`stroke\`, not \`fill\`, for line color.** Using \`fill\` on a line mark creates filled polygons/triangles.
+
+**CRITICAL: Aggregate transactional data.** If each row is an individual event (order, measurement, log entry) and multiple rows share the same x-value (e.g. same month, same date), you MUST use \`groupX\` to aggregate. Without it, lines connect raw values creating noisy spikes instead of a clean trend.
+\`\`\`json
+{ "type": "line", "data": "csv", "options": { "x": "year_month", "y": "revenue", "stroke": "category", "groupX": { "outputs": { "y": "sum" } }, "tip": true } }
+\`\`\``,
   },
 
   area: {
@@ -355,6 +360,18 @@ CRITICAL: the text mark's \`groupX.outputs\` must include \`"text": "sum"\` (or 
   "marks": [
     { "type": "tickX", "data": "csv", "options": { "x": "salary", "y": "department", "stroke": "steelblue", "strokeOpacity": 0.5, "tip": true } }
   ]
+}
+\`\`\`
+
+**When to use ticks for distributions:** If the user asks to see the "distribution", "spread", or "individual values" of a numeric field across categories (e.g. heart rate by user, salary by department), use \`tickX\` or \`tickY\` to show EVERY data point as an individual tick mark. Do NOT aggregate or show ranges — the point is to reveal the full distribution. Use \`strokeOpacity: 0.3\`–\`0.5\` when there are many overlapping points.
+
+**Example — show all individual values (large dataset):**
+\`\`\`json
+{
+  "marks": [
+    { "type": "tickX", "data": "csv", "options": { "x": "heart_rate", "y": "user", "stroke": "steelblue", "strokeOpacity": 0.3, "tip": true } }
+  ],
+  "x": { "label": "Heart Rate (bpm)" }
 }
 \`\`\``,
   },
@@ -860,16 +877,16 @@ All three work together: filter narrows raw data first, then groupX aggregates, 
 
 **Filtering to top/bottom N values:**
 There is no built-in "top N". Follow this two-step workflow:
-1. Call \`analyze_data\` to find the top values (e.g. top 5 subcategories by revenue)
+1. Call \`filter_data\` to find the top values (e.g. top 5 subcategories by revenue)
 2. Add \`"filter"\` to the mark options using the discovered values — the key is the ACTUAL CSV column name
 
-Example — after \`analyze_data\` reveals Laptops, Furniture, and Phones are the top 3 by revenue:
+Example — after \`filter_data\` reveals Laptops, Furniture, and Phones are the top 3 by revenue:
 \`\`\`json
 { "options": { "x": "subcategory", "y": "revenue", "fill": "subcategory",
   "filter": { "subcategory": ["Laptops", "Furniture", "Phones"] },
   "groupX": { "outputs": { "y": "sum" } }, "tip": true } }
 \`\`\`
-After calling \`analyze_data\`, you MUST re-render the chart with the filter added — do not stop at analysis. Apply the filter to EVERY mark in the chart (bars, text labels, etc.).`,
+After calling \`filter_data\`, you MUST re-render the chart with the filter added — do not stop at analysis. Apply the filter to EVERY mark in the chart (bars, text labels, etc.).`,
   },
 
   "layout-patterns": {
@@ -1020,7 +1037,7 @@ Use ruleY (horizontal) or ruleX (vertical) with \`data: null\`:
 \`{ "type": "ruleY", "data": null, "options": { "values": [75], "stroke": "red", "strokeDasharray": "4 2", "strokeWidth": 2 } }\`
 - ALWAYS set \`stroke\` to a visible color (e.g. \`"red"\`, \`"#e15759"\`) — without it the line is invisible against bars
 - ALWAYS set \`strokeDasharray\` so it's visually distinct from data marks
-- For "line at the average/mean": call \`analyze_data\` first to get the numeric value, then use it in \`"values": [computed_value]\`
+- For "line at the average/mean": call \`filter_data\` first to get the numeric value, then use it in \`"values": [computed_value]\`
 See also: \`rule\` topic for full ruleX/ruleY options.
 
 ## Sorting
@@ -1030,7 +1047,7 @@ See also: \`rule\` topic for full ruleX/ruleY options.
 - When flipping orientation, swap the sort key and value too (see above).
 
 ## Filtering to top/bottom N
-There is NO built-in "top N" — you must call \`analyze_data\` first to find the values, then add a \`"filter"\` to your mark options with the discovered values. Do NOT just analyze — you MUST re-render with the filter applied.
+There is NO built-in "top N" — you must call \`filter_data\` first to find the values, then add a \`"filter"\` to your mark options with the discovered values. Do NOT just analyze — you MUST re-render with the filter applied.
 See also: \`filter\` topic for full filter syntax and examples.
 
 ## Adding text labels on bars

@@ -1,6 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { analyzeData } from "./data-analyzer";
+import { filterData } from "./data-filter";
 import { TOPIC_IDS, lookupDocs, type TopicId } from "@/lib/docs/plot-docs";
 
 const markSpecSchema = z.object({
@@ -42,17 +42,21 @@ export function createTools(csvData: Record<string, unknown>[] | undefined) {
       // No execute — this is a client-side tool
     }),
 
-    analyze_data: tool({
+    filter_data: tool({
       description:
-        "Analyze the CSV data to answer questions about it. Use this before creating charts when you need to understand the data structure, distributions, or compute aggregations. Returns computed results.",
+        "Filter CSV data to top/bottom N entries by a column. Can aggregate first (e.g., top 5 products by total revenue). Use before render_chart when you need to limit which rows or categories appear — Observable Plot cannot slice or limit data.",
       inputSchema: z.object({
-        query: z.string().describe("Natural language query about the data, e.g. 'top 5 values in revenue column' or 'statistics for all columns'"),
+        column: z.string().describe("Column to sort by (or value column when using groupBy)"),
+        direction: z.enum(["top", "bottom"]).describe("Whether to get highest or lowest values"),
+        n: z.number().int().min(1).max(50).describe("Number of entries to return"),
+        groupBy: z.string().optional().describe("Category column to group by before aggregating"),
+        aggregate: z.enum(["sum", "count", "mean", "max", "min"]).optional().describe("Aggregation function when groupBy is used"),
       }),
-      execute: async ({ query }) => {
+      execute: async ({ column, direction, n, groupBy, aggregate }) => {
         if (!csvData || csvData.length === 0) {
           return { error: "No CSV data available" };
         }
-        return analyzeData(csvData, query);
+        return filterData(csvData, { column, direction, n, groupBy, aggregate });
       },
     }),
 
