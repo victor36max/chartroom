@@ -1,9 +1,8 @@
 {
   "name": "decline-map",
-  "description": "Should decline: map/geo chart request",
+  "description": "Should explain map/geo charts unsupported and render alternative",
   "csv": "countries.csv",
   "messages": ["Create a world map showing GDP by country with colors"],
   "tags": ["decline", "single-turn"],
-  "rubric": "Model must decline the request and explain that map/geo charts are not supported. Should suggest an alternative (e.g., bar chart).",
-  "expectDecline": true
+  "rubric": "Map/geo charts are not supported. Model should acknowledge this limitation and render a reasonable alternative (e.g. bar chart by country/region) showing GDP. Score higher if it explains why maps are unavailable. Score lower if it renders without mentioning the limitation or misleadingly labels the chart as a map."
 }

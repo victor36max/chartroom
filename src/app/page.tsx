@@ -3,11 +3,13 @@
 import { useState, useRef, useCallback } from "react";
 import { ChatPanel, type ChatPanelHandle } from "@/components/chat/chat-panel";
 import { ChartPanel } from "@/components/chart/chart-panel";
+import { DEFAULT_TIER, type ModelTier } from "@/lib/agent/models";
 import type { ParsedCSV, ChartSpec } from "@/types";
 
 export default function Home() {
   const [csvData, setCsvData] = useState<ParsedCSV | null>(null);
   const [currentChart, setCurrentChart] = useState<ChartSpec | null>(null);
+  const [tier, setTier] = useState<ModelTier>(DEFAULT_TIER);
   const chatRef = useRef<ChatPanelHandle>(null);
 
   const handleChartSpecEdited = useCallback((spec: ChartSpec) => {
@@ -27,6 +29,8 @@ export default function Home() {
             csvData={csvData}
             onCSVParsed={setCsvData}
             onChartSpec={setCurrentChart}
+            tier={tier}
+            onTierChange={setTier}
           />
         </div>
         <div className="flex-1 flex flex-col overflow-hidden">

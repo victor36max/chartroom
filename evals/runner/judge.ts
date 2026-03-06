@@ -27,10 +27,11 @@ Be strict but fair.`;
 export async function judgeChart(
   screenshotBase64: string,
   userPrompts: string[],
-  rubric?: string
+  rubric: string | undefined,
+  judgeModelId: string
 ): Promise<JudgeResult> {
   const openrouter = createOpenRouter({ apiKey: process.env.OPENROUTER_API_KEY });
-  const model = openrouter(process.env.JUDGE_MODEL_ID ?? "anthropic/claude-sonnet-4");
+  const model = openrouter(judgeModelId);
 
   const rubricText = rubric ? `\nAdditional rubric: ${rubric}` : "";
 

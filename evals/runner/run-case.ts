@@ -40,7 +40,7 @@ export async function runCase(
   let csvData: Record<string, unknown>[];
   try {
     csvData = loadCSV(evalCase.csv);
-  } catch (err) {
+  } catch {
     return {
       name: evalCase.name,
       success: false,

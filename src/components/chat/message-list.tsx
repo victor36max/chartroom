@@ -2,13 +2,37 @@
 
 import { type UIMessage } from "ai";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
 import { useEffect, useRef } from "react";
 
 interface MessageListProps {
   messages: UIMessage[];
   status: "submitted" | "streaming" | "ready" | "error";
 }
+
+const toolThinkingLabels: Record<string, string> = {
+  lookup_docs: "Looking up docs...",
+  filter_data: "Filtering data...",
+  render_chart: "Rendering chart...",
+};
+
+function getStreamingToolLabel(messages: UIMessage[], fallback: string): string | null {
+  const lastAssistant = messages.findLast((m) => m.role === "assistant");
+  if (!lastAssistant) return fallback;
+
+  const hasText = lastAssistant.parts.some(
+    (p) => p.type === "text" && p.text.trim().length > 0
+  );
+  if (hasText) return null;
+
+  let lastToolName: string | null = null;
+  for (const part of lastAssistant.parts) {
+    if (part.type.startsWith("tool-")) {
+      lastToolName = part.type.slice(5);
+    }
+  }
+  return lastToolName ? (toolThinkingLabels[lastToolName] ?? fallback) : fallback;
+}
+
 
 export function MessageList({ messages, status }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -30,15 +54,20 @@ export function MessageList({ messages, status }: MessageListProps) {
     );
   }
 
+  const isThinking = status === "submitted" || status === "streaming";
+  const thinkingLabel = isThinking
+    ? getStreamingToolLabel(messages, "Thinking...")
+    : null;
+
   return (
     <ScrollArea className="flex-1 min-h-0">
       <div className="p-4 space-y-4">
         {messages.map((message) => (
-          <MessageBubble key={message.id} message={message} />
+          <MessageBubbleGroup key={message.id} message={message} />
         ))}
-        {status === "submitted" && (
+        {thinkingLabel && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span className="animate-pulse">Thinking...</span>
+            <span className="animate-pulse">{thinkingLabel}</span>
           </div>
         )}
         <div ref={bottomRef} />
@@ -47,8 +76,15 @@ export function MessageList({ messages, status }: MessageListProps) {
   );
 }
 
-function MessageBubble({ message }: { message: UIMessage }) {
+function MessageBubbleGroup({ message }: { message: UIMessage }) {
   const isUser = message.role === "user";
+
+  const textParts = message.parts.filter((part) => part.type === "text");
+  const hasText = textParts.some(
+    (part) => part.type === "text" && part.text.trim().length > 0
+  );
+
+  if (!hasText) return null;
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
@@ -59,64 +95,12 @@ function MessageBubble({ message }: { message: UIMessage }) {
             : "bg-muted"
         }`}
       >
-        {message.parts.map((part, i) => {
-          if (part.type === "text") {
-            return (
-              <p key={i} className="whitespace-pre-wrap">
-                {part.text}
-              </p>
-            );
-          }
-          if (part.type.startsWith("tool-")) {
-            const toolName = part.type.slice(5);
-            const state = (part as unknown as { state: string }).state;
-            return (
-              <ToolCallStatus
-                key={i}
-                toolName={toolName}
-                state={state}
-              />
-            );
-          }
-          return null;
-        })}
+        {textParts.map((part, i) => (
+          <p key={i} className="whitespace-pre-wrap">
+            {part.type === "text" ? part.text : null}
+          </p>
+        ))}
       </div>
-    </div>
-  );
-}
-
-function ToolCallStatus({
-  toolName,
-  state,
-}: {
-  toolName: string;
-  state: string;
-}) {
-  const labels: Record<string, string> = {
-    render_chart: "Chart",
-    analyze_data: "Analysis",
-  };
-
-  const stateLabels: Record<string, string> = {
-    call: "Running...",
-    "partial-call": "Preparing...",
-    result: "Done",
-  };
-
-  return (
-    <div className="flex items-center gap-2 py-1">
-      <Badge variant="secondary" className="text-xs">
-        {labels[toolName] ?? toolName}
-      </Badge>
-      <span className="text-xs text-muted-foreground">
-        {state === "call" && (
-          <span className="animate-pulse">{stateLabels[state]}</span>
-        )}
-        {state === "result" && stateLabels[state]}
-        {state === "partial-call" && (
-          <span className="animate-pulse">{stateLabels[state]}</span>
-        )}
-      </span>
     </div>
   );
 }

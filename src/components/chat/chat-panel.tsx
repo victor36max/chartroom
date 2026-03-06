@@ -12,7 +12,10 @@ import { parseCSV, metadataToContext } from "@/lib/csv/parser";
 import { captureChart } from "@/components/chart/chart-capture";
 import { specToPlot } from "@/lib/chart/spec-to-plot";
 import type { ParsedCSV, ChartSpec } from "@/types";
+import { MODEL_TIER_LABELS, type ModelTier } from "@/lib/agent/models";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select as SelectPrimitive } from "radix-ui";
 
 export interface ChatPanelHandle {
   sendSpecEdit: (spec: ChartSpec) => void;
@@ -22,12 +25,14 @@ interface ChatPanelProps {
   csvData: ParsedCSV | null;
   onCSVParsed: (data: ParsedCSV) => void;
   onChartSpec: (spec: ChartSpec) => void;
+  tier: ModelTier;
+  onTierChange: (tier: ModelTier) => void;
 }
 
 const MAX_CSV_ROWS = 5000;
 
 export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function ChatPanel(
-  { csvData, onCSVParsed, onChartSpec },
+  { csvData, onCSVParsed, onChartSpec, tier, onTierChange },
   ref
 ) {
   const [input, setInput] = useState("");
@@ -44,13 +49,15 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
     // eslint-disable-next-line react-hooks/refs -- body() is only called on send, not during render
     transport: new DefaultChatTransport({
       api: "/api/chat",
-      body: () =>
-        csvDataRef.current
+      body: () => ({
+        tier,
+        ...(csvDataRef.current
           ? {
               csvData: csvDataRef.current.data.slice(0, MAX_CSV_ROWS),
               dataContext: metadataToContext(csvDataRef.current.metadata),
             }
-          : {},
+          : {}),
+      }),
     }),
     sendAutomaticallyWhen: (messages) => {
       if (!lastAssistantMessageIsCompleteWithToolCalls(messages)) return false;
@@ -161,17 +168,36 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
 
   return (
     <div className="flex flex-col h-full">
-      {csvData && (
-        <div className="px-3 py-2 border-b flex items-center gap-2">
-          <Badge variant="secondary" className="text-xs">
-            CSV loaded
-          </Badge>
-          <span className="text-xs text-muted-foreground">
-            {csvData.metadata.rowCount} rows,{" "}
-            {csvData.metadata.columns.length} cols
-          </span>
-        </div>
-      )}
+      <div className="px-3 py-2 border-b flex items-center justify-between">
+        <Select value={tier} onValueChange={(v) => onTierChange(v as ModelTier)}>
+          <SelectTrigger size="sm" className="w-[120px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {(["fast", "mid", "power"] as const).map((t) => (
+              <SelectPrimitive.Item
+                key={t}
+                value={t}
+                className="relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground"
+              >
+                <SelectPrimitive.ItemText>{MODEL_TIER_LABELS[t].label}</SelectPrimitive.ItemText>
+                <span className="text-muted-foreground text-xs">{MODEL_TIER_LABELS[t].subtitle}</span>
+              </SelectPrimitive.Item>
+            ))}
+          </SelectContent>
+        </Select>
+        {csvData && (
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-xs">
+              CSV loaded
+            </Badge>
+            <span className="text-xs text-muted-foreground">
+              {csvData.metadata.rowCount} rows,{" "}
+              {csvData.metadata.columns.length} cols
+            </span>
+          </div>
+        )}
+      </div>
       <MessageList messages={messages} status={status} />
       {csvError && (
         <p className="px-3 py-1 text-xs text-destructive border-t">{csvError}</p>

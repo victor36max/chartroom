@@ -9,34 +9,30 @@ function download(url: string, filename: string) {
   document.body.removeChild(a);
 }
 
-export async function exportChartAsPng() {
+export async function exportChartAsPng(options?: {
+  pixelRatio?: number;
+  backgroundColor?: string | null;
+}) {
   const container = document.getElementById("chart-container");
   if (!container) return;
 
-  const dataUrl = await toPng(container, {
-    backgroundColor: "#ffffff",
-    pixelRatio: 2,
-  });
+  const pixelRatio = options?.pixelRatio ?? 2;
+  const bg = options?.backgroundColor;
 
-  download(dataUrl, "chart.png");
-}
+  // Temporarily remove max-width so html-to-image captures full chart content
+  const prevMaxWidth = container.style.maxWidth;
+  const prevWidth = container.style.width;
+  container.style.maxWidth = "none";
+  container.style.width = "max-content";
 
-export function exportChartAsSvg() {
-  const container = document.getElementById("chart-container");
-  if (!container) return;
-
-  const svg = container.querySelector("svg");
-  if (!svg) return;
-
-  if (!svg.getAttribute("xmlns")) {
-    svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  try {
+    const dataUrl = await toPng(container, {
+      pixelRatio,
+      ...(bg != null ? { backgroundColor: bg } : {}),
+    });
+    download(dataUrl, "chart.png");
+  } finally {
+    container.style.maxWidth = prevMaxWidth;
+    container.style.width = prevWidth;
   }
-
-  const serializer = new XMLSerializer();
-  const svgString = serializer.serializeToString(svg);
-  const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-
-  download(url, "chart.svg");
-  URL.revokeObjectURL(url);
 }

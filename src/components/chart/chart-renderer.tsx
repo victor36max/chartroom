@@ -28,9 +28,23 @@ export function ChartRenderer({ spec, data }: ChartRendererProps) {
     }
   }, [spec, data]);
 
+  const hasPadding =
+    spec.paddingTop != null ||
+    spec.paddingRight != null ||
+    spec.paddingBottom != null ||
+    spec.paddingLeft != null;
+  const containerStyle: React.CSSProperties | undefined = hasPadding
+    ? {
+        paddingTop: spec.paddingTop ?? 16,
+        paddingRight: spec.paddingRight ?? 16,
+        paddingBottom: spec.paddingBottom ?? 16,
+        paddingLeft: spec.paddingLeft ?? 16,
+      }
+    : undefined;
+
   return (
     <div className="flex items-center justify-center p-6 h-full">
-      <div ref={containerRef} id="chart-container" className="w-full max-w-3xl" />
+      <div ref={containerRef} id="chart-container" className="w-full max-w-3xl" style={containerStyle} />
     </div>
   );
 }

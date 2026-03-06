@@ -3,6 +3,7 @@ import { runCase } from "./run-case";
 import { judgeChart } from "./judge";
 import { writeReport } from "./report";
 import type { EvalCase } from "./types";
+import { resolveModelId, type ModelTier } from "../../src/lib/agent/models";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -22,12 +23,14 @@ function parseArgs() {
     }
     return values;
   };
+  const tier = (get("--tier") ?? "mid") as ModelTier;
   return {
     tags: getAll("--tag"),
     caseName: get("--case"),
     skipJudge: args.includes("--no-judge"),
     rebuildBundle: args.includes("--rebuild-bundle"),
-    modelId: get("--model") ?? process.env.MODEL_ID ?? "anthropic/claude-sonnet-4",
+    modelId: get("--model") ?? resolveModelId(tier),
+    judgeModelId: resolveModelId("power"),
     concurrency: Number(get("--concurrency") ?? 5),
   };
 }
@@ -96,7 +99,8 @@ async function main() {
       result.judgeScores = await judgeChart(
         result.screenshotBase64,
         evalCase.messages,
-        evalCase.rubric
+        evalCase.rubric,
+        opts.judgeModelId
       );
     }
 

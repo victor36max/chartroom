@@ -13,6 +13,10 @@ export interface ChartSpec {
   marginRight?: number;
   marginBottom?: number;
   marginLeft?: number;
+  paddingTop?: number;
+  paddingRight?: number;
+  paddingBottom?: number;
+  paddingLeft?: number;
   style?: Record<string, unknown>;
   titleStyle?: Record<string, unknown>;
   subtitleStyle?: Record<string, unknown>;

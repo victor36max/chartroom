@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartRenderer } from "@/components/chart/chart-renderer";
 import { DataTable } from "@/components/data/data-table";
-import { exportChartAsPng, exportChartAsSvg } from "@/lib/chart/export-chart";
+import { exportChartAsPng } from "@/lib/chart/export-chart";
 import { specToPlot } from "@/lib/chart/spec-to-plot";
-import { Download, Image, Check, Code, X, SlidersHorizontal } from "lucide-react";
+import { Download, Check, Code, X, SlidersHorizontal } from "lucide-react";
 import CodeMirror from "@uiw/react-codemirror";
 import { json } from "@codemirror/lang-json";
 import { VisualSpecEditor } from "./visual-spec-editor";
@@ -32,6 +32,7 @@ export function ChartPanel({ csvData, chartSpec, onChartSpecEdited }: ChartPanel
   const [previewSpec, setPreviewSpec] = useState<ChartSpec | null>(null);
 
   // Sync editor content when chartSpec changes (new AI-generated spec)
+  /* eslint-disable react-hooks/set-state-in-effect -- legitimate prop-to-state sync */
   useEffect(() => {
     if (chartSpec) {
       setEditorValue(JSON.stringify(chartSpec, null, 2));
@@ -39,6 +40,7 @@ export function ChartPanel({ csvData, chartSpec, onChartSpecEdited }: ChartPanel
       setPreviewSpec(null);
     }
   }, [chartSpec]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Live preview with debounce
   useEffect(() => {
@@ -87,6 +89,30 @@ export function ChartPanel({ csvData, chartSpec, onChartSpecEdited }: ChartPanel
     setPreviewSpec(null);
   }, []);
 
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportScale, setExportScale] = useState(2);
+  const [exportBg, setExportBg] = useState(true);
+  const exportRef = useRef<HTMLDivElement>(null);
+
+  // Close popover on outside click or Escape
+  useEffect(() => {
+    if (!exportOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (exportRef.current && !exportRef.current.contains(e.target as Node)) {
+        setExportOpen(false);
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setExportOpen(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [exportOpen]);
+
   const displaySpec = jsonPanelOpen && previewSpec ? previewSpec : chartSpec;
 
   return (
@@ -113,22 +139,65 @@ export function ChartPanel({ csvData, chartSpec, onChartSpecEdited }: ChartPanel
             </button>
           )}
           {hasChart && (
-            <>
+            <div className="relative" ref={exportRef}>
               <button
-                onClick={exportChartAsSvg}
-                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                title="Download SVG"
-              >
-                <Image className="h-4 w-4" />
-              </button>
-              <button
-                onClick={exportChartAsPng}
-                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                onClick={() => setExportOpen(!exportOpen)}
+                className={`p-1.5 rounded-md transition-colors ${
+                  exportOpen
+                    ? "bg-muted text-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
                 title="Download PNG"
               >
                 <Download className="h-4 w-4" />
               </button>
-            </>
+              {exportOpen && (
+                <div className="absolute right-0 top-full mt-1 z-50 w-48 rounded-md border bg-popover p-3 shadow-md space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">Scale</label>
+                    <div className="flex gap-1">
+                      {[1, 2].map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => setExportScale(s)}
+                          className={`flex-1 h-7 rounded text-xs font-medium transition-colors ${
+                            exportScale === s
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {s}x
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="export-bg"
+                      checked={exportBg}
+                      onChange={(e) => setExportBg(e.target.checked)}
+                      className="rounded border-input"
+                    />
+                    <label htmlFor="export-bg" className="text-xs cursor-pointer">
+                      White background
+                    </label>
+                  </div>
+                  <button
+                    onClick={() => {
+                      exportChartAsPng({
+                        pixelRatio: exportScale,
+                        backgroundColor: exportBg ? "#ffffff" : null,
+                      });
+                      setExportOpen(false);
+                    }}
+                    className="w-full h-7 rounded text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                  >
+                    Export PNG
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>

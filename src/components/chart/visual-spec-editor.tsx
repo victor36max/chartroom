@@ -60,7 +60,7 @@ export function VisualSpecEditor({
       const clone = structuredClone(spec) as ChartSpec;
       updater(clone);
       // Clean up empty objects for axes/color to keep JSON tidy
-      for (const key of ["x", "y", "fx", "color"] as const) {
+      for (const key of ["x", "y", "fx", "fy", "color"] as const) {
         const val = clone[key];
         if (val && typeof val === "object" && Object.keys(val).length === 0) {
           delete clone[key];
@@ -82,7 +82,7 @@ export function VisualSpecEditor({
   return (
     <Accordion
       type="multiple"
-      defaultValue={["general", "colors", "marks"]}
+      defaultValue={["general", "chart", "colors", "marks"]}
       className="px-3 py-2"
     >
       {/* General */}
@@ -119,6 +119,45 @@ export function VisualSpecEditor({
               }
             />
           </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Padding</Label>
+            <div className="grid grid-cols-4 gap-1.5">
+              {(["Top", "Right", "Bottom", "Left"] as const).map((side) => {
+                const key = `padding${side}` as const;
+                return (
+                  <div key={side} className="space-y-0.5">
+                    <span className="text-[10px] text-muted-foreground">
+                      {side}
+                    </span>
+                    <Input
+                      className="h-7 text-xs"
+                      type="number"
+                      placeholder="16"
+                      value={spec[key] ?? ""}
+                      onChange={(e) =>
+                        updateSpec((s) => {
+                          if (e.target.value) {
+                            (s as unknown as Record<string, unknown>)[key] = Number(e.target.value);
+                          } else {
+                            delete (s as unknown as Record<string, unknown>)[key];
+                          }
+                        })
+                      }
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+
+      {/* Chart */}
+      <AccordionItem value="chart">
+        <AccordionTrigger className="text-xs font-medium py-2">
+          Chart
+        </AccordionTrigger>
+        <AccordionContent className="space-y-3 pb-3">
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
               <Label className="text-xs">Width</Label>
@@ -149,6 +188,36 @@ export function VisualSpecEditor({
                   })
                 }
               />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Margins</Label>
+            <div className="grid grid-cols-4 gap-1.5">
+              {(["Top", "Right", "Bottom", "Left"] as const).map((side) => {
+                const key = `margin${side}` as const;
+                return (
+                  <div key={side} className="space-y-0.5">
+                    <span className="text-[10px] text-muted-foreground">
+                      {side}
+                    </span>
+                    <Input
+                      className="h-7 text-xs"
+                      type="number"
+                      placeholder="auto"
+                      value={spec[key] ?? ""}
+                      onChange={(e) =>
+                        updateSpec((s) => {
+                          if (e.target.value) {
+                            (s as unknown as Record<string, unknown>)[key] = Number(e.target.value);
+                          } else {
+                            delete (s as unknown as Record<string, unknown>)[key];
+                          }
+                        })
+                      }
+                    />
+                  </div>
+                );
+              })}
             </div>
           </div>
         </AccordionContent>
@@ -385,6 +454,116 @@ export function VisualSpecEditor({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Padding</Label>
+              <Input
+                className="h-7 text-xs"
+                type="number"
+                step="0.05"
+                min="0"
+                max="1"
+                placeholder="0.1"
+                value={((spec.fx as Record<string, unknown>)?.padding as number) ?? ""}
+                onChange={(e) =>
+                  updateSpec((s) => {
+                    const fx = { ...(s.fx as Record<string, unknown> ?? {}) };
+                    if (e.target.value) fx.padding = Number(e.target.value);
+                    else delete fx.padding;
+                    s.fx = fx;
+                  })
+                }
+              />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      )}
+
+      {/* Facet Y — only shown when fy is present */}
+      {spec.fy && (
+        <AccordionItem value="fy-axis">
+          <AccordionTrigger className="text-xs font-medium py-2">
+            Facet Y
+          </AccordionTrigger>
+          <AccordionContent className="space-y-3 pb-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Label</Label>
+              <Input
+                className="h-7 text-xs"
+                value={((spec.fy as Record<string, unknown>)?.label as string) ?? ""}
+                placeholder="Facet label"
+                onChange={(e) =>
+                  updateSpec((s) => {
+                    const fy = { ...(s.fy as Record<string, unknown> ?? {}) };
+                    if (e.target.value) fy.label = e.target.value;
+                    else delete fy.label;
+                    s.fy = fy;
+                  })
+                }
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Tick format</Label>
+              <Input
+                className="h-7 text-xs font-mono"
+                placeholder="e.g. ,.0f"
+                value={
+                  ((spec.fy as Record<string, unknown>)?.tickFormat as string) ?? ""
+                }
+                onChange={(e) =>
+                  updateSpec((s) => {
+                    const fy = { ...(s.fy as Record<string, unknown> ?? {}) };
+                    if (e.target.value) fy.tickFormat = e.target.value;
+                    else delete fy.tickFormat;
+                    s.fy = fy;
+                  })
+                }
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Tick rotation</Label>
+              <Select
+                value={String((spec.fy as Record<string, unknown>)?.tickRotate ?? "0")}
+                onValueChange={(v) =>
+                  updateSpec((s) => {
+                    const fy = { ...(s.fy as Record<string, unknown> ?? {}) };
+                    if (v === "0") delete fy.tickRotate;
+                    else fy.tickRotate = Number(v);
+                    s.fy = fy;
+                  })
+                }
+              >
+                <SelectTrigger size="sm" className="w-full text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {["0", "-45", "-90", "45", "90"].map((deg) => (
+                    <SelectItem key={deg} value={deg} className="text-xs">
+                      {deg === "0" ? "None" : `${deg}\u00B0`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Padding</Label>
+              <Input
+                className="h-7 text-xs"
+                type="number"
+                step="0.05"
+                min="0"
+                max="1"
+                placeholder="0.1"
+                value={((spec.fy as Record<string, unknown>)?.padding as number) ?? ""}
+                onChange={(e) =>
+                  updateSpec((s) => {
+                    const fy = { ...(s.fy as Record<string, unknown> ?? {}) };
+                    if (e.target.value) fy.padding = Number(e.target.value);
+                    else delete fy.padding;
+                    s.fy = fy;
+                  })
+                }
+              />
             </div>
           </AccordionContent>
         </AccordionItem>

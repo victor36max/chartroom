@@ -1,9 +1,8 @@
 {
   "name": "decline-boxplot",
-  "description": "Should decline: box plot request",
+  "description": "Should explain box plots unsupported and render alternative",
   "csv": "students.csv",
   "messages": ["Create box plots of scores grouped by subject"],
   "tags": ["decline", "single-turn"],
-  "rubric": "Model must decline and explain box plots are not supported. Should suggest strip plot (tickX) or histogram as alternative.",
-  "expectDecline": true
+  "rubric": "Box plots are not supported. Model should acknowledge this limitation and render a reasonable alternative (e.g. strip plot, histogram) showing score distribution by subject. Score higher if it explains why box plot is unavailable. Score lower if it renders without mentioning the limitation or misleadingly labels the chart as a box plot."
 }
