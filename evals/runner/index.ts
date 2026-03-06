@@ -26,7 +26,7 @@ function parseArgs() {
   const tier = (get("--tier") ?? "mid") as ModelTier;
   return {
     tags: getAll("--tag"),
-    caseName: get("--case"),
+    caseNames: getAll("--case"),
     skipJudge: args.includes("--no-judge"),
     rebuildBundle: args.includes("--rebuild-bundle"),
     modelId: get("--model") ?? resolveModelId(tier),
@@ -69,7 +69,7 @@ async function main() {
   );
 
   if (opts.tags.length > 0) cases = cases.filter((c) => opts.tags.some((t) => c.tags?.includes(t)));
-  if (opts.caseName) cases = cases.filter((c) => c.name === opts.caseName);
+  if (opts.caseNames.length > 0) cases = cases.filter((c) => opts.caseNames.includes(c.name));
 
   if (cases.length === 0) {
     console.error("No cases found matching filters");
