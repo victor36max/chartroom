@@ -1,0 +1,8 @@
+{
+  "name": "layer-reference-line",
+  "description": "Bar chart with horizontal reference line at specific value",
+  "csv": "students.csv",
+  "messages": ["Bar chart of average score by subject with a red dashed reference line at 75"],
+  "tags": ["bar", "rule", "layer", "single-turn"],
+  "rubric": "Must use layer with bar mark + rule mark. Rule must be at y datum=75 (not field). Rule should be red and preferably dashed (strokeDash). Bar should show aggregate mean of score by subject."
+}
