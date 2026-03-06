@@ -10,7 +10,7 @@ import { MessageList } from "./message-list";
 import { MessageInput } from "./message-input";
 import { parseCSV, metadataToContext } from "@/lib/csv/parser";
 import { captureChart } from "@/components/chart/chart-capture";
-import { specToPlot } from "@/lib/chart/spec-to-plot";
+import { validateSpec } from "@/lib/chart/validate-spec";
 import type { ParsedCSV, ChartSpec } from "@/types";
 import { MODEL_TIER_LABELS, type ModelTier } from "@/lib/agent/models";
 import { Badge } from "@/components/ui/badge";
@@ -71,20 +71,21 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
           title?: string;
           description?: string;
         };
-        const chartSpec: ChartSpec = {
-          ...spec.spec,
-          title: spec.title ?? spec.spec.title,
-        };
-        // Pre-validate the spec so rendering errors are fed back to the AI
-        try {
-          specToPlot(chartSpec, csvDataRef.current?.data ?? []);
-        } catch (err) {
+
+        // Merge title into VL spec if provided separately
+        const chartSpec: ChartSpec = spec.title
+          ? { ...spec.spec, title: spec.title } as ChartSpec
+          : spec.spec;
+
+        // Validate via VL compile
+        const validation = validateSpec(chartSpec as unknown as Record<string, unknown>, csvDataRef.current?.data ?? []);
+        if (!validation.valid) {
           addToolOutput({
             tool: "render_chart",
             toolCallId: toolCall.toolCallId,
             output: JSON.stringify({
               success: false,
-              error: err instanceof Error ? err.message : String(err),
+              error: validation.error,
             }),
           });
           return;
