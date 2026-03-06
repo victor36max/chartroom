@@ -16,6 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import { LayerEditorCard } from "./layer-editor-card";
 import type { ColumnMeta } from "@/types";
 
 interface VisualSpecEditorProps {
@@ -370,9 +373,43 @@ export function VisualSpecEditor({
             </span>
           </AccordionTrigger>
           <AccordionContent className="space-y-2 pb-3">
-            <p className="text-xs text-muted-foreground">
-              Edit layered specs in the JSON tab for full control.
-            </p>
+            {(spec.layer as SpecObj[]).map((layer, i) => (
+              <LayerEditorCard
+                key={i}
+                layer={layer}
+                index={i}
+                columns={columns}
+                onChange={(updated) =>
+                  updateSpec((s) => {
+                    (s.layer as SpecObj[])[i] = updated;
+                  })
+                }
+                onRemove={() =>
+                  updateSpec((s) => {
+                    const layers = s.layer as SpecObj[];
+                    layers.splice(i, 1);
+                    // Convert back to single spec if only 1 layer remains
+                    if (layers.length === 1) {
+                      const single = layers[0];
+                      delete s.layer;
+                      Object.assign(s, single);
+                    }
+                  })
+                }
+              />
+            ))}
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full h-7 text-xs"
+              onClick={() =>
+                updateSpec((s) => {
+                  (s.layer as SpecObj[]).push({ mark: "point", encoding: {} });
+                })
+              }
+            >
+              <Plus className="h-3 w-3 mr-1" /> Add layer
+            </Button>
           </AccordionContent>
         </AccordionItem>
       )}
