@@ -7,6 +7,7 @@ import { renderChart } from "./render";
 import type { EvalCase, CaseResult } from "./types";
 import type { ChartSpec } from "../../src/types";
 import type { Page } from "playwright";
+import { validateSpec } from "../../src/lib/chart/validate-spec";
 import Papa from "papaparse";
 import fs from "fs";
 import path from "path";
@@ -69,6 +70,12 @@ export async function runCase(
           ? { ...input.spec, title: input.title } as ChartSpec
           : input.spec;
         capturedSpec = chartSpec;
+
+        // Validate spec before rendering (matches production behavior)
+        const validation = validateSpec(chartSpec as unknown as Record<string, unknown>, csvData);
+        if (!validation.valid) {
+          return { success: false as const, error: `Vega-Lite compile error: ${validation.error}. Fix the spec and try again.` };
+        }
 
         const result = await renderChart(page, chartSpec, csvData);
         if (!result.png) {
