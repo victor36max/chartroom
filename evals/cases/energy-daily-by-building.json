@@ -4,5 +4,5 @@
   "csv": "energy.csv",
   "messages": ["Show daily total energy consumption over time for each building as a line chart"],
   "tags": ["line", "single-turn", "hard-data", "aggregation"],
-  "rubric": "Must use line mark with x=date, y=consumption_kwh, stroke=building. Must aggregate hourly data to daily totals (groupX sum). All 4 buildings should be visible as separate series. Color legend required."
+  "rubric": "Must use line mark with x=date, y=consumption_kwh, stroke=building. Must aggregate hourly data to daily totals (aggregate sum). All 4 buildings should be visible as separate series. Color legend required."
 }

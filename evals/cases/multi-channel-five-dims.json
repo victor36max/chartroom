@@ -3,6 +3,6 @@
   "description": "Edge case: 5 simultaneous visual channels (x, y, r, fill, text labels)",
   "csv": "countries.csv",
   "messages": ["Show GDP vs life expectancy, with bubble size for population, color by continent, and label each country name on the chart"],
-  "tags": ["edge-case", "multi-channel", "composition", "dot", "text", "single-turn"],
-  "rubric": "Must map 5 dimensions: x=gdp_billions, y=life_expectancy, r=population_millions (size), fill=continent (color), plus a text mark for country labels. The dot mark handles x/y/r/fill, and a separate text mark adds labels. FAIL if any of the 5 requested dimensions is missing. FAIL if text labels are not present."
+  "tags": ["edge-case", "multi-channel", "composition", "point", "text", "single-turn"],
+  "rubric": "Must map 5 dimensions: x=gdp_billions, y=life_expectancy, r=population_millions (size), fill=continent (color), plus a text mark for country labels. The point mark handles x/y/r/fill, and a separate text mark adds labels. FAIL if any of the 5 requested dimensions is missing. FAIL if text labels are not present."
 }

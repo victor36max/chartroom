@@ -3,6 +3,6 @@
   "description": "Bubble chart with size and color channels",
   "csv": "countries.csv",
   "messages": ["Make a bubble chart — GDP vs life expectancy, bubble size for population, colored by continent"],
-  "tags": ["dot", "single-turn", "multi-channel"],
-  "rubric": "Must use dot mark with r=population_millions, fill=continent. Color legend required. x=gdp_billions, y=life_expectancy."
+  "tags": ["point", "single-turn", "multi-channel"],
+  "rubric": "Must use point mark with r=population_millions, fill=continent. Color legend required. x=gdp_billions, y=life_expectancy."
 }

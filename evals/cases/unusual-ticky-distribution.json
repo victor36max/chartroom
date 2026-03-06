@@ -4,5 +4,5 @@
   "csv": "fitness.csv",
   "messages": ["Show the distribution of resting heart rate for each user using tick marks"],
   "tags": ["edge-case", "tick", "distribution", "hard-data", "single-turn"],
-  "rubric": "Should use tickY with y=resting_heart_rate and x=user, or tickX with x=resting_heart_rate and y=user. Both orientations valid. Must show individual data points (no aggregation — each of the 1500 rows is a tick). FAIL if model aggregates away the distribution (e.g., showing only mean per user). The whole point is seeing the spread of values."
+  "rubric": "Should use tick with y=resting_heart_rate and x=user, or tick with x=resting_heart_rate and y=user. Both orientations valid. Must show individual data points (no aggregation — each of the 1500 rows is a tick). FAIL if model aggregates away the distribution (e.g., showing only mean per user). The whole point is seeing the spread of values."
 }

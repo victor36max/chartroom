@@ -4,5 +4,5 @@
   "csv": "countries.csv",
   "messages": ["Bar chart of GDP by country with the country names rotated 45 degrees on the x-axis"],
   "tags": ["bar", "single-turn", "axis"],
-  "rubric": "Must use barY (or barX). Must include an axisX mark with tickRotate around -45 degrees, OR use top-level x axis configuration for rotation."
+  "rubric": "Must use bar (or horizontal bar). Must include an axisX mark with tickRotate around -45 degrees, OR use top-level x axis configuration for rotation."
 }

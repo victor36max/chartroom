@@ -4,5 +4,5 @@
   "csv": "sales.csv",
   "messages": ["Show a horizontal bar chart of total units sold by product"],
   "tags": ["bar", "single-turn", "horizontal", "aggregation"],
-  "rubric": "Must use barX with groupY (not groupX). y=product, x=units, reducer=sum."
+  "rubric": "Must use bar mark. y=product (nominal), x=units (quantitative, aggregate sum). Horizontal orientation via quantitative on x-axis."
 }

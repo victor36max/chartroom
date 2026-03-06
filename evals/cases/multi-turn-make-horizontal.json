@@ -4,5 +4,5 @@
   "csv": "students.csv",
   "messages": ["Bar chart of average score by subject", "Make it horizontal"],
   "tags": ["bar", "multi-turn", "horizontal"],
-  "rubric": "First response should be barY. After 'make it horizontal', must switch to barX with groupY. Data and aggregation should be preserved."
+  "rubric": "First response should be bar. After 'make it horizontal', must switch to horizontal bar with aggregate. Data and aggregation should be preserved."
 }

@@ -4,5 +4,5 @@
   "csv": "monthly-temps.csv",
   "messages": ["Compare the three cities"],
   "tags": ["edge-case", "ambiguous", "single-turn"],
-  "rubric": "The request is deliberately vague. A valid chart must use at least one meaningful dimension (avg_temp or precipitation) and distinguish cities visually. Acceptable: grouped bar, multi-series line, faceted chart, or dot chart. FAIL if model asks for clarification without rendering anything. FAIL if chart doesn't distinguish the three cities (e.g., no fill/stroke by city)."
+  "rubric": "The request is deliberately vague. A valid chart must use at least one meaningful dimension (avg_temp or precipitation) and distinguish cities visually. Acceptable: grouped bar, multi-series line, faceted chart, or scatter chart. FAIL if model asks for clarification without rendering anything. FAIL if chart doesn't distinguish the three cities (e.g., no fill/stroke by city)."
 }

@@ -1,8 +1,8 @@
 {
   "name": "transform-chain-filter-group-stack",
-  "description": "Edge case: requires filter + groupX sum + stackY together",
+  "description": "Edge case: requires filter + aggregate sum + stack together",
   "csv": "orders.csv",
   "messages": ["Show a stacked bar chart of revenue by category, broken down by region, but only for 2024. Filter out 2023 data."],
   "tags": ["edge-case", "transform-chain", "filter", "aggregation", "stacked", "single-turn"],
-  "rubric": "Must combine filter (to keep only 2024 rows) + groupX with sum + stackY. The filter can use year_month prefix or order_date. Must have x=category, y=revenue, fill=region. FAIL if 2023 data is included (no filter applied). FAIL if bars are not stacked (missing stackY). FAIL if revenue is counted instead of summed."
+  "rubric": "Must combine filter (to keep only 2024 rows) + aggregate with sum + stack. The filter can use year_month prefix or order_date. Must have x=category, y=revenue, fill=region. FAIL if 2023 data is included (no filter applied). FAIL if bars are not stacked (missing stack). FAIL if revenue is counted instead of summed."
 }

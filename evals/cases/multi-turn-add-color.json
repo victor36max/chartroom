@@ -6,6 +6,6 @@
     "Show steps over time",
     "Color it by user"
   ],
-  "tags": ["dot", "multi-turn", "refinement", "color"],
+  "tags": ["point", "multi-turn", "refinement", "color"],
   "rubric": "Final chart must show steps over time as a dot/scatter or line chart with fill or stroke mapped to the user column. Each user (Alice, Bob, Carol, Dave, Eve) should be visually distinguishable by color. A legend should be present."
 }

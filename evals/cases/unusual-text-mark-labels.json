@@ -4,5 +4,5 @@
   "csv": "sales.csv",
   "messages": ["Create a bar chart of revenue by product, and put the exact revenue value as a label on top of each bar"],
   "tags": ["edge-case", "composition", "text", "bar", "single-turn"],
-  "rubric": "Must use barY for the bars AND a text mark positioned at the same x/y coordinates to show revenue values. The text mark should have the same aggregation as the bars (groupX sum). FAIL if only bars are shown without value labels. FAIL if text mark references wrong columns or has no aggregation (would show individual row values instead of totals)."
+  "rubric": "Must use bar for the bars AND a text mark positioned at the same x/y coordinates to show revenue values. The text mark should have the same aggregation as the bars (aggregate sum). FAIL if only bars are shown without value labels. FAIL if text mark references wrong columns or has no aggregation (would show individual row values instead of totals)."
 }

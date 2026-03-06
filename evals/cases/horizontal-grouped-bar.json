@@ -4,5 +4,5 @@
   "csv": "sales.csv",
   "messages": ["Create a horizontal grouped bar chart with regions side by side for each product"],
   "tags": ["bar", "single-turn", "horizontal", "grouped", "facet"],
-  "rubric": "Must use barX with fy for side-by-side grouping. y=region (or product), fy=product (or region), x=revenue with groupY sum. fill by region. Must NOT use stackX. Color legend required."
+  "rubric": "Must use horizontal bar with fy for side-by-side grouping. y=region (or product), fy=product (or region), x=revenue with aggregate sum. color by region. Must NOT use stack. Color legend required."
 }

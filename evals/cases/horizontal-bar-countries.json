@@ -4,5 +4,5 @@
   "csv": "countries.csv",
   "messages": ["Horizontal bar chart of life expectancy by country, sorted from highest to lowest"],
   "tags": ["bar", "single-turn", "horizontal", "sort"],
-  "rubric": "Must use barX. y=country, x=life_expectancy. Sort y by -x descending. No aggregation needed since each country appears once."
+  "rubric": "Must use horizontal bar. y=country, x=life_expectancy. Sort y by -x descending. No aggregation needed since each country appears once."
 }

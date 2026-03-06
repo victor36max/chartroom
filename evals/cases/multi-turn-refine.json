@@ -7,5 +7,5 @@
     "Make it horizontal and sort by value descending"
   ],
   "tags": ["bar", "multi-turn", "refinement"],
-  "rubric": "Final chart should be a horizontal bar (barX) with products on y-axis sorted by units descending."
+  "rubric": "Final chart should be a horizontal bar (horizontal bar) with products on y-axis sorted by units descending."
 }

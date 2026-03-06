@@ -1,8 +1,8 @@
 {
   "name": "trap-wrong-group-direction",
-  "description": "Trap: barX requires groupY, not groupX",
+  "description": "Trap: horizontal bar requires aggregate, not aggregate",
   "csv": "sales.csv",
   "messages": ["Horizontal bar chart of total revenue by product, sorted largest to smallest"],
   "tags": ["trap-case", "horizontal", "aggregation", "bar", "single-turn"],
-  "rubric": "MUST use barX with groupY (NOT groupX). barX is horizontal so the categorical axis is y and quantitative axis is x. groupY aggregates along the y-axis. FAIL if model uses barX with groupX (the #1 horizontal bar mistake). FAIL if model uses barY instead of barX (user explicitly said horizontal). Sort must be descending by revenue."
+  "rubric": "MUST use horizontal bar with aggregate (NOT aggregate). horizontal bar is horizontal so the categorical axis is y and quantitative axis is x. aggregate aggregates along the y-axis. FAIL if model uses horizontal bar with aggregate (the #1 horizontal bar mistake). FAIL if model uses bar instead of horizontal bar (user explicitly said horizontal). Sort must be descending by revenue."
 }

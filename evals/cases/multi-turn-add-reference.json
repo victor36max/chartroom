@@ -4,5 +4,5 @@
   "csv": "students.csv",
   "messages": ["Bar chart of average score by subject", "Add a red dashed horizontal line at 75 to show the passing threshold"],
   "tags": ["bar", "rule", "multi-turn"],
-  "rubric": "Final chart must have barY + ruleY at 75. ruleY should have red color and dashed style."
+  "rubric": "Final chart must have bar + rule at 75. rule should have red color and dashed style."
 }

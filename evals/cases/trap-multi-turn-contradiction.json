@@ -7,5 +7,5 @@
     "Actually, break it down by region and make it a stacked bar chart instead"
   ],
   "tags": ["trap-case", "multi-turn", "contradiction", "stacked", "bar"],
-  "rubric": "The second message completely contradicts the first (line → stacked bar, single series → by region). The model must REPLACE the line chart with a stacked barY chart: x=year_month, y=revenue, fill=region, groupX sum, stackY. FAIL if model tries to keep the line chart and add bars on top. FAIL if model loses the monthly dimension. FAIL if model uses line mark in the final output."
+  "rubric": "The second message completely contradicts the first (line → stacked bar, single series → by region). The model must REPLACE the line chart with a stacked bar chart: x=year_month, y=revenue, fill=region, aggregate sum, stack. FAIL if model tries to keep the line chart and add bars on top. FAIL if model loses the monthly dimension. FAIL if model uses line mark in the final output."
 }

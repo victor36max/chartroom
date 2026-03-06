@@ -4,5 +4,5 @@
   "csv": "orders.csv",
   "messages": ["Show me how monthly revenue has changed over time for each product category"],
   "tags": ["line", "single-turn", "hard-data", "aggregation"],
-  "rubric": "Must use line mark with x=year_month, y=revenue, stroke=category. Must aggregate with groupX sum (raw data has multiple orders per month). All 4 categories visible. Color legend required."
+  "rubric": "Must use line mark with x=year_month, y=revenue, stroke=category. Must aggregate with aggregate sum (raw data has multiple orders per month). All 4 categories visible. Color legend required."
 }

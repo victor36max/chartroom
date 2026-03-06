@@ -4,5 +4,5 @@
   "csv": "sales.csv",
   "messages": ["Create a horizontal stacked bar chart of revenue by product, colored by region"],
   "tags": ["bar", "single-turn", "horizontal", "stacked", "aggregation"],
-  "rubric": "Must use barX with groupY sum and stackX. y=product, x=revenue, fill=region. Must have color legend."
+  "rubric": "Must use horizontal bar with aggregate sum and stack. y=product, x=revenue, fill=region. Must have color legend."
 }

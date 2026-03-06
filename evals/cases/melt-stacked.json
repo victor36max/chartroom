@@ -1,8 +1,8 @@
 {
   "name": "melt-stacked",
-  "description": "Stacked bar chart using melt transform",
+  "description": "Stacked bar chart using fold transform",
   "csv": "survey.csv",
   "messages": ["Create a stacked bar chart comparing q1, q2, and q3 scores across departments"],
-  "tags": ["bar", "single-turn", "melt", "stacked"],
-  "rubric": "Must use melt transform on q1_score/q2_score/q3_score columns. Must use barY with stackY and fill by the melted key column. Color legend required."
+  "tags": ["bar", "single-turn", "fold", "stacked"],
+  "rubric": "Must use fold transform on q1_score/q2_score/q3_score columns. Must use bar with stack and color by the folded key column. Color legend required."
 }

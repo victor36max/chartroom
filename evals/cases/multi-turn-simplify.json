@@ -6,6 +6,6 @@
     "Show GDP, population, life expectancy, and CO2 by country colored by continent",
     "This is too busy, simplify it"
   ],
-  "tags": ["dot", "multi-turn", "refinement", "edge-case"],
+  "tags": ["point", "multi-turn", "refinement", "edge-case"],
   "rubric": "Final chart must be simpler than the first attempt — fewer dimensions encoded, fewer marks, or a clearer layout. Should still be a valid, readable chart. Acceptable simplifications: fewer variables, faceting instead of overloading, or focusing on the most important relationship."
 }

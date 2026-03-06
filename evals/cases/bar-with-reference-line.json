@@ -4,5 +4,5 @@
   "csv": "students.csv",
   "messages": ["Bar chart of average score by subject, with a horizontal reference line at 75"],
   "tags": ["bar", "rule", "single-turn", "composition"],
-  "rubric": "Must have a barY mark (with groupX mean) AND a ruleY mark. ruleY must be at value 75."
+  "rubric": "Must have a bar mark (with aggregate mean) AND a rule mark. rule must be at value 75."
 }

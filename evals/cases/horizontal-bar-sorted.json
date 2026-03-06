@@ -4,5 +4,5 @@
   "csv": "sales.csv",
   "messages": ["Horizontal bar chart of total revenue by product, sorted highest to lowest"],
   "tags": ["bar", "single-turn", "aggregation", "sort"],
-  "rubric": "Must use barX mark with groupY (not groupX). y=product, x=revenue, reducer=sum. Sort y by -x descending."
+  "rubric": "Must use bar mark. y=product (nominal), x=revenue (quantitative, aggregate sum). Sort y by -x descending. Horizontal orientation."
 }

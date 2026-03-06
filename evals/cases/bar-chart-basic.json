@@ -4,5 +4,5 @@
   "csv": "sales.csv",
   "messages": ["Show me a bar chart of total revenue by region"],
   "tags": ["bar", "single-turn", "aggregation"],
-  "rubric": "Should produce a barY chart with region on x-axis and summed revenue on y-axis. Must have title and subtitle."
+  "rubric": "Should produce a bar chart with region on x-axis and summed revenue on y-axis. Must have title and subtitle."
 }

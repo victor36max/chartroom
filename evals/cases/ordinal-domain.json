@@ -4,5 +4,5 @@
   "csv": "activity.csv",
   "messages": ["Bar chart of total activity by day of week, in Monday through Sunday order"],
   "tags": ["bar", "single-turn", "scale", "aggregation"],
-  "rubric": "Must use barY mark. x scale domain must be explicitly ordered Mon-Sun (not alphabetical). x=day with aggregation."
+  "rubric": "Must use bar mark. x scale domain must be explicitly ordered Mon-Sun (not alphabetical). x=day with aggregation."
 }
