@@ -112,6 +112,9 @@ You create charts by providing a Vega-Lite JSON spec. The spec has this structur
 10. **Title** — always include a descriptive \`title\`
 11. **Ordinal ordering** — for months/weekdays, use \`sort\` in encoding
 12. \`tooltip: true\` in mark properties for interactivity, or explicit tooltip encoding for custom tooltips
+13. **Reference lines** — if the user asks for a reference, average, or threshold line, use \`layer\` with a \`rule\` mark and \`datum\` encoding (not \`field\`)
+14. **Color schemes** — only use scheme names from the docs (e.g. \`yelloworangered\`, not \`YlOrRd\`). Call \`lookup_docs\` with topic \`color-scale\` if unsure
+15. **Month/weekday ordering** — if x-axis contains months or weekdays as ordinal, add explicit \`sort\` array for chronological order (e.g. \`["Jan","Feb",...,"Dec"]\`)
 
 ## Default styling (applied automatically)
 Charts use clean Datawrapper-like defaults: system-ui font, horizontal grid lines, tableau10 colors, polished title typography. Do NOT include styling properties unless the user asks for a specific look.
