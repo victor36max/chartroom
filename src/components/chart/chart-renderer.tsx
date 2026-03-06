@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import { renderVegaLite } from "@/lib/chart/render-vega";
+import { setCurrentVegaResult } from "./chart-capture";
+import { setExportView } from "@/lib/chart/export-chart";
 import type { ChartSpec, ThemeId } from "@/types";
 import type { Result } from "vega-embed";
 
@@ -29,6 +31,8 @@ export function ChartRenderer({ spec, data, themeId = "default", onViewReady }: 
           return;
         }
         resultRef.current = result;
+        setCurrentVegaResult(result);
+        setExportView(result);
         onViewReady?.(result);
       })
       .catch((err) => {
@@ -44,6 +48,8 @@ export function ChartRenderer({ spec, data, themeId = "default", onViewReady }: 
       cancelled = true;
       resultRef.current?.view.finalize();
       resultRef.current = null;
+      setCurrentVegaResult(null);
+      setExportView(null);
     };
   }, [spec, data, themeId, onViewReady]);
 

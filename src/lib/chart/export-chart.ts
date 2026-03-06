@@ -1,4 +1,10 @@
-import { toPng } from "html-to-image";
+import type { Result } from "vega-embed";
+
+let currentResult: Result | null = null;
+
+export function setExportView(result: Result | null) {
+  currentResult = result;
+}
 
 function download(url: string, filename: string) {
   const a = document.createElement("a");
@@ -11,28 +17,16 @@ function download(url: string, filename: string) {
 
 export async function exportChartAsPng(options?: {
   pixelRatio?: number;
-  backgroundColor?: string | null;
 }) {
-  const container = document.getElementById("chart-container");
-  if (!container) return;
+  if (!currentResult) return;
+  const scaleFactor = options?.pixelRatio ?? 2;
+  const dataUrl = await currentResult.view.toImageURL("png", scaleFactor);
+  download(dataUrl, "chart.png");
+}
 
-  const pixelRatio = options?.pixelRatio ?? 2;
-  const bg = options?.backgroundColor;
-
-  // Temporarily remove max-width so html-to-image captures full chart content
-  const prevMaxWidth = container.style.maxWidth;
-  const prevWidth = container.style.width;
-  container.style.maxWidth = "none";
-  container.style.width = "max-content";
-
-  try {
-    const dataUrl = await toPng(container, {
-      pixelRatio,
-      ...(bg != null ? { backgroundColor: bg } : {}),
-    });
-    download(dataUrl, "chart.png");
-  } finally {
-    container.style.maxWidth = prevMaxWidth;
-    container.style.width = prevWidth;
-  }
+export async function exportChartAsSvg() {
+  if (!currentResult) return;
+  const svg = await currentResult.view.toSVG();
+  const blob = new Blob([svg], { type: "image/svg+xml" });
+  download(URL.createObjectURL(blob), "chart.svg");
 }
