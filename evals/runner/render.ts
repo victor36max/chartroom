@@ -12,7 +12,7 @@ const BUNDLE_PATH = path.resolve(__dirname, "bundle/renderer.js");
 const HTML_PAGE = path.resolve(__dirname, "renderer-page.html");
 
 export async function buildBundle(): Promise<void> {
-  console.log("Building specToPlot bundle for browser...");
+  console.log("Building vega-embed bundle for browser...");
   await esbuild.build({
     entryPoints: [path.resolve(__dirname, "bundle-entry.ts")],
     bundle: true,
@@ -69,17 +69,12 @@ export async function renderChart(
   try {
     const evalError = await page.evaluate(
       ([spec, data]) => {
-        const container = document.getElementById("chart-container")!;
-        container.innerHTML = "";
-        try {
-          const fn = (window as unknown as { specToPlot: (s: unknown, d: unknown) => HTMLElement })
-            .specToPlot;
-          const el = fn(spec, data);
-          container.appendChild(el);
-          return null;
-        } catch (err) {
-          return err instanceof Error ? err.message : String(err);
-        }
+        const fn = (window as unknown as {
+          renderVegaLite: (s: unknown, d: unknown) => Promise<void>;
+        }).renderVegaLite;
+        return fn(spec, data).then(() => null).catch((err: unknown) =>
+          err instanceof Error ? err.message : String(err)
+        );
       },
       [spec, data] as [unknown, unknown]
     );
@@ -88,8 +83,8 @@ export async function renderChart(
       return { error: evalError };
     }
 
-    // Wait for SVG layout to settle
-    await page.waitForTimeout(150);
+    // Wait for Vega to finish rendering
+    await page.waitForTimeout(300);
 
     const container = page.locator("#chart-container");
     const png = await container.screenshot({ type: "png" });

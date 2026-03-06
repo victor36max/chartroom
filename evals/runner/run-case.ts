@@ -65,10 +65,9 @@ export async function runCase(
     render_chart: {
       ...baseTools.render_chart,
       execute: async (input: { spec: ChartSpec; title?: string; description?: string }) => {
-        const chartSpec: ChartSpec = {
-          ...input.spec,
-          title: input.title ?? input.spec.title,
-        };
+        const chartSpec: ChartSpec = input.title
+          ? { ...input.spec, title: input.title } as ChartSpec
+          : input.spec;
         capturedSpec = chartSpec;
 
         const result = await renderChart(page, chartSpec, csvData);

@@ -7,7 +7,7 @@ export function validateSpec(
 ): { valid: true } | { valid: false; error: string } {
   try {
     const fullSpec = injectData(spec, data);
-    vl.compile(fullSpec as vl.TopLevelSpec);
+    vl.compile(fullSpec as unknown as vl.TopLevelSpec);
     return { valid: true };
   } catch (err) {
     return {
