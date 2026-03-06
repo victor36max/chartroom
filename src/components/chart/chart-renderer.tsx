@@ -1,50 +1,55 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { specToPlot } from "@/lib/chart/spec-to-plot";
-import type { ChartSpec } from "@/types";
+import { renderVegaLite } from "@/lib/chart/render-vega";
+import type { ChartSpec, ThemeId } from "@/types";
+import type { Result } from "vega-embed";
 
 interface ChartRendererProps {
   spec: ChartSpec;
   data: Record<string, unknown>[];
+  themeId?: ThemeId;
+  onViewReady?: (result: Result) => void;
 }
 
-export function ChartRenderer({ spec, data }: ChartRendererProps) {
+export function ChartRenderer({ spec, data, themeId = "default", onViewReady }: ChartRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const resultRef = useRef<Result | null>(null);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    try {
-      const plot = specToPlot(spec, data);
-      container.replaceChildren(plot);
-    } catch (err) {
-      container.replaceChildren();
-      const errorDiv = document.createElement("div");
-      errorDiv.className = "p-4 text-sm text-destructive";
-      errorDiv.textContent = `Chart error: ${err instanceof Error ? err.message : "Unknown error"}`;
-      container.appendChild(errorDiv);
-    }
-  }, [spec, data]);
+    let cancelled = false;
 
-  const hasPadding =
-    spec.paddingTop != null ||
-    spec.paddingRight != null ||
-    spec.paddingBottom != null ||
-    spec.paddingLeft != null;
-  const containerStyle: React.CSSProperties | undefined = hasPadding
-    ? {
-        paddingTop: spec.paddingTop ?? 16,
-        paddingRight: spec.paddingRight ?? 16,
-        paddingBottom: spec.paddingBottom ?? 16,
-        paddingLeft: spec.paddingLeft ?? 16,
-      }
-    : undefined;
+    renderVegaLite(container, spec as unknown as Record<string, unknown>, data, themeId)
+      .then((result) => {
+        if (cancelled) {
+          result.view.finalize();
+          return;
+        }
+        resultRef.current = result;
+        onViewReady?.(result);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        container.innerHTML = "";
+        const errorDiv = document.createElement("div");
+        errorDiv.className = "p-4 text-sm text-destructive";
+        errorDiv.textContent = `Chart error: ${err instanceof Error ? err.message : "Unknown error"}`;
+        container.appendChild(errorDiv);
+      });
+
+    return () => {
+      cancelled = true;
+      resultRef.current?.view.finalize();
+      resultRef.current = null;
+    };
+  }, [spec, data, themeId, onViewReady]);
 
   return (
     <div className="flex items-center justify-center p-6 h-full">
-      <div ref={containerRef} id="chart-container" className="w-full max-w-3xl" style={containerStyle} />
+      <div ref={containerRef} id="chart-container" className="w-full max-w-3xl" />
     </div>
   );
 }
