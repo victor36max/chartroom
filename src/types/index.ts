@@ -1,32 +1,19 @@
-export interface ChartSpec {
-  marks: Array<MarkSpec>;
-  title?: string;
-  subtitle?: string;
-  width?: number;
-  height?: number;
-  color?: Record<string, unknown>;
-  x?: Record<string, unknown>;
-  y?: Record<string, unknown>;
-  fx?: Record<string, unknown>;
-  fy?: Record<string, unknown>;
-  marginTop?: number;
-  marginRight?: number;
-  marginBottom?: number;
-  marginLeft?: number;
-  paddingTop?: number;
-  paddingRight?: number;
-  paddingBottom?: number;
-  paddingLeft?: number;
-  style?: Record<string, unknown>;
-  titleStyle?: Record<string, unknown>;
-  subtitleStyle?: Record<string, unknown>;
-}
+import type { TopLevelSpec } from "vega-lite";
 
-export interface MarkSpec {
-  type: string;
-  data?: string; // "csv" to reference uploaded data, or inline
-  options?: Record<string, unknown>;
-}
+export type ChartSpec = TopLevelSpec;
+
+export type ThemeId =
+  | "default"
+  | "dark"
+  | "excel"
+  | "fivethirtyeight"
+  | "ggplot2"
+  | "googlecharts"
+  | "latimes"
+  | "powerbi"
+  | "quartz"
+  | "urbaninstitute"
+  | "vox";
 
 export interface ColumnMeta {
   name: string;
