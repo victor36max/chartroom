@@ -1,8 +1,8 @@
 {
   "name": "grouped-bar-fx",
-  "description": "Grouped bar chart using fx faceting",
+  "description": "Grouped bar chart using xOffset encoding",
   "csv": "sales.csv",
   "messages": ["Create a grouped bar chart with products side by side for each region"],
-  "tags": ["bar", "single-turn", "grouped", "facet"],
-  "rubric": "Must use bar with fx for side-by-side grouping. color by product (or region), fx by region (or product). Must NOT use stack. Color legend required."
+  "tags": ["bar", "single-turn", "grouped"],
+  "rubric": "Must use bar with xOffset (or column) for side-by-side grouping. color by product (or region). Must NOT use stack. Color legend required."
 }
