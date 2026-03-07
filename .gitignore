@@ -45,3 +45,5 @@ next-env.d.ts
 # evals
 evals/results/
 evals/runner/bundle/
+evals/cases/*
+!evals/cases/bar-chart-basic.json
