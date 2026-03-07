@@ -21,6 +21,7 @@ export async function buildBundle(): Promise<void> {
     outfile: BUNDLE_PATH,
     alias: {
       "@/types": path.resolve(ROOT, "src/types/index.ts"),
+      "@/lib": path.resolve(ROOT, "src/lib"),
     },
   });
   console.log("Bundle built successfully.");
@@ -65,8 +66,17 @@ export async function renderChart(
   page: Page,
   spec: ChartSpec,
   data: Record<string, unknown>[]
-): Promise<{ png: Buffer; error?: undefined } | { png?: undefined; error: string }> {
+): Promise<{ png: Buffer; warnings: string[]; error?: undefined } | { png?: undefined; warnings?: undefined; error: string }> {
   try {
+    // Capture console warnings emitted by Vega-Lite during rendering
+    const warnings: string[] = [];
+    const onConsole = (msg: import("playwright").ConsoleMessage) => {
+      if (msg.type() === "warning") {
+        warnings.push(msg.text());
+      }
+    };
+    page.on("console", onConsole);
+
     const evalError = await page.evaluate(
       ([spec, data]) => {
         const fn = (window as unknown as {
@@ -79,16 +89,24 @@ export async function renderChart(
       [spec, data] as [unknown, unknown]
     );
 
+    // Wait for Vega to finish rendering (and emitting warnings)
+    await page.waitForTimeout(300);
+    page.off("console", onConsole);
+
     if (evalError) {
       return { error: evalError };
     }
 
-    // Wait for Vega to finish rendering
-    await page.waitForTimeout(300);
-
     const container = page.locator("#chart-container");
+    // Resize viewport to fit the chart so nothing is clipped
+    const box = await container.boundingBox();
+    if (box) {
+      const width = Math.ceil(box.x + box.width);
+      const height = Math.ceil(box.y + box.height);
+      await page.setViewportSize({ width, height });
+    }
     const png = await container.screenshot({ type: "png" });
-    return { png };
+    return { png, warnings };
   } catch (err) {
     return { error: err instanceof Error ? err.message : String(err) };
   }

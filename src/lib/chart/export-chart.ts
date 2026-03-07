@@ -17,16 +17,25 @@ function download(url: string, filename: string) {
 
 export async function exportChartAsPng(options?: {
   pixelRatio?: number;
+  transparent?: boolean;
 }) {
   if (!currentResult) return;
   const scaleFactor = options?.pixelRatio ?? 2;
-  const dataUrl = await currentResult.view.toImageURL("png", scaleFactor);
+  const view = currentResult.view;
+  const prevBg = view.background();
+  if (options?.transparent) view.background("transparent");
+  const dataUrl = await view.toImageURL("png", scaleFactor);
+  view.background(prevBg);
   download(dataUrl, "chart.png");
 }
 
-export async function exportChartAsSvg() {
+export async function exportChartAsSvg(options?: { transparent?: boolean }) {
   if (!currentResult) return;
-  const svg = await currentResult.view.toSVG();
+  const view = currentResult.view;
+  const prevBg = view.background();
+  if (options?.transparent) view.background("transparent");
+  const svg = await view.toSVG();
+  view.background(prevBg);
   const blob = new Blob([svg], { type: "image/svg+xml" });
   download(URL.createObjectURL(blob), "chart.svg");
 }

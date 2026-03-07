@@ -55,7 +55,7 @@ export function ChartRenderer({ spec, data, themeId = "default", onViewReady }: 
 
   return (
     <div className="flex items-center justify-center p-6 h-full">
-      <div ref={containerRef} id="chart-container" className="w-full max-w-3xl" />
+      <div ref={containerRef} id="chart-container" className="max-w-full max-h-full" />
     </div>
   );
 }

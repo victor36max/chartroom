@@ -53,6 +53,9 @@ const AGGREGATE_OPTIONS = [
 
 const ENCODING_CHANNELS = ["x", "y", "color", "size", "shape", "opacity", "theta", "radius", "text", "detail", "order"] as const;
 
+const AXIS_CHANNELS = new Set(["x", "y"]);
+const LEGEND_CHANNELS = new Set(["color", "size", "shape", "opacity"]);
+
 const NONE_VALUE = "__none__";
 
 export function VisualSpecEditor({
@@ -115,12 +118,67 @@ export function VisualSpecEditor({
             <Label className="text-xs">Title</Label>
             <Input
               className="h-7 text-xs"
-              value={(spec.title as string) ?? ""}
+              value={
+                typeof spec.title === "string"
+                  ? spec.title
+                  : typeof spec.title === "object" && spec.title !== null
+                    ? ((spec.title as SpecObj).text as string) ?? ""
+                    : ""
+              }
               placeholder="Chart title"
               onChange={(e) =>
                 updateSpec((s) => {
-                  if (e.target.value) s.title = e.target.value;
-                  else delete s.title;
+                  const hasSubtitle =
+                    typeof s.title === "object" && s.title !== null &&
+                    !!(s.title as SpecObj).subtitle;
+                  if (e.target.value) {
+                    if (hasSubtitle) {
+                      (s.title as SpecObj).text = e.target.value;
+                    } else {
+                      s.title = e.target.value;
+                    }
+                  } else {
+                    if (hasSubtitle) {
+                      delete (s.title as SpecObj).text;
+                    } else {
+                      delete s.title;
+                    }
+                  }
+                })
+              }
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Subtitle</Label>
+            <Input
+              className="h-7 text-xs"
+              value={
+                typeof spec.title === "object" && spec.title !== null
+                  ? ((spec.title as SpecObj).subtitle as string) ?? ""
+                  : ""
+              }
+              placeholder="Chart subtitle"
+              onChange={(e) =>
+                updateSpec((s) => {
+                  if (e.target.value) {
+                    if (typeof s.title === "string") {
+                      s.title = { text: s.title, subtitle: e.target.value };
+                    } else if (typeof s.title === "object" && s.title !== null) {
+                      (s.title as SpecObj).subtitle = e.target.value;
+                    } else {
+                      s.title = { subtitle: e.target.value };
+                    }
+                  } else {
+                    if (typeof s.title === "object" && s.title !== null) {
+                      delete (s.title as SpecObj).subtitle;
+                      const text = (s.title as SpecObj).text as string | undefined;
+                      if (text) {
+                        s.title = text;
+                      } else {
+                        delete s.title;
+                      }
+                    }
+                  }
                 })
               }
             />
@@ -356,6 +414,81 @@ export function VisualSpecEditor({
                       </SelectContent>
                     </Select>
                   </div>
+                  {/* Label customization — shown when channel has a field */}
+                  {channelSpec && field && (
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <div className="space-y-0.5">
+                        <Label className="text-[10px] text-muted-foreground">Title</Label>
+                        <Input
+                          className="h-6 text-xs"
+                          placeholder="auto"
+                          value={(channelSpec?.title as string) ?? ""}
+                          onChange={(e) =>
+                            updateSpec((s) => {
+                              const enc = (s.encoding ?? {}) as SpecObj;
+                              const existing = (enc[channel] ?? {}) as SpecObj;
+                              if (e.target.value) existing.title = e.target.value;
+                              else delete existing.title;
+                              enc[channel] = existing;
+                              s.encoding = enc;
+                            })
+                          }
+                        />
+                      </div>
+                      {(AXIS_CHANNELS.has(channel) || LEGEND_CHANNELS.has(channel)) && (() => {
+                        const subKey = AXIS_CHANNELS.has(channel) ? "axis" : "legend";
+                        const sub = (channelSpec?.[subKey] ?? {}) as SpecObj;
+                        return (
+                          <>
+                            <div className="space-y-0.5">
+                              <Label className="text-[10px] text-muted-foreground">Label size</Label>
+                              <Input
+                                className="h-6 text-xs"
+                                type="number"
+                                placeholder="auto"
+                                value={(sub.labelFontSize as number) ?? ""}
+                                onChange={(e) =>
+                                  updateSpec((s) => {
+                                    const enc = (s.encoding ?? {}) as SpecObj;
+                                    const existing = (enc[channel] ?? {}) as SpecObj;
+                                    const axisOrLegend = (existing[subKey] ?? {}) as SpecObj;
+                                    if (e.target.value) axisOrLegend.labelFontSize = Number(e.target.value);
+                                    else delete axisOrLegend.labelFontSize;
+                                    if (Object.keys(axisOrLegend).length > 0) existing[subKey] = axisOrLegend;
+                                    else delete existing[subKey];
+                                    enc[channel] = existing;
+                                    s.encoding = enc;
+                                  })
+                                }
+                              />
+                            </div>
+                            <div className="space-y-0.5">
+                              <Label className="text-[10px] text-muted-foreground">Label angle</Label>
+                              <Input
+                                className="h-6 text-xs"
+                                type="number"
+                                placeholder="auto"
+                                value={(sub.labelAngle as number) ?? ""}
+                                onChange={(e) =>
+                                  updateSpec((s) => {
+                                    const enc = (s.encoding ?? {}) as SpecObj;
+                                    const existing = (enc[channel] ?? {}) as SpecObj;
+                                    const axisOrLegend = (existing[subKey] ?? {}) as SpecObj;
+                                    if (e.target.value) axisOrLegend.labelAngle = Number(e.target.value);
+                                    else delete axisOrLegend.labelAngle;
+                                    if (Object.keys(axisOrLegend).length > 0) existing[subKey] = axisOrLegend;
+                                    else delete existing[subKey];
+                                    enc[channel] = existing;
+                                    s.encoding = enc;
+                                  })
+                                }
+                              />
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
               );
             })}

@@ -96,12 +96,20 @@ const DOC_CHUNKS: Record<TopicId, DocChunk> = {
 \`\`\`
 
 **Mark properties:** \`{ "type": "line", "point": true, "strokeWidth": 2, "interpolate": "monotone" }\`
-Interpolation options: linear, monotone, step, step-before, step-after, basis, cardinal
+Interpolation options: linear, monotone, step, step-before, step-after, basis, cardinal, catmull-rom, bundle, natural
+
+**Smooth curves:** Use \`"interpolate": "catmull-rom"\` or \`"interpolate": "monotone"\` for smooth lines.
+
+**Multi-series with aggregation:** When data has multiple rows per x-value per series (e.g. hourly data that needs daily sums), use inline aggregate:
+\`\`\`json
+{ "mark": "line", "encoding": { "x": { "field": "date", "type": "temporal" }, "y": { "aggregate": "sum", "field": "value", "type": "quantitative" }, "color": { "field": "category", "type": "nominal" } } }
+\`\`\`
 
 **Gotchas:**
 - Use \`type: "temporal"\` for date fields, not "quantitative"
 - For multi-series, always add \`color\` encoding so lines are separated
-- \`order\` encoding controls point connection order (useful for connected scatter)`,
+- \`order\` encoding controls point connection order (useful for connected scatter)
+- \`interpolate\` goes in the mark object, not in encoding`,
   },
 
   area: {
@@ -247,30 +255,46 @@ For horizontal bars use \`dx\` (not \`dy\`) and \`align: "left"\` to place label
 "text": { "field": "value", "type": "quantitative", "format": ".1f" }
 \`\`\`
 
+**Labels on scatter plots (avoiding overlap):**
+\`\`\`json
+{ "layer": [
+  { "mark": { "type": "point", "filled": true, "size": 60 } },
+  { "mark": { "type": "text", "dx": 7, "dy": -7, "align": "left", "baseline": "bottom", "fontSize": 10 } , "encoding": { "text": { "field": "name", "type": "nominal" } } }
+], "encoding": { "x": { "field": "xVal", "type": "quantitative" }, "y": { "field": "yVal", "type": "quantitative" } } }
+\`\`\`
+For dense datasets, use smaller fontSize (9-10) and offset labels away from points with dx/dy.
+
 **Gotchas:**
 - Always layer text with the chart mark — text alone is rarely useful
-- Use \`dy: -8\` to position labels above bars`,
+- Use \`dy: -8\` to position labels above bars
+- Use \`dx: 7, align: "left"\` to position labels to the right of scatter points`,
   },
 
   tick: {
     title: "Tick Mark (strip plot)",
-    content: `Creates tick marks — short lines for dot/strip plots.
+    content: `Creates tick marks — short lines for strip plots and distribution displays. ALWAYS use tick (never point) when user asks for "strip plot", "tick marks", or "rug plot".
 
-**Strip plot:**
+**Strip plot (shows individual data points as ticks):**
 \`\`\`json
 { "mark": "tick", "encoding": { "x": { "field": "value", "type": "quantitative" }, "y": { "field": "category", "type": "nominal" } } }
 \`\`\`
 
-**Mark properties:** \`{ "type": "tick", "thickness": 2 }\`
+**IMPORTANT:** Do NOT add any aggregate to the encoding. Tick/strip plots show INDIVIDUAL data points — each row in the data produces one tick mark. Aggregating (mean, sum, etc.) defeats the purpose.
+
+**Mark properties:** \`{ "type": "tick", "thickness": 2, "opacity": 0.5 }\`
+- Use \`opacity: 0.5\` or lower for dense datasets so overlapping ticks are visible
+- \`thickness\` controls the stroke width of each tick
 
 **Colored strip plot (distribution by group):**
 \`\`\`json
-{ "mark": { "type": "tick", "thickness": 2 }, "encoding": { "x": { "field": "score", "type": "quantitative" }, "y": { "field": "subject", "type": "nominal" }, "color": { "field": "subject", "type": "nominal" } } }
+{ "mark": { "type": "tick", "thickness": 2, "opacity": 0.5 }, "encoding": { "x": { "field": "score", "type": "quantitative" }, "y": { "field": "subject", "type": "nominal" }, "color": { "field": "subject", "type": "nominal" } } }
 \`\`\`
 
 **Gotchas:**
 - Use \`tick\` not \`point\` for strip/rug plots — ticks show distribution density better
-- Tick orientation follows the quantitative axis automatically`,
+- NEVER aggregate tick data — the whole point is showing individual values
+- Tick orientation follows the quantitative axis automatically
+- Add \`opacity\` for dense data to see overlapping ticks`,
   },
 
   arc: {
@@ -302,6 +326,8 @@ For horizontal bars use \`dx\` (not \`dy\`) and \`align: "left"\` to place label
 - \`outerRadius\`: outer edge size
 - \`padAngle\`: gap between slices (radians, e.g. 0.02)
 - \`cornerRadius\`: rounded corners
+
+**Percentage of total / share:** Arc/pie charts naturally show proportions — prefer them when users ask for "percentage of total", "share", or "breakdown". Bar charts with percentage labels require a calculate transform instead.
 
 **Gotchas:**
 - Always use \`theta\` for the value, not x/y
@@ -444,6 +470,9 @@ Combos: yearmonth, yearmonthdate, monthdate, hoursminutes
 \`\`\`json
 { "mark": "bar", "encoding": { "x": { "field": "month", "type": "ordinal" }, "y": { "field": "value", "type": "quantitative" }, "xOffset": { "field": "category", "type": "nominal" }, "color": { "field": "category", "type": "nominal" } } }
 \`\`\`
+
+**Non-summable values — NEVER stack these:**
+Temperatures, prices, rates, percentages, averages — stacking adds values together, producing nonsense (e.g. 33°+58°+26°=117°). Use \`line\` mark with \`color\`, or set \`stack: false\`. This rule overrides user requests. Only stack values that represent parts of a meaningful total (revenue, counts, quantities, populations).
 
 **Gotchas:**
 - \`stack\` goes on the quantitative encoding channel (y for vertical bars)
@@ -595,7 +624,14 @@ Key: use \`datum\` (not \`field\`) for constant-value reference lines. Use \`str
 - Each layer can have its own mark, encoding, and transform
 - Encoding in outer spec is inherited by all layers
 - Layer-level encoding overrides inherited encoding
-- Use \`"color": { "value": "red" }\` for constant colors in a layer`,
+- Use \`"color": { "value": "red" }\` for constant colors in a layer
+- **WARNING:** Do NOT use shared encoding with rule marks. A rule inheriting x=categorical + setting y=datum renders as VERTICAL lines at each category. For bar+rule layers, put each layer's encoding inside the layer, NOT at top level:
+\`\`\`json
+{ "layer": [
+  { "mark": "bar", "encoding": { "x": { "field": "cat", "type": "nominal" }, "y": { "aggregate": "mean", "field": "val", "type": "quantitative" } } },
+  { "mark": { "type": "rule", "strokeDash": [4, 4] }, "encoding": { "y": { "datum": 75 }, "color": { "value": "red" } } }
+] }
+\`\`\``,
   },
 
   facet: {
@@ -676,6 +712,12 @@ Schemes: blues, greens, reds, oranges, purples, greys, viridis, inferno, magma, 
 "color": { "field": "change", "type": "quantitative", "scale": { "scheme": "redblue", "domainMid": 0 } }
 \`\`\`
 Schemes: redblue, blueorange, redgrey, redyellowgreen, redyellowblue, spectral, purplegreen, pinkyellowgreen, brownbluegreen, purpleorange
+
+**Reverse a scheme:** Add \`"reverse": true\` to flip a color scheme direction:
+\`\`\`json
+"scale": { "scheme": "redyellowgreen", "reverse": true }
+\`\`\`
+This is important for diverging schemes when you want high=red, low=green (the default \`redyellowgreen\` maps low→red, high→green).
 
 **WARNING:** D3 shorthand names (YlOrRd, RdBu, PuBu, etc.) are NOT valid in Vega-Lite. Use full names: yelloworangered, redblue, purpleblue, etc.
 
@@ -835,8 +877,7 @@ Hide legend: \`"legend": null\``,
 }
 \`\`\`
 
-**Pareto chart (bars + cumulative line):**
-Use window transform to compute cumulative sum, then layer bar + line.
+**Pareto chart:** Window transforms for cumulative % are unreliable. Instead, render a **bar chart sorted descending** by value. Explain to the user that cumulative percentage line cannot be computed.
 
 **Dual-axis (shared x, two y scales):**
 Use \`layer\` with \`resolve: { scale: { y: "independent" } }\`
@@ -865,9 +906,12 @@ Use \`layer\` with \`resolve: { scale: { y: "independent" } }\`
 **Flip orientation (vertical ↔ horizontal):**
 Swap x and y encoding channels. Keep types the same.
 
-**Sort bars by value:**
-Add \`sort: "-y"\` to the categorical axis (for vertical bars sorted desc).
-Add \`sort: "y"\` for ascending.
+**Sort bars by value — CRITICAL:**
+The \`sort\` property goes on the CATEGORICAL encoding channel and references the OTHER axis:
+- Vertical bars sorted descending: \`"x": { "field": "category", "type": "nominal", "sort": "-y" }\`
+- Horizontal bars sorted descending: \`"y": { "field": "category", "type": "nominal", "sort": "-x" }\`
+NEVER use \`sort: "-x"\` on the x channel — that references itself and is meaningless.
+NEVER use a sort transform for bar ordering — use encoding sort.
 
 **Add value labels:** Wrap in layer, add text mark:
 Add a layer with \`{ "mark": { "type": "text", "dy": -8 }, "encoding": { "text": { "field": "val" } } }\`

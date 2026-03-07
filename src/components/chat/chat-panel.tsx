@@ -91,6 +91,7 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
           return;
         }
 
+        const warnings = validation.warnings;
         onChartSpec(chartSpec);
 
         // Wait for React to flush and the browser to paint before capturing
@@ -105,6 +106,7 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
             output: JSON.stringify({
               success: true,
               image: png,
+              ...(warnings.length > 0 && { warnings }),
             }),
           });
         } catch {

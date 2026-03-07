@@ -92,12 +92,15 @@ function injectChartImages(messages: ModelMessage[]): any[] {
             typeof output === "string" ? JSON.parse(output) : output;
 
           if (parsed?.image && typeof parsed.image === "string") {
+            const warningText = Array.isArray(parsed.warnings) && parsed.warnings.length > 0
+              ? `\n\nVega-Lite warnings:\n${parsed.warnings.map((w: string) => `- ${w}`).join("\n")}\n\nPlease fix these warnings.`
+              : "";
             return {
               ...part,
               output: [
                 {
                   type: "text",
-                  text: "Chart rendered successfully. Here is a screenshot for evaluation:",
+                  text: `Chart rendered successfully.${warningText} Here is a screenshot for evaluation:`,
                 },
                 {
                   type: "image",

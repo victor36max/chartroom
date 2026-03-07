@@ -19,10 +19,18 @@ Criteria:
 - correctness: Does the chart accurately represent the data as requested?
 - chartType: Is the appropriate chart type used for the request?
 - readability: Are axes, labels, and values clear and legible?
-- aesthetics: Does the chart look polished (title, subtitle, colors)?
+- aesthetics: Does the chart look polished (title, colors, layout)?
 - completeness: Did the AI fulfill the complete request?
 
-Be strict but fair.`;
+CRITICAL RULES — you MUST follow these:
+1. The rubric is authoritative. If the rubric says "both orientations acceptable", do NOT penalize for either orientation. If the rubric says multiple mark types are acceptable, accept any of them.
+2. Do NOT invent requirements beyond what the user requested and the rubric states. Only score against stated requirements.
+3. Score each criterion independently. A chart with the wrong type but clean labels, good colors, and a clear title should still score 4-5 on readability and aesthetics.
+4. For "decline" cases where the rubric says to acknowledge a limitation and render an alternative: score high (4-5) if the alternative chart is reasonable and well-rendered. Only score low if the output is misleading or broken.
+5. A subtitle is NOT required unless the rubric explicitly requires it.
+6. Do not penalize for reasonable axis choices when the rubric doesn't specify exact axis mappings.
+
+Be fair and follow the rubric strictly.`;
 
 export async function judgeChart(
   screenshotBase64: string,
@@ -35,35 +43,42 @@ export async function judgeChart(
 
   const rubricText = rubric ? `\nAdditional rubric: ${rubric}` : "";
 
-  const { text } = await generateText({
-    model,
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "text",
-            text: `${JUDGE_PROMPT}
+  const messages = [
+    {
+      role: "user" as const,
+      content: [
+        {
+          type: "text" as const,
+          text: `${JUDGE_PROMPT}
 
 User request: "${userPrompts.join('" → "')}"${rubricText}`,
-          },
-          {
-            type: "file",
-            data: screenshotBase64,
-            mediaType: "image/png",
-          },
-        ],
-      },
-    ],
-  });
+        },
+        {
+          type: "file" as const,
+          data: screenshotBase64,
+          mediaType: "image/png" as const,
+        },
+      ],
+    },
+  ];
 
-  // Extract JSON from response (model may wrap in markdown code fences)
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new Error(`Judge did not return valid JSON: ${text.slice(0, 200)}`);
+  let parsed: Record<string, unknown> | undefined;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const { text } = await generateText({ model, messages });
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        if (attempt < 2) { await new Promise(r => setTimeout(r, 1000)); continue; }
+        throw new Error(`Judge did not return valid JSON: ${text.slice(0, 200)}`);
+      }
+      parsed = JSON.parse(jsonMatch[0]);
+      break;
+    } catch (err) {
+      if (attempt === 2) throw err;
+      await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+    }
   }
-
-  const parsed = JSON.parse(jsonMatch[0]);
+  if (!parsed) throw new Error("Judge failed after 3 attempts");
   const scores = {
     correctness: clamp(parsed.correctness),
     chartType: clamp(parsed.chartType),
@@ -78,7 +93,7 @@ User request: "${userPrompts.join('" → "')}"${rubricText}`,
   return {
     scores,
     total,
-    reasoning: parsed.reasoning ?? "",
+    reasoning: String(parsed.reasoning ?? ""),
   };
 }
 

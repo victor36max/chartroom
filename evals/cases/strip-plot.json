@@ -4,5 +4,5 @@
   "csv": "students.csv",
   "messages": ["Show the distribution of scores by subject as a strip plot"],
   "tags": ["tick", "single-turn"],
-  "rubric": "Must use tick mark. x=score, y=subject."
+  "rubric": "Must use tick mark. One axis should map to score (quantitative), the other to subject (nominal). Both orientations valid."
 }

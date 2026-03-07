@@ -3,7 +3,7 @@
   "description": "Multi-turn: create chart then add a reference line",
   "csv": "stocks.csv",
   "messages": [
-    "Plot Google stock price over time",
+    "Plot Google (GOOG) stock price over time",
     "Add a horizontal line at the average price"
   ],
   "tags": ["line", "rule", "multi-turn", "refinement", "composition"],

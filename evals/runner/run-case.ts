@@ -83,7 +83,8 @@ export async function runCase(
         }
 
         screenshotBuffer = result.png;
-        return { success: true as const, image: result.png.toString("base64") };
+        const warnings = result.warnings?.length ? result.warnings : undefined;
+        return { success: true as const, image: result.png.toString("base64"), warnings };
       },
       // Convert tool result to multimodal content so the model sees the screenshot
       toModelOutput: ({
@@ -91,15 +92,18 @@ export async function runCase(
       }: {
         toolCallId: string;
         input: unknown;
-        output: { success: boolean; image?: string; error?: string };
+        output: { success: boolean; image?: string; error?: string; warnings?: string[] };
       }) => {
         if (output.success && output.image) {
+          const warningText = output.warnings?.length
+            ? `\n\nVega-Lite warnings:\n${output.warnings.map(w => `- ${w}`).join("\n")}\n\nPlease fix these warnings.`
+            : "";
           return {
             type: "content" as const,
             value: [
               {
                 type: "text" as const,
-                text: "Chart rendered successfully. Here is a screenshot for evaluation:",
+                text: `Chart rendered successfully.${warningText} Here is a screenshot for evaluation:`,
               },
               {
                 type: "file-data" as const,
@@ -168,7 +172,7 @@ export async function runCase(
     if (lastError) break;
   }
 
-  // Save screenshot
+  // Save screenshot and SVG
   let screenshotPath: string | undefined;
   let screenshotBase64: string | undefined;
   if (screenshotBuffer) {
@@ -178,6 +182,7 @@ export async function runCase(
     fs.writeFileSync(screenshotPath, screenshotBuffer);
     screenshotBase64 = screenshotBuffer.toString("base64");
   }
+
 
   return {
     name: evalCase.name,

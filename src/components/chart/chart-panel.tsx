@@ -107,7 +107,9 @@ export function ChartPanel({ csvData, chartSpec, onChartSpecEdited, themeId, onT
   }, []);
 
   const [exportOpen, setExportOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState<"png" | "svg">("png");
   const [exportScale, setExportScale] = useState(2);
+  const [exportTransparent, setExportTransparent] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
 
   // Close popover on outside click or Escape
@@ -185,41 +187,62 @@ export function ChartPanel({ csvData, chartSpec, onChartSpecEdited, themeId, onT
               </button>
               {exportOpen && (
                 <div className="absolute right-0 top-full mt-1 z-50 w-48 rounded-md border bg-popover p-3 shadow-md space-y-3">
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium">Scale</label>
-                    <div className="flex gap-1">
-                      {[1, 2].map((s) => (
-                        <button
-                          key={s}
-                          onClick={() => setExportScale(s)}
-                          className={`flex-1 h-7 rounded text-xs font-medium transition-colors ${
-                            exportScale === s
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          {s}x
-                        </button>
-                      ))}
-                    </div>
+                  <div className="flex gap-0 rounded-md bg-muted p-0.5">
+                    {(["png", "svg"] as const).map((fmt) => (
+                      <button
+                        key={fmt}
+                        onClick={() => setExportFormat(fmt)}
+                        className={`flex-1 h-7 rounded text-xs font-medium transition-colors ${
+                          exportFormat === fmt
+                            ? "bg-background text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {fmt.toUpperCase()}
+                      </button>
+                    ))}
                   </div>
+                  {exportFormat === "png" && (
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium">Scale</label>
+                      <div className="flex gap-1">
+                        {[1, 2].map((s) => (
+                          <button
+                            key={s}
+                            onClick={() => setExportScale(s)}
+                            className={`flex-1 h-7 rounded text-xs font-medium transition-colors ${
+                              exportScale === s
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            {s}x
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={exportTransparent}
+                      onChange={(e) => setExportTransparent(e.target.checked)}
+                      className="h-3.5 w-3.5 rounded border-muted-foreground accent-primary"
+                    />
+                    <span className="text-xs">Transparent background</span>
+                  </label>
                   <button
                     onClick={() => {
-                      exportChartAsPng({ pixelRatio: exportScale });
+                      if (exportFormat === "png") {
+                        exportChartAsPng({ pixelRatio: exportScale, transparent: exportTransparent });
+                      } else {
+                        exportChartAsSvg({ transparent: exportTransparent });
+                      }
                       setExportOpen(false);
                     }}
                     className="w-full h-7 rounded text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                   >
-                    Export PNG
-                  </button>
-                  <button
-                    onClick={() => {
-                      exportChartAsSvg();
-                      setExportOpen(false);
-                    }}
-                    className="w-full h-7 rounded text-xs font-medium bg-muted text-foreground hover:bg-muted/80 transition-colors"
-                  >
-                    Export SVG
+                    Export {exportFormat.toUpperCase()}
                   </button>
                 </div>
               )}

@@ -1,5 +1,6 @@
 "use client";
 
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -35,6 +36,9 @@ const AGGREGATE_OPTIONS = [
 ];
 
 const CHANNELS = ["x", "y", "color", "opacity", "size", "text"] as const;
+
+const AXIS_CHANNELS = new Set(["x", "y"]);
+const LEGEND_CHANNELS = new Set(["color", "size", "opacity"]);
 
 const NONE_VALUE = "__none__";
 
@@ -195,6 +199,81 @@ export function LayerEditorCard({ layer, index, columns, onChange, onRemove }: L
                 </SelectContent>
               </Select>
             </div>
+            {/* Label customization — shown when channel has a field */}
+            {channelSpec && field && (
+              <div className="grid grid-cols-3 gap-1">
+                <div className="space-y-0.5">
+                  <Label className="text-[10px] text-muted-foreground">Title</Label>
+                  <Input
+                    className="h-6 text-xs"
+                    placeholder="auto"
+                    value={(channelSpec?.title as string) ?? ""}
+                    onChange={(e) =>
+                      update((l) => {
+                        const enc = (l.encoding ?? {}) as SpecObj;
+                        const existing = (enc[channel] ?? {}) as SpecObj;
+                        if (e.target.value) existing.title = e.target.value;
+                        else delete existing.title;
+                        enc[channel] = existing;
+                        l.encoding = enc;
+                      })
+                    }
+                  />
+                </div>
+                {(AXIS_CHANNELS.has(channel) || LEGEND_CHANNELS.has(channel)) && (() => {
+                  const subKey = AXIS_CHANNELS.has(channel) ? "axis" : "legend";
+                  const sub = (channelSpec?.[subKey] ?? {}) as SpecObj;
+                  return (
+                    <>
+                      <div className="space-y-0.5">
+                        <Label className="text-[10px] text-muted-foreground">Label size</Label>
+                        <Input
+                          className="h-6 text-xs"
+                          type="number"
+                          placeholder="auto"
+                          value={(sub.labelFontSize as number) ?? ""}
+                          onChange={(e) =>
+                            update((l) => {
+                              const enc = (l.encoding ?? {}) as SpecObj;
+                              const existing = (enc[channel] ?? {}) as SpecObj;
+                              const axisOrLegend = (existing[subKey] ?? {}) as SpecObj;
+                              if (e.target.value) axisOrLegend.labelFontSize = Number(e.target.value);
+                              else delete axisOrLegend.labelFontSize;
+                              if (Object.keys(axisOrLegend).length > 0) existing[subKey] = axisOrLegend;
+                              else delete existing[subKey];
+                              enc[channel] = existing;
+                              l.encoding = enc;
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-0.5">
+                        <Label className="text-[10px] text-muted-foreground">Label angle</Label>
+                        <Input
+                          className="h-6 text-xs"
+                          type="number"
+                          placeholder="auto"
+                          value={(sub.labelAngle as number) ?? ""}
+                          onChange={(e) =>
+                            update((l) => {
+                              const enc = (l.encoding ?? {}) as SpecObj;
+                              const existing = (enc[channel] ?? {}) as SpecObj;
+                              const axisOrLegend = (existing[subKey] ?? {}) as SpecObj;
+                              if (e.target.value) axisOrLegend.labelAngle = Number(e.target.value);
+                              else delete axisOrLegend.labelAngle;
+                              if (Object.keys(axisOrLegend).length > 0) existing[subKey] = axisOrLegend;
+                              else delete existing[subKey];
+                              enc[channel] = existing;
+                              l.encoding = enc;
+                            })
+                          }
+                        />
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
           </div>
         );
       })}
