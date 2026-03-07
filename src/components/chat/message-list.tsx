@@ -11,7 +11,6 @@ interface MessageListProps {
 
 const toolThinkingLabels: Record<string, string> = {
   lookup_docs: "Looking up docs...",
-  filter_data: "Filtering data...",
   render_chart: "Rendering chart...",
 };
 

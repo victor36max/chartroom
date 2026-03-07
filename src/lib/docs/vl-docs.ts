@@ -547,6 +547,16 @@ This creates two new columns:
 "transform": [{ "filter": { "field": "price", "range": [10, 100] } }]
 \`\`\`
 
+**Top/bottom N (e.g. top 5 products by revenue):**
+\`\`\`json
+"transform": [
+  {"aggregate": [{"op": "sum", "field": "revenue", "as": "total"}], "groupby": ["product"]},
+  {"window": [{"op": "rank", "as": "rank"}], "sort": [{"field": "total", "order": "descending"}]},
+  {"filter": "datum.rank <= 5"}
+]
+\`\`\`
+For bottom N, change sort order to \`"ascending"\`.
+
 **Expression syntax:** Use \`datum.fieldName\` to reference fields. Standard JS operators: ==, !=, >, <, >=, <=, &&, ||`,
   },
 
@@ -877,7 +887,21 @@ Hide legend: \`"legend": null\``,
 }
 \`\`\`
 
-**Pareto chart:** Window transforms for cumulative % are unreliable. Instead, render a **bar chart sorted descending** by value. Explain to the user that cumulative percentage line cannot be computed.
+**Pareto chart (bars + cumulative % line, dual axis):**
+\`\`\`json
+{ "transform": [
+    {"aggregate": [{"op": "sum", "field": "value", "as": "total"}], "groupby": ["category"]},
+    {"joinaggregate": [{"op": "sum", "field": "total", "as": "grand_total"}]},
+    {"window": [{"op": "sum", "field": "total", "as": "cumulative"}], "sort": [{"field": "total", "order": "descending"}]},
+    {"calculate": "datum.cumulative / datum.grand_total * 100", "as": "cumulative_pct"}
+  ],
+  "layer": [
+    { "mark": "bar", "encoding": { "x": { "field": "category", "type": "nominal", "sort": "-y" }, "y": { "field": "total", "type": "quantitative" } } },
+    { "mark": { "type": "line", "color": "red", "point": true }, "encoding": { "x": { "field": "category", "type": "nominal", "sort": "-y" }, "y": { "field": "cumulative_pct", "type": "quantitative", "axis": { "title": "Cumulative %", "format": ".0f" } } } }
+  ],
+  "resolve": { "scale": { "y": "independent" } }
+}
+\`\`\`
 
 **Dual-axis (shared x, two y scales):**
 Use \`layer\` with \`resolve: { scale: { y: "independent" } }\`

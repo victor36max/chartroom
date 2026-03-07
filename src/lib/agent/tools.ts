@@ -1,6 +1,5 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { filterData } from "./data-filter";
 import { TOPIC_IDS, lookupDocs, type TopicId } from "@/lib/docs/vl-docs";
 
 // Encoding channel schema — field, type, aggregate, bin, etc.
@@ -39,7 +38,7 @@ const vlSpecSchema = z.object({
   // NO config, NO $schema, NO background, NO padding, NO autosize
 });
 
-export function createTools(csvData: Record<string, unknown>[] | undefined) {
+export function createTools() {
   return {
     render_chart: tool({
       description:
@@ -52,24 +51,6 @@ export function createTools(csvData: Record<string, unknown>[] | undefined) {
       // No execute — this is a client-side tool
     }),
 
-    filter_data: tool({
-      description:
-        "Filter CSV data to top/bottom N entries by a column. Can aggregate first (e.g., top 5 products by total revenue). Use before render_chart when you need to limit which rows or categories appear.",
-      inputSchema: z.object({
-        column: z.string().describe("Column to sort by (or value column when using groupBy)"),
-        direction: z.enum(["top", "bottom"]).describe("Whether to get highest or lowest values"),
-        n: z.number().int().min(1).max(50).describe("Number of entries to return"),
-        groupBy: z.string().optional().describe("Category column to group by before aggregating"),
-        aggregate: z.enum(["sum", "count", "mean", "max", "min"]).optional().describe("Aggregation function when groupBy is used"),
-      }),
-      execute: async ({ column, direction, n, groupBy, aggregate }) => {
-        if (!csvData || csvData.length === 0) {
-          return { error: "No CSV data available" };
-        }
-        return filterData(csvData, { column, direction, n, groupBy, aggregate });
-      },
-    }),
-
     lookup_docs: tool({
       description:
         "Look up Vega-Lite documentation for specific topics. " +
@@ -77,10 +58,10 @@ export function createTools(csvData: Record<string, unknown>[] | undefined) {
         "Available topics: " +
         "bar, line, area, point, rect, rule, text, tick, arc, boxplot, " +
         "encoding (channels and types), aggregate (aggregate/bin/timeUnit), " +
-        "stack, fold (wide-to-long reshape), filter, calculate, " +
+        "stack, fold (wide-to-long reshape), filter (includes top/bottom N with window), calculate, " +
         "layer (multi-mark), facet (small multiples), repeat, " +
         "color-scale, position-scales, styling, " +
-        "layout-patterns (stacked/grouped/horizontal), composite-patterns, editing-charts",
+        "layout-patterns (stacked/grouped/horizontal), composite-patterns (lollipop/pareto/dual-axis/trend-line), editing-charts",
       inputSchema: z.object({
         topics: z
           .array(z.enum(TOPIC_IDS))

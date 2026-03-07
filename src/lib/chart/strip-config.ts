@@ -1,4 +1,4 @@
-const STRIP_KEYS = ["config", "$schema", "background", "padding", "autosize"] as const;
+const STRIP_KEYS = ["config", "$schema", "background", "autosize"] as const;
 
 export function stripStyling(spec: Record<string, unknown>): Record<string, unknown> {
   const clone = { ...spec };

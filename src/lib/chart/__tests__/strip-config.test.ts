@@ -12,9 +12,9 @@ describe("stripStyling", () => {
     expect(stripStyling(spec)).toEqual({ mark: "bar", encoding: {} });
   });
 
-  it("removes background, padding, autosize", () => {
+  it("removes background and autosize but preserves padding", () => {
     const spec = { mark: "bar", encoding: {}, background: "white", padding: 10, autosize: "fit" };
-    expect(stripStyling(spec)).toEqual({ mark: "bar", encoding: {} });
+    expect(stripStyling(spec)).toEqual({ mark: "bar", encoding: {}, padding: 10 });
   });
 
   it("preserves data, mark, encoding, transform, layer, title", () => {

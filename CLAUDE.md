@@ -30,10 +30,9 @@ State (`csvData`, `currentChart`, `themeId`) lives in `page.tsx` and flows down 
 
 ### AI layer (Vercel AI SDK)
 
-The API route `src/app/api/chat/route.ts` uses `streamText` from `ai` with `@openrouter/ai-sdk-provider`. The model is configurable via three tiers (fast/mid/power) defined in `src/lib/agent/models.ts`. It exposes three tools:
+The API route `src/app/api/chat/route.ts` uses `streamText` from `ai` with `@openrouter/ai-sdk-provider`. The model is configurable via three tiers (fast/mid/power) defined in `src/lib/agent/models.ts`. It exposes two tools:
 
 - **`render_chart`** — *client-side only* (no `execute`). The AI emits a Vega-Lite spec; `ChatPanel` intercepts it, renders via `renderVegaLite`, captures a screenshot via `html-to-image`, and sends the PNG back as a tool result.
-- **`filter_data`** — *server-side*. Filters/aggregates CSV data to top/bottom N entries via `filterData()` from `src/lib/agent/data-filter.ts`.
 - **`lookup_docs`** — *server-side*. Queries Vega-Lite documentation from `src/lib/docs/vl-docs.ts` (25 topics covering marks, encoding, transforms, scales, composition, styling, patterns).
 
 After each `render_chart` result, `injectChartImages()` in the route transforms the PNG back into a multimodal image part so the model can evaluate its own output. `pruneOldCharts()` manages context by keeping only the last 5 chart specs and the latest image. A `stepCountIs(5)` stop condition limits agentic iterations.
@@ -72,7 +71,6 @@ AI emits Vega-Lite spec (JSON)
 | `src/app/api/chat/route.ts` | Streaming API endpoint, model config, image injection, context pruning |
 | `src/lib/agent/tools.ts` | Tool definitions (Zod schemas for Vega-Lite spec) |
 | `src/lib/agent/system-prompt.ts` | System prompt with Vega-Lite spec format, rules, and pre-render checklist |
-| `src/lib/agent/data-filter.ts` | Server-side CSV filtering (top/bottom N, groupBy + aggregate) |
 | `src/lib/agent/models.ts` | Model tier config (fast/mid/power) and `resolveModelId()` |
 | `src/lib/docs/vl-docs.ts` | Vega-Lite documentation (25 topics) for `lookup_docs` tool |
 | `src/lib/chart/render-vega.ts` | Renders Vega-Lite specs via vega-embed with theme support |
@@ -94,7 +92,6 @@ Uses Vitest with jsdom environment. Config in `vitest.config.ts`.
 
 Test files:
 - `src/lib/csv/__tests__/parser.test.ts`
-- `src/lib/agent/__tests__/data-filter.test.ts`
 - `src/lib/chart/__tests__/inject-data.test.ts`
 - `src/lib/chart/__tests__/strip-config.test.ts`
 - `src/lib/chart/__tests__/validate-spec.test.ts`

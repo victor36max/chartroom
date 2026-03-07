@@ -57,7 +57,7 @@ export async function runCase(
   const system = buildSystemPrompt(dataContext);
 
   // Build eval tools — add execute + toModelOutput to render_chart
-  const baseTools = createTools(csvData);
+  const baseTools = createTools();
   let capturedSpec: ChartSpec | undefined;
   let screenshotBuffer: Buffer | undefined;
 

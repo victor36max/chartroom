@@ -22,6 +22,7 @@ export interface ColumnMeta {
   unique?: number;
   min?: number | string;
   max?: number | string;
+  computed?: boolean;
 }
 
 export interface DataMetadata {

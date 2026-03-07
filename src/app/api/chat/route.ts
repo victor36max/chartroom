@@ -140,11 +140,10 @@ export async function POST(req: Request) {
   }
 
   const messages = body.messages as UIMessage[];
-  const csvData = Array.isArray(body.csvData) ? (body.csvData as Record<string, unknown>[]) : undefined;
   const dataContext = typeof body.dataContext === "string" ? body.dataContext : undefined;
   const tier = (body.tier === "fast" || body.tier === "mid" || body.tier === "power" ? body.tier : "mid") as ModelTier;
 
-  const tools = createTools(csvData);
+  const tools = createTools();
 
   const modelMessages = await convertToModelMessages(messages);
   const prunedMessages = pruneOldCharts(modelMessages);

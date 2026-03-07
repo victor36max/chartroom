@@ -52,6 +52,23 @@ describe("injectData", () => {
     expect(result.spec.data).toEqual({ values: SAMPLE_ROWS });
   });
 
+  it("does not inject data into layer items without data (they inherit from parent)", () => {
+    const spec = {
+      data: { name: "csv" },
+      transform: [{ aggregate: [{ op: "sum", field: "score", as: "total" }], groupby: ["name"] }],
+      layer: [
+        { mark: "bar", encoding: { y: { field: "total" } } },
+        { mark: "line", encoding: { y: { field: "total" } } },
+      ],
+    };
+    const result = injectData(spec, SAMPLE_ROWS);
+    expect(result.data).toEqual({ values: SAMPLE_ROWS });
+    // Layer items should NOT have data injected — they inherit from parent
+    const layers = result.layer as Record<string, unknown>[];
+    expect(layers[0].data).toBeUndefined();
+    expect(layers[1].data).toBeUndefined();
+  });
+
   it("preserves non-csv data (e.g. inline values)", () => {
     const spec = {
       data: { values: [{ a: 1 }] },

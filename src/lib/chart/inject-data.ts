@@ -9,7 +9,7 @@ function isCSVSentinel(data: unknown): boolean {
   );
 }
 
-function replaceData(obj: SpecObj, rows: Record<string, unknown>[]): SpecObj {
+function replaceData(obj: SpecObj, rows: Record<string, unknown>[], topLevel = false): SpecObj {
   const clone = { ...obj };
 
   // Replace sentinel data
@@ -17,8 +17,8 @@ function replaceData(obj: SpecObj, rows: Record<string, unknown>[]): SpecObj {
     clone.data = { values: rows };
   }
 
-  // Inject data if spec has no data at all (single view)
-  if (!clone.data && !clone.layer && !clone.hconcat && !clone.vconcat && !clone.concat && !clone.facet && !clone.repeat) {
+  // Inject data only at top level if spec has no data at all (single view)
+  if (topLevel && !clone.data && !clone.layer && !clone.hconcat && !clone.vconcat && !clone.concat && !clone.facet && !clone.repeat) {
     clone.data = { values: rows };
   }
 
@@ -46,5 +46,5 @@ export function injectData(
   spec: Record<string, unknown>,
   rows: Record<string, unknown>[]
 ): Record<string, unknown> {
-  return replaceData(structuredClone(spec) as SpecObj, rows);
+  return replaceData(structuredClone(spec) as SpecObj, rows, true);
 }
