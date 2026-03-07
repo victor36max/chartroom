@@ -16,6 +16,10 @@ const toolThinkingLabels: Record<string, string> = {
 };
 
 function getStreamingToolLabel(messages: UIMessage[], fallback: string): string | null {
+  // If the last message is from the user, the model hasn't started responding yet
+  const lastMessage = messages[messages.length - 1];
+  if (lastMessage?.role === "user") return fallback;
+
   const lastAssistant = messages.findLast((m) => m.role === "assistant");
   if (!lastAssistant) return fallback;
 
