@@ -1,6 +1,6 @@
 import embed, { type Result } from "vega-embed";
 import type { ThemeId } from "@firechart/core";
-import { injectData, stripStyling, getThemeConfig } from "@firechart/core";
+import { injectData, getThemeConfig } from "@firechart/core";
 
 export async function renderVegaLite(
   container: HTMLElement,
@@ -8,8 +8,7 @@ export async function renderVegaLite(
   datasets: Record<string, Record<string, unknown>[]>,
   themeId: ThemeId = "default"
 ): Promise<Result> {
-  const cleaned = stripStyling(spec);
-  const withData = injectData(cleaned, datasets);
+  const withData = injectData(spec, datasets);
   const withDefaults = {
     width: 500,
     height: 300,

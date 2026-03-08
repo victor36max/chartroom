@@ -3,7 +3,7 @@ import { z } from "zod";
 import fs from "fs";
 import path from "path";
 import { exec } from "child_process";
-import { injectData, stripStyling, getThemeConfig, type DatasetMap, type ThemeId } from "@firechart/core";
+import { injectData, getThemeConfig, type DatasetMap, type ThemeId } from "@firechart/core";
 
 function openInBrowser(filePath: string) {
   const cmd = process.platform === "darwin" ? "open"
@@ -27,8 +27,7 @@ export function registerOpenInteractive(server: McpServer, datasets: DatasetMap)
           dataRows[name] = parsed.data;
         }
 
-        const cleaned = stripStyling(spec);
-        const withData = injectData(cleaned, dataRows);
+        const withData = injectData(spec, dataRows);
         const themeId = (theme ?? "default") as ThemeId;
         const config = getThemeConfig(themeId);
 

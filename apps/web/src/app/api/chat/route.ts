@@ -18,8 +18,7 @@ import { resolveModelId, type ModelTier } from "@/lib/agent/models";
 export const maxDuration = 60;
 
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function injectChartImages(messages: ModelMessage[]): any[] {
+function injectChartImages(messages: ModelMessage[]): ModelMessage[] {
   return messages.map((msg) => {
     if (msg.role !== "tool") return msg;
 

@@ -5,7 +5,7 @@ export const encodingChannelSchema = z.record(z.string(), z.unknown())
 
 export const vlMarkSchema = z.union([
   z.string().describe("Mark type: bar, line, area, point, rect, rule, text, tick, arc, boxplot, errorbar, errorband, trail, square, circle"),
-  z.object({ type: z.string() }).passthrough().describe("Mark with properties: { type, tooltip, opacity, ... }"),
+  z.object({ type: z.string() }).loose().describe("Mark with properties: { type, tooltip, opacity, ... }"),
 ]);
 
 export const vlUnitSchema: z.ZodType = z.lazy(() => z.object({
@@ -14,7 +14,7 @@ export const vlUnitSchema: z.ZodType = z.lazy(() => z.object({
   encoding: z.record(z.string(), encodingChannelSchema).optional(),
   transform: z.array(z.record(z.string(), z.unknown())).optional(),
   layer: z.array(vlUnitSchema).optional(),
-  title: z.union([z.string(), z.object({ text: z.string() }).passthrough()]).optional(),
+  title: z.union([z.string(), z.object({ text: z.string(), subtitle: z.string().optional() }).loose()]).optional(),
   width: z.union([z.number(), z.literal("container")]).optional(),
   height: z.union([z.number(), z.literal("container")]).optional(),
 }));
@@ -40,7 +40,7 @@ export function createVlSpecSchema(datasetNames?: string[]) {
     repeat: z.unknown().optional().describe("Repeat spec for repeated views"),
     spec: vlUnitSchema.optional().describe("Inner spec for facet/repeat"),
     resolve: z.record(z.string(), z.unknown()).optional().describe("Resolve shared/independent scales across layers/facets"),
-    title: z.union([z.string(), z.object({ text: z.string() }).passthrough()]).optional(),
+    title: z.union([z.string(), z.object({ text: z.string(), subtitle: z.string().optional() }).loose()]).optional(),
     width: z.union([z.number(), z.literal("container")]).optional(),
     height: z.union([z.number(), z.literal("container")]).optional(),
   });

@@ -1,1 +1,1 @@
-export { initRenderer, renderChart, closeRenderer, buildBundle } from "./renderer";
+export { initRenderer, renderChart, closeRenderer } from "./renderer";

@@ -74,10 +74,8 @@ export async function runCase(
     ...baseTools,
     render_chart: {
       ...baseTools.render_chart,
-      execute: async (input: { spec: ChartSpec; title?: string; description?: string }) => {
-        const chartSpec: ChartSpec = input.title
-          ? { ...input.spec, title: input.title } as ChartSpec
-          : input.spec;
+      execute: async (input: { spec: ChartSpec }) => {
+        const chartSpec: ChartSpec = input.spec;
         capturedSpec = chartSpec;
 
         // Validate spec before rendering (matches production behavior)

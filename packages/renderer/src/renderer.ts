@@ -1,41 +1,19 @@
 import { chromium, type Browser, type Page } from "playwright";
-import * as esbuild from "esbuild";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const BUNDLE_PATH = path.resolve(__dirname, "bundle/renderer.js");
-const HTML_PAGE = path.resolve(__dirname, "renderer-page.html");
-
-export async function buildBundle(): Promise<void> {
-  console.log("Building vega-embed bundle for browser...");
-  await esbuild.build({
-    entryPoints: [path.resolve(__dirname, "bundle-entry.ts")],
-    bundle: true,
-    format: "iife",
-    platform: "browser",
-    outfile: BUNDLE_PATH,
-  });
-  console.log("Bundle built successfully.");
-}
-
-function bundleIsStale(): boolean {
-  if (!fs.existsSync(BUNDLE_PATH)) return true;
-  const bundleMtime = fs.statSync(BUNDLE_PATH).mtimeMs;
-  const srcFiles = [
-    path.resolve(__dirname, "bundle-entry.ts"),
-    path.resolve(__dirname, "renderer-page.html"),
-  ];
-  for (const file of srcFiles) {
-    if (fs.existsSync(file) && fs.statSync(file).mtimeMs > bundleMtime) return true;
-  }
-  return false;
-}
+// Resolve from package root so paths work both from src/ (dev) and dist/ (published)
+const PKG_ROOT = path.resolve(__dirname, "..");
+const BUNDLE_PATH = path.resolve(PKG_ROOT, "src/bundle/renderer.js");
+const HTML_PAGE = path.resolve(PKG_ROOT, "src/renderer-page.html");
 
 export async function initRenderer(pageCount = 1): Promise<{ browser: Browser; pages: Page[] }> {
-  if (bundleIsStale()) {
-    await buildBundle();
+  if (!fs.existsSync(BUNDLE_PATH)) {
+    throw new Error(
+      `Vega-embed bundle not found at ${BUNDLE_PATH}. Run "bun run build:bundle" first.`
+    );
   }
   const browser = await chromium.launch();
   const pages = await Promise.all(

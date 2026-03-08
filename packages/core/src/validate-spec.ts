@@ -84,6 +84,16 @@ export function validateSpec(
   spec: Record<string, unknown>,
   datasets: Record<string, Record<string, unknown>[]>
 ): { valid: true; warnings: string[] } | { valid: false; error: string } {
+  if (typeof spec.$schema === "string") {
+    const schemaUrl = spec.$schema;
+    if (!/^https:\/\/vega\.github\.io\/schema\/vega-lite\/v6\.json$/.test(schemaUrl)) {
+      return {
+        valid: false,
+        error: `Invalid $schema: "${schemaUrl}". Must be a valid Vega-Lite v6 schema URL (https://vega.github.io/schema/vega-lite/v6.json), or omit $schema entirely.`,
+      };
+    }
+  }
+
   try {
     const fullSpec = injectData(spec, datasets);
     const warnings: string[] = [];

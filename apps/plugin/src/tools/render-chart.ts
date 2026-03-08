@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import fs from "fs";
+import os from "os";
 import path from "path";
 import { type DatasetMap } from "@firechart/core";
 import { initRenderer, renderChart as rendererRenderChart } from "@firechart/renderer";
@@ -52,7 +53,7 @@ export function registerRenderChart(server: McpServer, datasets: DatasetMap) {
         const { png, warnings } = result as { png: Buffer; warnings: string[] };
 
         // Save PNG
-        const tmpDir = "/tmp/firechart";
+        const tmpDir = path.join(os.tmpdir(), "firechart");
         fs.mkdirSync(tmpDir, { recursive: true });
         const filePath = outputPath ?? path.join(tmpDir, `chart-${Date.now()}.png`);
         fs.writeFileSync(filePath, png);

@@ -8,10 +8,12 @@
     "lint": "bun run --filter '*' lint",
     "typecheck": "bun run --filter '*' typecheck",
     "test": "bun run --filter '*' test",
-    "eval": "bun run --filter @firechart/eval eval"
+    "eval": "bun run --filter @firechart/eval eval",
+    "build:packages": "bun run --filter @firechart/core build && bun run --filter @firechart/renderer build && bun run --filter @firechart/plugin build"
   },
   "devDependencies": {
     "eslint": "^10.0.3",
+    "tsup": "^8.5.1",
     "typescript": "^5",
     "typescript-eslint": "^8.56.1"
   },

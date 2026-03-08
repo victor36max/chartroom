@@ -81,6 +81,51 @@ describe("validateSpec", () => {
     }
   });
 
+  it("rejects spec with a v5 $schema", () => {
+    const spec = {
+      $schema: "https://vega.github.io/schema/vega-lite/v5.json",
+      mark: "bar",
+      encoding: {
+        x: { field: "category", type: "nominal" },
+        y: { field: "value", type: "quantitative" },
+      },
+    };
+    const result = validateSpec(spec, { csv: ROWS });
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.error).toContain("Invalid $schema");
+    }
+  });
+
+  it("rejects spec with an arbitrary invalid $schema", () => {
+    const spec = {
+      $schema: "https://example.com/schema.json",
+      mark: "bar",
+      encoding: {
+        x: { field: "category", type: "nominal" },
+        y: { field: "value", type: "quantitative" },
+      },
+    };
+    const result = validateSpec(spec, { csv: ROWS });
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.error).toContain("Invalid $schema");
+    }
+  });
+
+  it("accepts spec with valid v6 $schema", () => {
+    const spec = {
+      $schema: "https://vega.github.io/schema/vega-lite/v6.json",
+      mark: "bar",
+      encoding: {
+        x: { field: "category", type: "nominal" },
+        y: { field: "value", type: "quantitative" },
+      },
+    };
+    const result = validateSpec(spec, { csv: ROWS });
+    expect(result.valid).toBe(true);
+  });
+
   it("warns when encoding references original field instead of alias", () => {
     const spec = {
       mark: "bar",

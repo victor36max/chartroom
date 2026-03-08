@@ -1,5 +1,5 @@
 import embed from "vega-embed";
-import { stripStyling, injectData, getThemeConfig } from "@firechart/core";
+import { injectData, getThemeConfig } from "@firechart/core";
 
 (window as unknown as Record<string, unknown>).renderVegaLite = async (
   spec: Record<string, unknown>,
@@ -9,8 +9,7 @@ import { stripStyling, injectData, getThemeConfig } from "@firechart/core";
   const container = document.getElementById("chart-container")!;
   container.innerHTML = "";
 
-  const cleaned = stripStyling(spec);
-  const withData = injectData(cleaned, datasets);
+  const withData = injectData(spec, datasets);
   const config = getThemeConfig(themeId as Parameters<typeof getThemeConfig>[0]);
 
   await embed(container, withData as Parameters<typeof embed>[1], {

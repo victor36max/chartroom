@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "firechart": {
-      "command": "bun",
-      "args": ["run", "--cwd", "${CLAUDE_PLUGIN_ROOT}", "start"]
+      "command": "npx",
+      "args": ["@firechart/plugin"]
     }
   }
 }

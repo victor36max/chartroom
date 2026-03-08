@@ -1,9 +1,20 @@
 {
   "name": "@firechart/plugin",
   "version": "0.1.0",
-  "private": true,
-  "main": "src/server.ts",
+  "type": "module",
+  "main": "dist/server.js",
+  "bin": {
+    "firechart": "dist/server.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js"
+    }
+  },
+  "files": ["dist", "skills"],
   "scripts": {
+    "build": "tsup src/server.ts --format esm --dts --tsconfig tsconfig.build.json",
     "generate-skill": "bun scripts/generate-skill.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

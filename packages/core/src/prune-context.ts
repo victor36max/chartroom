@@ -5,8 +5,7 @@ import type { ModelMessage } from "ai";
  * - render_chart: keep all specs (small JSON), prune all images except the latest
  * - lookup_docs: prune all results except those from the latest user turn
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function pruneOldToolResults(messages: any[]): ModelMessage[] {
+export function pruneOldToolResults(messages: ModelMessage[]): ModelMessage[] {
   const chartCallIds: string[] = [];
   for (const msg of messages) {
     if (msg.role !== "assistant" || typeof msg.content === "string") continue;
@@ -36,13 +35,11 @@ export function pruneOldToolResults(messages: any[]): ModelMessage[] {
 
   if (staleImageIds.size === 0 && staleDocIds.size === 0) return messages;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return messages.map((msg: any) => {
+  return messages.map((msg) => {
     if (msg.role === "tool" && Array.isArray(msg.content)) {
       return {
         ...msg,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        content: msg.content.map((part: any) => {
+        content: msg.content.map((part) => {
           if (part.type === "tool-result" && staleImageIds.has(part.toolCallId)) {
             return { ...part, output: { type: "text", value: "Older chart image — pruned to save context." } };
           }

@@ -19,7 +19,6 @@ export {
 } from "./csv-parser";
 
 // Spec utilities
-export { stripStyling } from "./strip-config";
 export { injectData } from "./inject-data";
 export { validateSpec } from "./validate-spec";
 

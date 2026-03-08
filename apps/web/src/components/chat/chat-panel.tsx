@@ -77,14 +77,9 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
       if (toolCall.toolName === "render_chart") {
         const spec = (toolCall as unknown as { input: unknown }).input as {
           spec: ChartSpec;
-          title?: string;
-          description?: string;
         };
 
-        // Merge title into VL spec if provided separately
-        const chartSpec: ChartSpec = spec.title
-          ? { ...spec.spec, title: spec.title } as ChartSpec
-          : spec.spec;
+        const chartSpec: ChartSpec = spec.spec;
 
         // Build datasets rows map for validation
         const ds = datasetsRef.current;

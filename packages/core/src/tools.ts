@@ -13,8 +13,6 @@ export function createTools(datasets: Record<string, Record<string, unknown>[]>)
         "Render a chart using Vega-Lite. The chart will be displayed to the user and a screenshot will be returned for you to evaluate. Always use this tool to create or update charts.",
       inputSchema: z.object({
         spec: vlSpecSchema.describe("The Vega-Lite chart specification"),
-        title: z.string().optional().describe("Chart title"),
-        description: z.string().optional().describe("Brief description of the chart for the user"),
       }),
       // No execute — this is a client-side tool in web, overridden in eval
     }),
