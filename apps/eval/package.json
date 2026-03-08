@@ -1,21 +1,22 @@
 {
-  "name": "@firechart/plugin",
+  "name": "@firechart/eval",
   "version": "0.1.0",
   "private": true,
-  "main": "src/server.ts",
   "scripts": {
-    "generate-skill": "bun scripts/generate-skill.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "start": "bun src/server.ts",
-    "build:bundle": "bun run --cwd ../../packages/renderer build:bundle"
+    "eval": "bun src/index.ts"
   },
   "dependencies": {
     "@firechart/core": "workspace:*",
     "@firechart/renderer": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.12.1"
+    "@openrouter/ai-sdk-provider": "^2.2.3",
+    "ai": "^6.0.108",
+    "papaparse": "^5.5.3",
+    "playwright": "^1.58.2"
   },
   "devDependencies": {
+    "@types/papaparse": "^5.5.2",
     "typescript": "^5"
   }
 }

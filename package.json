@@ -3,14 +3,17 @@
   "private": true,
   "workspaces": ["packages/*", "apps/*"],
   "scripts": {
-    "dev": "bun --filter @firechart/web dev",
-    "build": "bun --filter @firechart/web build",
-    "lint": "bun --filter @firechart/web lint",
-    "test": "bun --filter '*' test",
-    "eval": "bun --filter @firechart/eval eval"
+    "dev": "bun run --filter @firechart/web dev",
+    "build": "bun run --filter @firechart/web build",
+    "lint": "bun run --filter '*' lint",
+    "typecheck": "bun run --filter '*' typecheck",
+    "test": "bun run --filter '*' test",
+    "eval": "bun run --filter @firechart/eval eval"
   },
   "devDependencies": {
-    "typescript": "^5"
+    "eslint": "^10.0.3",
+    "typescript": "^5",
+    "typescript-eslint": "^8.56.1"
   },
   "ignoreScripts": [
     "sharp",

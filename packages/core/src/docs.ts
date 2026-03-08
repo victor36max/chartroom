@@ -36,7 +36,7 @@ interface DocChunk {
   content: string;
 }
 
-const DOC_CHUNKS: Record<TopicId, DocChunk> = {
+export const DOC_CHUNKS: Record<TopicId, DocChunk> = {
   bar: {
     title: "Bar Mark",
     content: `Creates bar charts (vertical or horizontal).

@@ -39,4 +39,17 @@ export {
 export { buildSystemPrompt, type SystemPromptOptions } from "./system-prompt";
 
 // Docs
-export { TOPIC_IDS, lookupDocs, type TopicId } from "./docs";
+export { TOPIC_IDS, lookupDocs, DOC_CHUNKS, type TopicId } from "./docs";
+
+// AI tools (requires `ai` peer dependency)
+export { createTools } from "./tools";
+export { pruneOldToolResults } from "./prune-context";
+
+// Model config
+export {
+  MODEL_TIERS,
+  MODEL_TIER_LABELS,
+  DEFAULT_TIER,
+  resolveModelId,
+  type ModelTier,
+} from "./models";

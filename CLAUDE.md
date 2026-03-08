@@ -28,24 +28,28 @@ Firechart is a **Bun workspace monorepo** with shared packages and multiple apps
 ```
 packages/
   core/         @firechart/core     — Shared logic: types, CSV parsing, spec validation,
-                                       data injection, themes, docs, system prompt, Zod schemas
+                                       data injection, themes, docs, system prompt, Zod schemas,
+                                       AI tools, model config
   renderer/     @firechart/renderer — Playwright-based headless Vega-Lite → PNG rendering
 
 apps/
   web/          @firechart/web      — Next.js 16 App Router web app
+  eval/         @firechart/eval     — Eval runner (cases, judge, reports)
   plugin/       @firechart/plugin   — Claude Code MCP server + /chart skill
 ```
 
 ### `@firechart/core` (packages/core)
 
-Node-compatible shared logic with no browser or AI SDK dependencies:
+Node-compatible shared logic (`ai` SDK is an optional peer dependency):
 - **Types**: `ChartSpec`, `ThemeId`, `ColumnMeta`, `DataMetadata`, `ParsedCSV`, `DatasetMap`
 - **CSV**: `parseCSV` (browser File), `parseCSVString` (Node string), `extractMetadata`, `metadataToContext`, `datasetsToContext`
 - **Spec utils**: `stripStyling`, `injectData`, `validateSpec`
 - **Themes**: `DEFAULT_CONFIG`, `getThemeConfig` (11 built-in via vega-themes)
-- **Schemas**: `vlSpecSchema`, `createVlSpecSchema` (Zod, no AI SDK dep)
+- **Schemas**: `vlSpecSchema`, `createVlSpecSchema` (Zod)
 - **System prompt**: `buildSystemPrompt({ context: "web"|"plugin", dataContext? })`
-- **Docs**: `TOPIC_IDS`, `lookupDocs` (25 Vega-Lite reference topics)
+- **Docs**: `TOPIC_IDS`, `lookupDocs` (28 Vega-Lite reference topics)
+- **AI tools**: `createTools` (render_chart + lookup_docs tool defs), `pruneOldToolResults`
+- **Models**: `resolveModelId`, `MODEL_TIERS`, `MODEL_TIER_LABELS`, `DEFAULT_TIER`
 
 ### `@firechart/renderer` (packages/renderer)
 
@@ -74,7 +78,15 @@ Claude Code MCP server providing chart generation tools:
 - **`render_chart`** — render spec to PNG via `@firechart/renderer`
 - **`open_interactive`** — open chart in browser with tooltips
 
-Skill: `/chart` — guided workflow for chart generation from CSV data.
+Skill: `/chart` — guided workflow for chart generation from CSV data. Vega-Lite reference docs in `skills/chart/docs/`.
+
+### `@firechart/eval` (apps/eval)
+
+Eval runner for automated chart quality assessment:
+- Loads eval cases from `cases/` (JSON) and data from `data/` (CSV)
+- Runs agentic loop with `generateText` + `createTools` from core
+- Renders charts via `@firechart/renderer`, judges via vision model
+- Generates HTML reports in `results/`
 
 ### Key files
 
@@ -87,15 +99,20 @@ Skill: `/chart` — guided workflow for chart generation from CSV data.
 | `packages/core/src/themes.ts` | Theme config (11 themes via vega-themes) |
 | `packages/core/src/spec-schema.ts` | Zod schemas for Vega-Lite specs |
 | `packages/core/src/system-prompt.ts` | Parameterized system prompt (web/plugin) |
-| `packages/core/src/docs.ts` | Vega-Lite reference docs (25 topics) |
+| `packages/core/src/docs.ts` | Vega-Lite reference docs (28 topics) |
+| `packages/core/src/tools.ts` | AI tool definitions (render_chart + lookup_docs) |
+| `packages/core/src/models.ts` | Model tier config + resolution |
+| `packages/core/src/prune-context.ts` | Context pruning for multi-turn |
 | `packages/renderer/src/renderer.ts` | Playwright headless renderer |
 | `apps/web/src/app/api/chat/route.ts` | Streaming API endpoint |
-| `apps/web/src/lib/agent/tools.ts` | AI tool definitions |
 | `apps/web/src/lib/chart/render-vega.ts` | Browser-side Vega-Lite rendering |
 | `apps/web/src/components/chat/chat-panel.tsx` | Chat UI with useChat |
 | `apps/web/src/components/chart/chart-panel.tsx` | Chart display + editor |
 | `apps/plugin/src/server.ts` | MCP server entry point |
 | `apps/plugin/skills/chart/SKILL.md` | /chart skill definition |
+| `apps/plugin/skills/chart/docs/` | Vega-Lite reference docs (28 markdown files) |
+| `apps/eval/src/index.ts` | Eval runner entry point |
+| `apps/eval/src/run-case.ts` | Single eval case execution |
 
 ### Testing
 

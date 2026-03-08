@@ -23,7 +23,7 @@ describe("validateSpec", () => {
     const spec = { encoding: { x: { field: "category" } } };
     const result = validateSpec(spec, { csv: ROWS });
     expect(result.valid).toBe(false);
-    expect(result.error).toBeDefined();
+    expect(!result.valid && result.error).toBeDefined();
   });
 
   it("returns valid for a layered spec", () => {
