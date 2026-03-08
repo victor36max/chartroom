@@ -1,8 +1,15 @@
 {
   "name": "donut-chart",
   "description": "Donut chart of revenue by region",
-  "csv": "sales.csv",
-  "messages": ["Make a donut chart of revenue by region"],
-  "tags": ["arc", "single-turn"],
-  "rubric": "Must use arc mark with innerRadius > 0. value=revenue, label=region."
+  "messages": [
+    "Make a donut chart of revenue by region"
+  ],
+  "tags": [
+    "arc",
+    "single-turn"
+  ],
+  "rubric": "Must use arc mark with innerRadius > 0. value=revenue, label=region.",
+  "csvs": {
+    "sales": "sales.csv"
+  }
 }

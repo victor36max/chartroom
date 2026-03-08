@@ -1,8 +1,17 @@
 {
   "name": "colloquial-lollipop",
   "description": "Edge case: colloquial chart type name — lollipop chart",
-  "csv": "students.csv",
-  "messages": ["Make a lollipop chart of average score by subject"],
-  "tags": ["edge-case", "colloquial", "composition", "single-turn"],
-  "rubric": "A lollipop chart is a dot+rule combination (dot at value, thin line from baseline to dot). The model should approximate this using supported marks: rule for stems + dot for circles, or tick + dot. Acceptable alternative: bar chart with acknowledgment that lollipop isn't native. FAIL if model declines entirely. FAIL if model renders a plain bar chart without acknowledging the lollipop request or attempting the dot+rule composition."
+  "messages": [
+    "Make a lollipop chart of average score by subject"
+  ],
+  "tags": [
+    "edge-case",
+    "colloquial",
+    "composition",
+    "single-turn"
+  ],
+  "rubric": "A lollipop chart is a dot+rule combination (dot at value, thin line from baseline to dot). The model should approximate this using supported marks: rule for stems + dot for circles, or tick + dot. Acceptable alternative: bar chart with acknowledgment that lollipop isn't native. FAIL if model declines entirely. FAIL if model renders a plain bar chart without acknowledging the lollipop request or attempting the dot+rule composition.",
+  "csvs": {
+    "students": "students.csv"
+  }
 }

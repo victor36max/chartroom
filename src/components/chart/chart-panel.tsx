@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, type DragEvent, type ChangeEvent } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartRenderer } from "@/components/chart/chart-renderer";
 import { DataTable } from "@/components/data/data-table";
@@ -10,12 +10,13 @@ import { Download, Check, Code, X, SlidersHorizontal, Palette } from "lucide-rea
 import CodeMirror from "@uiw/react-codemirror";
 import { json } from "@codemirror/lang-json";
 import { VisualSpecEditor } from "./visual-spec-editor";
-import type { ParsedCSV, ChartSpec, ThemeId } from "@/types";
+import type { DatasetMap, ChartSpec, ThemeId } from "@/types";
 
 interface ChartPanelProps {
-  csvData: ParsedCSV | null;
+  datasets: DatasetMap;
   chartSpec: ChartSpec | null;
   onChartSpecEdited?: (spec: ChartSpec) => void;
+  onFilesSelected?: (files: File[]) => void;
   themeId: ThemeId;
   onThemeChange?: (themeId: ThemeId) => void;
 }
@@ -36,11 +37,16 @@ const THEME_OPTIONS: { value: ThemeId; label: string }[] = [
 
 const jsonExtensions = [json()];
 
-export function ChartPanel({ csvData, chartSpec, onChartSpecEdited, themeId, onThemeChange }: ChartPanelProps) {
-  const hasData = csvData && csvData.data.length > 0;
+export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSelected, themeId, onThemeChange }: ChartPanelProps) {
+  const datasetEntries = Object.entries(datasets);
+  const hasData = datasetEntries.length > 0;
+  const firstDataset = hasData ? datasetEntries[0][1] : null;
+  const datasetsRows = Object.fromEntries(datasetEntries.map(([name, d]) => [name, d.data]));
   const hasChart = chartSpec && hasData;
 
+  const dropzoneInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState("chart");
+  const [activeDataset, setActiveDataset] = useState("");
   const [jsonPanelOpen, setJsonPanelOpen] = useState(false);
   const [editorTab, setEditorTab] = useState<"visual" | "json">("visual");
   const [editorValue, setEditorValue] = useState("");
@@ -58,13 +64,23 @@ export function ChartPanel({ csvData, chartSpec, onChartSpecEdited, themeId, onT
   }, [chartSpec]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
+  // Sync activeDataset when datasets change
+  /* eslint-disable react-hooks/set-state-in-effect -- legitimate prop-to-state sync */
+  useEffect(() => {
+    const names = Object.keys(datasets);
+    if (names.length > 0 && !datasets[activeDataset]) {
+      setActiveDataset(names[0]);
+    }
+  }, [datasets, activeDataset]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
   // Live preview with debounce
   useEffect(() => {
-    if (!jsonPanelOpen || !csvData) return;
+    if (!jsonPanelOpen || !hasData) return;
     const timer = setTimeout(() => {
       try {
         const parsed = JSON.parse(editorValue);
-        const result = validateSpec(parsed as Record<string, unknown>, csvData.data);
+        const result = validateSpec(parsed as Record<string, unknown>, datasetsRows);
         if (result.valid) {
           setPreviewSpec(parsed as ChartSpec);
         }
@@ -73,7 +89,7 @@ export function ChartPanel({ csvData, chartSpec, onChartSpecEdited, themeId, onT
       }
     }, 500);
     return () => clearTimeout(timer);
-  }, [editorValue, jsonPanelOpen, csvData]);
+  }, [editorValue, jsonPanelOpen, hasData, datasetsRows]);
 
   const handleEditorChange = useCallback((value: string) => {
     setEditorValue(value);
@@ -81,7 +97,7 @@ export function ChartPanel({ csvData, chartSpec, onChartSpecEdited, themeId, onT
   }, []);
 
   const handleApply = useCallback(() => {
-    if (!csvData || !onChartSpecEdited) return;
+    if (!hasData || !onChartSpecEdited) return;
 
     let parsed: ChartSpec;
     try {
@@ -91,7 +107,7 @@ export function ChartPanel({ csvData, chartSpec, onChartSpecEdited, themeId, onT
       return;
     }
 
-    const result = validateSpec(parsed as unknown as Record<string, unknown>, csvData.data);
+    const result = validateSpec(parsed as unknown as Record<string, unknown>, datasetsRows);
     if (!result.valid) {
       setEditorError(`Spec error: ${result.error}`);
       return;
@@ -99,7 +115,7 @@ export function ChartPanel({ csvData, chartSpec, onChartSpecEdited, themeId, onT
 
     setEditorError(null);
     onChartSpecEdited(parsed);
-  }, [editorValue, csvData, onChartSpecEdited]);
+  }, [editorValue, hasData, datasetsRows, onChartSpecEdited]);
 
   const handleCloseJsonPanel = useCallback(() => {
     setJsonPanelOpen(false);
@@ -254,19 +270,64 @@ export function ChartPanel({ csvData, chartSpec, onChartSpecEdited, themeId, onT
         <div className={`${jsonPanelOpen ? "w-1/2" : "w-full"} flex flex-col overflow-hidden transition-all`}>
           <TabsContent value="chart" className="flex-1 m-0 overflow-auto">
             {hasChart ? (
-              <ChartRenderer spec={displaySpec!} data={csvData.data} themeId={themeId} />
-            ) : (
+              <ChartRenderer spec={displaySpec!} datasets={datasetsRows} themeId={themeId} />
+            ) : hasData ? (
               <div className="flex items-center justify-center h-full text-muted-foreground">
-                <p className="text-sm">
-                  {hasData
-                    ? "Ask the AI to create a chart from your data"
-                    : "Upload a CSV to get started"}
-                </p>
+                <p className="text-sm">Ask the AI to create a chart from your data</p>
+              </div>
+            ) : (
+              <div
+                className="flex items-center justify-center h-full"
+                onDrop={(e: DragEvent<HTMLDivElement>) => {
+                  e.preventDefault();
+                  const csvFiles = Array.from(e.dataTransfer.files).filter((f) => f.name.endsWith(".csv"));
+                  if (csvFiles.length > 0) onFilesSelected?.(csvFiles);
+                }}
+                onDragOver={(e: DragEvent<HTMLDivElement>) => e.preventDefault()}
+              >
+                <button
+                  type="button"
+                  onClick={() => dropzoneInputRef.current?.click()}
+                  className="rounded-lg border-2 border-dashed border-muted-foreground/25 px-12 py-10 text-sm text-muted-foreground hover:border-muted-foreground/50 transition-colors cursor-pointer"
+                >
+                  Drop CSV file(s) here or click to upload
+                </button>
+                <input
+                  ref={dropzoneInputRef}
+                  type="file"
+                  accept=".csv"
+                  multiple
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                    const files = e.target.files;
+                    if (files && files.length > 0) {
+                      onFilesSelected?.(Array.from(files));
+                      e.target.value = "";
+                    }
+                  }}
+                  className="hidden"
+                />
               </div>
             )}
           </TabsContent>
           <TabsContent value="data" className="flex-1 m-0 overflow-hidden flex flex-col">
-            {hasData && <DataTable csvData={csvData} />}
+            {datasetEntries.length > 1 && (
+              <div className="border-b px-3 py-1.5 flex gap-1 shrink-0 overflow-x-auto">
+                {datasetEntries.map(([name]) => (
+                  <button
+                    key={name}
+                    onClick={() => setActiveDataset(name)}
+                    className={`px-2 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+                      activeDataset === name
+                        ? "bg-muted text-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+            )}
+            {datasets[activeDataset] && <DataTable csvData={datasets[activeDataset]} />}
           </TabsContent>
         </div>
         {jsonPanelOpen && hasChart && (
@@ -319,7 +380,7 @@ export function ChartPanel({ csvData, chartSpec, onChartSpecEdited, themeId, onT
                 <VisualSpecEditor
                   editorValue={editorValue}
                   onChange={handleEditorChange}
-                  columns={csvData?.metadata.columns ?? []}
+                  columns={firstDataset?.metadata.columns ?? []}
                 />
               ) : (
                 <CodeMirror

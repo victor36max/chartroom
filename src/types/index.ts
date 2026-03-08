@@ -35,3 +35,5 @@ export interface ParsedCSV {
   metadata: DataMetadata;
   errors: string[];
 }
+
+export type DatasetMap = Record<string, ParsedCSV>;

@@ -1,8 +1,15 @@
 {
   "name": "decline-boxplot",
   "description": "Box plot of scores grouped by subject",
-  "csv": "students.csv",
-  "messages": ["Create box plots of scores grouped by subject"],
-  "tags": ["boxplot", "single-turn"],
-  "rubric": "Must use boxplot mark. x=subject (nominal), y=score (quantitative). Should show distribution of scores per subject with median, quartiles, and whiskers."
+  "messages": [
+    "Create box plots of scores grouped by subject"
+  ],
+  "tags": [
+    "boxplot",
+    "single-turn"
+  ],
+  "rubric": "Must use boxplot mark. x=subject (nominal), y=score (quantitative). Should show distribution of scores per subject with median, quartiles, and whiskers.",
+  "csvs": {
+    "students": "students.csv"
+  }
 }

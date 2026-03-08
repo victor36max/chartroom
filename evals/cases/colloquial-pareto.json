@@ -1,8 +1,18 @@
 {
   "name": "colloquial-pareto",
   "description": "Pareto chart — bars sorted descending + cumulative percentage line with dual axis",
-  "csv": "orders.csv",
-  "messages": ["Create a Pareto chart of revenue by subcategory"],
-  "tags": ["edge-case", "colloquial", "composition", "aggregation", "single-turn"],
-  "rubric": "A Pareto chart has bars sorted descending by value + a cumulative percentage line on a secondary y-axis. Model should use aggregate, joinaggregate, window (cumulative sum), and calculate transforms to compute cumulative %. Must use layer with resolve.scale.y = independent for dual axis. Bars MUST be sorted by revenue descending. Cumulative line should reach 100% at the rightmost bar. FAIL if no cumulative line, bars are unsorted, or only a plain bar chart."
+  "messages": [
+    "Create a Pareto chart of revenue by subcategory"
+  ],
+  "tags": [
+    "edge-case",
+    "colloquial",
+    "composition",
+    "aggregation",
+    "single-turn"
+  ],
+  "rubric": "A Pareto chart has bars sorted descending by value + a cumulative percentage line on a secondary y-axis. Model should use aggregate, joinaggregate, window (cumulative sum), and calculate transforms to compute cumulative %. Must use layer with resolve.scale.y = independent for dual axis. Bars MUST be sorted by revenue descending. Cumulative line should reach 100% at the rightmost bar. FAIL if no cumulative line, bars are unsorted, or only a plain bar chart.",
+  "csvs": {
+    "orders": "orders.csv"
+  }
 }

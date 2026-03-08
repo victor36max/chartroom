@@ -1,12 +1,19 @@
 {
   "name": "multi-turn-undo",
   "description": "Three-turn backtracking: line → bar → back to line",
-  "csv": "monthly-temps.csv",
   "messages": [
     "Show temperatures as a line chart",
     "Make it a bar chart",
     "Actually go back to the line chart"
   ],
-  "tags": ["line", "bar", "multi-turn", "refinement"],
-  "rubric": "Final chart must be a line chart (not bar) showing temperatures. The model must correctly revert to the line chart type from the first request. Data should show avg_temp by month with cities distinguished."
+  "tags": [
+    "line",
+    "bar",
+    "multi-turn",
+    "refinement"
+  ],
+  "rubric": "Final chart must be a line chart (not bar) showing temperatures. The model must correctly revert to the line chart type from the first request. Data should show avg_temp by month with cities distinguished.",
+  "csvs": {
+    "monthly_temps": "monthly-temps.csv"
+  }
 }

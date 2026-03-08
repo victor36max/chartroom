@@ -1,8 +1,18 @@
 {
   "name": "unusual-ticky-distribution",
   "description": "Edge case: tick marks for per-user heart rate distribution — must NOT aggregate",
-  "csv": "fitness.csv",
-  "messages": ["Show the distribution of resting heart rate for each user using tick marks"],
-  "tags": ["edge-case", "tick", "distribution", "hard-data", "single-turn"],
-  "rubric": "Should use tick mark with resting_heart_rate on one axis and user on the other. Both orientations valid. Must show individual data points (no aggregation). Score lower if model aggregates away the distribution (e.g., only mean per user), but still score readability and aesthetics fairly for whatever is rendered."
+  "messages": [
+    "Show the distribution of resting heart rate for each user using tick marks"
+  ],
+  "tags": [
+    "edge-case",
+    "tick",
+    "distribution",
+    "hard-data",
+    "single-turn"
+  ],
+  "rubric": "Should use tick mark with resting_heart_rate on one axis and user on the other. Both orientations valid. Must show individual data points (no aggregation). Score lower if model aggregates away the distribution (e.g., only mean per user), but still score readability and aesthetics fairly for whatever is rendered.",
+  "csvs": {
+    "fitness": "fitness.csv"
+  }
 }

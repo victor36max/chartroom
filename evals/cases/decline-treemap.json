@@ -1,8 +1,15 @@
 {
   "name": "decline-treemap",
   "description": "Should explain treemaps unsupported and render alternative",
-  "csv": "sales.csv",
-  "messages": ["Make a treemap showing revenue breakdown by region and product"],
-  "tags": ["decline", "single-turn"],
-  "rubric": "Treemaps are not supported. Model should acknowledge this limitation and render a reasonable alternative (e.g. stacked bar, pie chart) showing revenue by region and product. Score higher if it explains why treemap is unavailable. Score lower if it renders without mentioning the limitation or misleadingly labels the chart as a treemap."
+  "messages": [
+    "Make a treemap showing revenue breakdown by region and product"
+  ],
+  "tags": [
+    "decline",
+    "single-turn"
+  ],
+  "rubric": "Treemaps are not supported. Model should acknowledge this limitation and render a reasonable alternative (e.g. stacked bar, pie chart) showing revenue by region and product. Score higher if it explains why treemap is unavailable. Score lower if it renders without mentioning the limitation or misleadingly labels the chart as a treemap.",
+  "csvs": {
+    "sales": "sales.csv"
+  }
 }

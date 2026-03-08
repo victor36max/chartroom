@@ -1,8 +1,16 @@
 {
   "name": "date-axis",
   "description": "Multi-series line chart with date axis",
-  "csv": "stocks.csv",
-  "messages": ["Line chart of stock prices over time with each company as a separate line"],
-  "tags": ["line", "single-turn", "date"],
-  "rubric": "Must use line mark with x=date (properly parsed as dates), y=close, stroke=symbol. Must use stroke NOT fill for line coloring."
+  "messages": [
+    "Line chart of stock prices over time with each company as a separate line"
+  ],
+  "tags": [
+    "line",
+    "single-turn",
+    "date"
+  ],
+  "rubric": "Must use line mark with x=date (properly parsed as dates), y=close, stroke=symbol. Must use stroke NOT fill for line coloring.",
+  "csvs": {
+    "stocks": "stocks.csv"
+  }
 }

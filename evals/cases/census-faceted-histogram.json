@@ -1,8 +1,17 @@
 {
   "name": "census-faceted-histogram",
   "description": "Faceted histogram of median income distribution by state",
-  "csv": "census.csv",
-  "messages": ["Show the distribution of median income for each state as separate histograms"],
-  "tags": ["rect", "single-turn", "hard-data", "facet"],
-  "rubric": "Must create histograms of median_income with binning. Must use fx=state (or fy) to create separate panels for each state. Bar or area marks are both acceptable for histograms. Facet scale should be configured."
+  "messages": [
+    "Show the distribution of median income for each state as separate histograms"
+  ],
+  "tags": [
+    "rect",
+    "single-turn",
+    "hard-data",
+    "facet"
+  ],
+  "rubric": "Must create histograms of median_income with binning. Must use fx=state (or fy) to create separate panels for each state. Bar or area marks are both acceptable for histograms. Facet scale should be configured.",
+  "csvs": {
+    "census": "census.csv"
+  }
 }

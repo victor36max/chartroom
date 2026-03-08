@@ -1,8 +1,17 @@
 {
   "name": "vague-overview",
   "description": "Vague overview request on large dataset (4000+ rows)",
-  "csv": "energy.csv",
-  "messages": ["Give me an overview"],
-  "tags": ["vague", "single-turn", "aggregation", "hard-data"],
-  "rubric": "Must aggregate the 4000+ rows into a meaningful summary visualization (by building, by time period, by hour, etc.). Must NOT attempt to plot all individual data points. Any chart type acceptable. FAIL if model asks for clarification without rendering."
+  "messages": [
+    "Give me an overview"
+  ],
+  "tags": [
+    "vague",
+    "single-turn",
+    "aggregation",
+    "hard-data"
+  ],
+  "rubric": "Must aggregate the 4000+ rows into a meaningful summary visualization (by building, by time period, by hour, etc.). Must NOT attempt to plot all individual data points. Any chart type acceptable. FAIL if model asks for clarification without rendering.",
+  "csvs": {
+    "energy": "energy.csv"
+  }
 }

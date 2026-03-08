@@ -1,8 +1,17 @@
 {
   "name": "implicit-agg-which-region-most",
   "description": "Edge case: question phrasing that implies a chart, not an explicit chart request",
-  "csv": "orders.csv",
-  "messages": ["Which region brings in the most revenue?"],
-  "tags": ["edge-case", "implicit-aggregation", "aggregation", "single-turn"],
-  "rubric": "The user asks a QUESTION, not a chart request. The model must still render a chart (not just text). Must aggregate revenue by region using aggregate/aggregate with sum. A bar chart sorted descending is ideal. FAIL if model responds with only text and no render_chart call. FAIL if model uses count instead of sum (revenue needs summing, not counting)."
+  "messages": [
+    "Which region brings in the most revenue?"
+  ],
+  "tags": [
+    "edge-case",
+    "implicit-aggregation",
+    "aggregation",
+    "single-turn"
+  ],
+  "rubric": "The user asks a QUESTION, not a chart request. The model must still render a chart (not just text). Must aggregate revenue by region using aggregate/aggregate with sum. A bar chart sorted descending is ideal. FAIL if model responds with only text and no render_chart call. FAIL if model uses count instead of sum (revenue needs summing, not counting).",
+  "csvs": {
+    "orders": "orders.csv"
+  }
 }

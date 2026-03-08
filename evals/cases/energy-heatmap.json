@@ -1,8 +1,17 @@
 {
   "name": "energy-heatmap",
   "description": "Heatmap of average energy consumption by hour and weekday from 4000+ rows",
-  "csv": "energy.csv",
-  "messages": ["Create a heatmap showing average energy consumption by hour of day and day of week"],
-  "tags": ["cell", "single-turn", "hard-data", "aggregation"],
-  "rubric": "Must use cell mark with x=hour, y=weekday, fill=consumption_kwh. Must aggregate (aggregate mean or similar) since there are multiple buildings and weeks per hour×weekday combo. Weekday ordering should be correct (Mon-Sun). Sequential color scheme expected."
+  "messages": [
+    "Create a heatmap showing average energy consumption by hour of day and day of week"
+  ],
+  "tags": [
+    "cell",
+    "single-turn",
+    "hard-data",
+    "aggregation"
+  ],
+  "rubric": "Must use cell mark with x=hour, y=weekday, fill=consumption_kwh. Must aggregate (aggregate mean or similar) since there are multiple buildings and weeks per hour×weekday combo. Weekday ordering should be correct (Mon-Sun). Sequential color scheme expected.",
+  "csvs": {
+    "energy": "energy.csv"
+  }
 }

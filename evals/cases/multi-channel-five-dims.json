@@ -1,8 +1,19 @@
 {
   "name": "multi-channel-five-dims",
   "description": "Edge case: 5 simultaneous visual channels (x, y, r, fill, text labels)",
-  "csv": "countries.csv",
-  "messages": ["Show GDP vs life expectancy, with bubble size for population, color by continent, and add a text label for each country name"],
-  "tags": ["edge-case", "multi-channel", "composition", "point", "text", "single-turn"],
-  "rubric": "Must map 5 dimensions: x=gdp_billions, y=life_expectancy, size=population_millions, fill=continent (color), plus a text mark for country labels. The point mark handles x/y/size/fill, and a separate text mark adds labels. FAIL if any of the 5 requested dimensions is missing. FAIL if text labels are not present. Some label overlap is acceptable for dense regions — do not heavily penalize readability for inherent data density."
+  "messages": [
+    "Show GDP vs life expectancy, with bubble size for population, color by continent, and add a text label for each country name"
+  ],
+  "tags": [
+    "edge-case",
+    "multi-channel",
+    "composition",
+    "point",
+    "text",
+    "single-turn"
+  ],
+  "rubric": "Must map 5 dimensions: x=gdp_billions, y=life_expectancy, size=population_millions, fill=continent (color), plus a text mark for country labels. The point mark handles x/y/size/fill, and a separate text mark adds labels. FAIL if any of the 5 requested dimensions is missing. FAIL if text labels are not present. Some label overlap is acceptable for dense regions — do not heavily penalize readability for inherent data density.",
+  "csvs": {
+    "countries": "countries.csv"
+  }
 }

@@ -1,8 +1,18 @@
 {
   "name": "horizontal-grouped-bar",
   "description": "Horizontal grouped bar chart with regions side by side per product",
-  "csv": "sales.csv",
-  "messages": ["Create a horizontal grouped bar chart with regions side by side for each product"],
-  "tags": ["bar", "single-turn", "horizontal", "grouped", "facet"],
-  "rubric": "Must use horizontal bar with fy for side-by-side grouping. y=region (or product), fy=product (or region), x=revenue with aggregate sum. color by region. Must NOT use stack. Color legend required."
+  "messages": [
+    "Create a horizontal grouped bar chart with regions side by side for each product"
+  ],
+  "tags": [
+    "bar",
+    "single-turn",
+    "horizontal",
+    "grouped",
+    "facet"
+  ],
+  "rubric": "Must use horizontal bar with fy for side-by-side grouping. y=region (or product), fy=product (or region), x=revenue with aggregate sum. color by region. Must NOT use stack. Color legend required.",
+  "csvs": {
+    "sales": "sales.csv"
+  }
 }

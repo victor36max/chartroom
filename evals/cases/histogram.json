@@ -1,8 +1,16 @@
 {
   "name": "histogram",
   "description": "Histogram of student score distribution",
-  "csv": "students.csv",
-  "messages": ["Show the distribution of student scores as a histogram"],
-  "tags": ["bar", "single-turn", "bin"],
-  "rubric": "Must use bar mark with bin transform. x=score, bin outputs y=count."
+  "messages": [
+    "Show the distribution of student scores as a histogram"
+  ],
+  "tags": [
+    "bar",
+    "single-turn",
+    "bin"
+  ],
+  "rubric": "Must use bar mark with bin transform. x=score, bin outputs y=count.",
+  "csvs": {
+    "students": "students.csv"
+  }
 }

@@ -1,8 +1,15 @@
 {
   "name": "scatter-basic",
   "description": "Scatter plot of GDP vs life expectancy",
-  "csv": "countries.csv",
-  "messages": ["Create a scatter plot of GDP vs life expectancy"],
-  "tags": ["point", "single-turn"],
-  "rubric": "Must use point mark. x=gdp_billions, y=life_expectancy. Must have title and tooltip enabled."
+  "messages": [
+    "Create a scatter plot of GDP vs life expectancy"
+  ],
+  "tags": [
+    "point",
+    "single-turn"
+  ],
+  "rubric": "Must use point mark. x=gdp_billions, y=life_expectancy. Must have title and tooltip enabled.",
+  "csvs": {
+    "countries": "countries.csv"
+  }
 }

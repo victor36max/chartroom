@@ -1,11 +1,19 @@
 {
   "name": "multi-turn-add-element",
   "description": "Multi-turn: create chart then add a reference line",
-  "csv": "stocks.csv",
   "messages": [
     "Plot Google (GOOG) stock price over time",
     "Add a horizontal line at the average price"
   ],
-  "tags": ["line", "rule", "multi-turn", "refinement", "composition"],
-  "rubric": "Final chart must show GOOG stock price as a line over time AND a horizontal rule mark at the average price. The reference line should be visually distinct (different color or dashed). Both marks must be present. Only Google data should be shown, not other stocks."
+  "tags": [
+    "line",
+    "rule",
+    "multi-turn",
+    "refinement",
+    "composition"
+  ],
+  "rubric": "Final chart must show GOOG stock price as a line over time AND a horizontal rule mark at the average price. The reference line should be visually distinct (different color or dashed). Both marks must be present. Only Google data should be shown, not other stocks.",
+  "csvs": {
+    "stocks": "stocks.csv"
+  }
 }

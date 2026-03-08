@@ -19,10 +19,10 @@ function createWarningLogger(warnings: string[]): LoggerInterface {
 
 export function validateSpec(
   spec: Record<string, unknown>,
-  data: Record<string, unknown>[]
+  datasets: Record<string, Record<string, unknown>[]>
 ): { valid: true; warnings: string[] } | { valid: false; error: string } {
   try {
-    const fullSpec = injectData(spec, data);
+    const fullSpec = injectData(spec, datasets);
     const warnings: string[] = [];
     vl.compile(fullSpec as unknown as vl.TopLevelSpec, {
       logger: createWarningLogger(warnings),

@@ -3,7 +3,7 @@ import type { ChartSpec } from "../../src/types";
 export interface EvalCase {
   name: string;
   description?: string;
-  csv: string; // filename in evals/data/
+  csvs: Record<string, string>; // { datasetName: "filename.csv" }
   messages: string[];
   tags: string[];
   rubric?: string; // plain-text description fed to judge

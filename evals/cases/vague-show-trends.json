@@ -1,8 +1,16 @@
 {
   "name": "vague-show-trends",
   "description": "Vague trend request on time-series data",
-  "csv": "stocks.csv",
-  "messages": ["Show me the trends"],
-  "tags": ["vague", "single-turn", "line"],
-  "rubric": "Should produce a line or area chart showing stock prices (close) over time (date). Must distinguish multiple symbols visually (color/stroke). FAIL if model asks for clarification without rendering anything."
+  "messages": [
+    "Show me the trends"
+  ],
+  "tags": [
+    "vague",
+    "single-turn",
+    "line"
+  ],
+  "rubric": "Should produce a line or area chart showing stock prices (close) over time (date). Must distinguish multiple symbols visually (color/stroke). FAIL if model asks for clarification without rendering anything.",
+  "csvs": {
+    "stocks": "stocks.csv"
+  }
 }

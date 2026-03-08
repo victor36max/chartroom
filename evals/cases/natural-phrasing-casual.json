@@ -1,8 +1,16 @@
 {
   "name": "natural-phrasing-casual",
   "description": "Casual/colloquial phrasing for a clear request",
-  "csv": "fitness.csv",
-  "messages": ["yo can you chart my steps over time"],
-  "tags": ["vague", "single-turn", "line"],
-  "rubric": "Must render a line or scatter chart showing steps on y-axis and date on x-axis. Should handle the casual tone without issue. Multiple users in dataset — acceptable to show all users or aggregate. Must have readable axes."
+  "messages": [
+    "yo can you chart my steps over time"
+  ],
+  "tags": [
+    "vague",
+    "single-turn",
+    "line"
+  ],
+  "rubric": "Must render a line or scatter chart showing steps on y-axis and date on x-axis. Should handle the casual tone without issue. Multiple users in dataset — acceptable to show all users or aggregate. Must have readable axes.",
+  "csvs": {
+    "fitness": "fitness.csv"
+  }
 }

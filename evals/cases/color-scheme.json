@@ -1,8 +1,16 @@
 {
   "name": "color-scheme",
   "description": "Heatmap with specific color scheme",
-  "csv": "activity.csv",
-  "messages": ["Heatmap of activity by day and hour using the yelloworangered color scheme"],
-  "tags": ["cell", "single-turn", "color"],
-  "rubric": "Must use rect mark. color.scheme should be 'yelloworangered' or similar warm sequential scheme. x=hour, y=day, color=count."
+  "messages": [
+    "Heatmap of activity by day and hour using the yelloworangered color scheme"
+  ],
+  "tags": [
+    "cell",
+    "single-turn",
+    "color"
+  ],
+  "rubric": "Must use rect mark. color.scheme should be 'yelloworangered' or similar warm sequential scheme. x=hour, y=day, color=count.",
+  "csvs": {
+    "activity": "activity.csv"
+  }
 }

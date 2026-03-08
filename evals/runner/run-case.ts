@@ -2,12 +2,14 @@ import { generateText, stepCountIs, type ModelMessage, type ToolSet } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { buildSystemPrompt } from "../../src/lib/agent/system-prompt";
 import { createTools } from "../../src/lib/agent/tools";
-import { extractMetadata, metadataToContext } from "../../src/lib/csv/parser";
+import { extractMetadata, datasetsToContext } from "../../src/lib/csv/parser";
+import type { DatasetMap } from "../../src/types";
 import { renderChart } from "./render";
 import type { EvalCase, CaseResult } from "./types";
 import type { ChartSpec } from "../../src/types";
 import type { Page } from "playwright";
 import { validateSpec } from "../../src/lib/chart/validate-spec";
+import { pruneOldToolResults } from "../../src/lib/agent/prune-context";
 import Papa from "papaparse";
 import fs from "fs";
 import path from "path";
@@ -37,27 +39,31 @@ export async function runCase(
 ): Promise<CaseResult> {
   const start = Date.now();
 
-  // Load and parse CSV
-  let csvData: Record<string, unknown>[];
+  // Load datasets
+  const datasets: Record<string, Record<string, unknown>[]> = {};
+  const datasetMap: DatasetMap = {};
   try {
-    csvData = loadCSV(evalCase.csv);
-  } catch {
+    for (const [name, filename] of Object.entries(evalCase.csvs)) {
+      const data = loadCSV(filename);
+      datasets[name] = data;
+      datasetMap[name] = { data, metadata: extractMetadata(data), errors: [] };
+    }
+  } catch (err) {
     return {
       name: evalCase.name,
       success: false,
-      error: `CSV not found: ${evalCase.csv}`,
+      error: `CSV load error: ${err instanceof Error ? err.message : String(err)}`,
       steps: 0,
       toolCalls: [],
       durationMs: Date.now() - start,
     };
   }
 
-  const metadata = extractMetadata(csvData);
-  const dataContext = metadataToContext(metadata);
+  const dataContext = datasetsToContext(datasetMap);
   const system = buildSystemPrompt(dataContext);
 
   // Build eval tools — add execute + toModelOutput to render_chart
-  const baseTools = createTools();
+  const baseTools = createTools(datasets);
   let capturedSpec: ChartSpec | undefined;
   let screenshotBuffer: Buffer | undefined;
 
@@ -72,12 +78,12 @@ export async function runCase(
         capturedSpec = chartSpec;
 
         // Validate spec before rendering (matches production behavior)
-        const validation = validateSpec(chartSpec as unknown as Record<string, unknown>, csvData);
+        const validation = validateSpec(chartSpec as unknown as Record<string, unknown>, datasets);
         if (!validation.valid) {
           return { success: false as const, error: `Vega-Lite compile error: ${validation.error}. Fix the spec and try again.` };
         }
 
-        const result = await renderChart(page, chartSpec, csvData);
+        const result = await renderChart(page, chartSpec, datasets);
         if (!result.png) {
           return { success: false as const, error: result.error ?? "Render returned no image" };
         }
@@ -127,6 +133,7 @@ export async function runCase(
   const allToolCallNames: string[] = [];
   let totalSteps = 0;
   let lastError: string | undefined;
+  const debugLog: string[] = [];
 
   const conversationMessages: ModelMessage[] = [];
 
@@ -136,11 +143,12 @@ export async function runCase(
     let succeeded = false;
     for (let attempt = 0; attempt < 3 && !succeeded; attempt++) {
       try {
+        const prunedMessages = pruneOldToolResults(conversationMessages);
         const result = await Promise.race([
           generateText({
             model,
             system,
-            messages: conversationMessages,
+            messages: prunedMessages,
             tools: evalTools as ToolSet,
             stopWhen: stepCountIs(MAX_STEPS),
           }),
@@ -150,9 +158,26 @@ export async function runCase(
         ]);
 
         totalSteps += result.steps.length;
-        for (const step of result.steps) {
+
+        // Debug logging: capture model text and tool calls per step
+        debugLog.push(`--- Turn ${conversationMessages.length} (attempt ${attempt + 1}) ---`);
+        debugLog.push(`Steps: ${result.steps.length}, finishReason: ${result.finishReason}`);
+        if (result.text) {
+          debugLog.push(`Model text: ${result.text}`);
+        }
+        for (let si = 0; si < result.steps.length; si++) {
+          const step = result.steps[si];
+          debugLog.push(`  Step ${si + 1}: finishReason=${step.finishReason}, toolCalls=${step.toolCalls.length}`);
+          if (step.text) {
+            debugLog.push(`  Text: ${step.text.slice(0, 500)}`);
+          }
           for (const tc of step.toolCalls) {
             allToolCallNames.push(tc.toolName);
+            debugLog.push(`  Tool: ${tc.toolName}(${JSON.stringify(tc.input).slice(0, 300)})`);
+          }
+          for (const tr of step.toolResults) {
+            const val = typeof tr.output === "string" ? tr.output : JSON.stringify(tr.output);
+            debugLog.push(`  Result[${tr.toolName}]: ${val.slice(0, 300)}`);
           }
         }
 
@@ -172,6 +197,11 @@ export async function runCase(
     if (lastError) break;
   }
 
+  // Save debug log
+  const logsDir = path.join(outputDir, "logs");
+  fs.mkdirSync(logsDir, { recursive: true });
+  fs.writeFileSync(path.join(logsDir, `${evalCase.name}.log`), debugLog.join("\n"), "utf8");
+
   // Save screenshot and SVG
   let screenshotPath: string | undefined;
   let screenshotBase64: string | undefined;
@@ -186,9 +216,7 @@ export async function runCase(
 
   return {
     name: evalCase.name,
-    success: evalCase.expectDecline
-      ? !lastError && capturedSpec === undefined
-      : !lastError && capturedSpec !== undefined,
+    success: !lastError && capturedSpec !== undefined,
     error: lastError,
     finalSpec: capturedSpec,
     screenshotPath,

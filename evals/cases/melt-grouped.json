@@ -1,8 +1,17 @@
 {
   "name": "melt-grouped",
   "description": "Grouped bar chart using fold and faceting",
-  "csv": "survey.csv",
-  "messages": ["Show q1, q2, q3 scores side by side for each department as grouped bars"],
-  "tags": ["bar", "single-turn", "fold", "grouped"],
-  "rubric": "Must use fold transform. Must use xOffset or column for side-by-side grouping (not stacked). Color by folded key."
+  "messages": [
+    "Show q1, q2, q3 scores side by side for each department as grouped bars"
+  ],
+  "tags": [
+    "bar",
+    "single-turn",
+    "fold",
+    "grouped"
+  ],
+  "rubric": "Must use fold transform. Must use xOffset or column for side-by-side grouping (not stacked). Color by folded key.",
+  "csvs": {
+    "survey": "survey.csv"
+  }
 }

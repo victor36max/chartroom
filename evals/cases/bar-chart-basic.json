@@ -1,8 +1,16 @@
 {
   "name": "bar-chart-basic",
   "description": "Simple bar chart of revenue by region",
-  "csv": "sales.csv",
-  "messages": ["Show me a bar chart of total revenue by region"],
-  "tags": ["bar", "single-turn", "aggregation"],
-  "rubric": "Should produce a bar chart with region and summed revenue. Must have a title. Both horizontal and vertical orientations are acceptable."
+  "messages": [
+    "Show me a bar chart of total revenue by region"
+  ],
+  "tags": [
+    "bar",
+    "single-turn",
+    "aggregation"
+  ],
+  "rubric": "Should produce a bar chart with region and summed revenue. Must have a title. Both horizontal and vertical orientations are acceptable.",
+  "csvs": {
+    "sales": "sales.csv"
+  }
 }

@@ -65,7 +65,7 @@ export async function initRenderer(pageCount = 1): Promise<{ browser: Browser; p
 export async function renderChart(
   page: Page,
   spec: ChartSpec,
-  data: Record<string, unknown>[]
+  datasets: Record<string, Record<string, unknown>[]>
 ): Promise<{ png: Buffer; warnings: string[]; error?: undefined } | { png?: undefined; warnings?: undefined; error: string }> {
   try {
     // Capture console warnings emitted by Vega-Lite during rendering
@@ -78,15 +78,15 @@ export async function renderChart(
     page.on("console", onConsole);
 
     const evalError = await page.evaluate(
-      ([spec, data]) => {
+      ([spec, datasets]) => {
         const fn = (window as unknown as {
           renderVegaLite: (s: unknown, d: unknown) => Promise<void>;
         }).renderVegaLite;
-        return fn(spec, data).then(() => null).catch((err: unknown) =>
+        return fn(spec, datasets).then(() => null).catch((err: unknown) =>
           err instanceof Error ? err.message : String(err)
         );
       },
-      [spec, data] as [unknown, unknown]
+      [spec, datasets] as [unknown, unknown]
     );
 
     // Wait for Vega to finish rendering (and emitting warnings)

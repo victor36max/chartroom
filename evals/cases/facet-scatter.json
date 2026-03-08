@@ -1,8 +1,16 @@
 {
   "name": "facet-scatter",
   "description": "Faceted scatter plot by continent",
-  "csv": "countries.csv",
-  "messages": ["Scatter plot of population vs life expectancy, with a separate panel for each continent"],
-  "tags": ["point", "single-turn", "facet"],
-  "rubric": "Must use point mark with fx=continent (or fy). x=population_millions, y=life_expectancy. Facet scale should be configured."
+  "messages": [
+    "Scatter plot of population vs life expectancy, with a separate panel for each continent"
+  ],
+  "tags": [
+    "point",
+    "single-turn",
+    "facet"
+  ],
+  "rubric": "Must use point mark with fx=continent (or fy). x=population_millions, y=life_expectancy. Facet scale should be configured.",
+  "csvs": {
+    "countries": "countries.csv"
+  }
 }

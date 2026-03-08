@@ -1,8 +1,19 @@
 {
   "name": "multi-turn-three-steps",
   "description": "Three-step iterative refinement",
-  "csv": "stocks.csv",
-  "messages": ["Line chart of stock prices over time", "Add point markers at each data point", "Make the lines smoother using a catmull-rom curve"],
-  "tags": ["line", "point", "multi-turn", "composition"],
-  "rubric": "Final chart must have line mark with curve='catmull-rom' (or similar smooth curve). Must have dots/markers at data points. stroke=symbol for multi-series."
+  "messages": [
+    "Line chart of stock prices over time",
+    "Add point markers at each data point",
+    "Make the lines smoother using a catmull-rom curve"
+  ],
+  "tags": [
+    "line",
+    "point",
+    "multi-turn",
+    "composition"
+  ],
+  "rubric": "Final chart must have line mark with curve='catmull-rom' (or similar smooth curve). Must have dots/markers at data points. stroke=symbol for multi-series.",
+  "csvs": {
+    "stocks": "stocks.csv"
+  }
 }

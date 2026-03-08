@@ -1,5 +1,5 @@
 import Papa from "papaparse";
-import type { ParsedCSV, ColumnMeta, DataMetadata } from "@/types";
+import type { ParsedCSV, ColumnMeta, DataMetadata, DatasetMap } from "@/types";
 
 // Matches common date formats: YYYY-MM-DD, YYYY-MM, YYYY-MM-DDTHH:mm, YYYY/MM/DD, MM/DD/YYYY
 const ISO_DATE_RE = /^(\d{4}[-/]\d{2}([-/]\d{2})?(T\d{2}:\d{2}(:\d{2})?)?|\d{1,2}\/\d{1,2}\/\d{4})$/;
@@ -151,6 +151,42 @@ function detectWideFormat(columns: ColumnMeta[]): string[] {
   return hints;
 }
 
+export function fileNameToDatasetName(fileName: string): string {
+  return fileName;
+}
+
+export function datasetsToContext(datasets: DatasetMap): string {
+  const entries = Object.entries(datasets);
+  if (entries.length === 0) return "";
+  if (entries.length === 1) {
+    const [name, parsed] = entries[0];
+    return `Dataset "${name}" (reference with \`{ "url": "${name}" }\`):\n${metadataToContext(parsed.metadata)}`;
+  }
+  const sections = entries.map(([name, parsed]) =>
+    `### ${name} (reference with \`{ "url": "${name}" }\`)\n${metadataToContext(parsed.metadata)}`
+  );
+
+  // Detect shared column names across datasets as potential join keys
+  const columnSets = entries.map(([name, parsed]) => ({
+    name,
+    cols: new Set(parsed.metadata.columns.map(c => c.name)),
+  }));
+  const joinKeys: string[] = [];
+  for (let i = 0; i < columnSets.length; i++) {
+    for (let j = i + 1; j < columnSets.length; j++) {
+      for (const col of columnSets[i].cols) {
+        if (columnSets[j].cols.has(col)) {
+          joinKeys.push(`\`${col}\` (${columnSets[i].name} ↔ ${columnSets[j].name})`);
+        }
+      }
+    }
+  }
+
+  const header = `${entries.length} datasets available. Use lookup transforms to join across datasets.`;
+  const keyHint = joinKeys.length > 0 ? `\nJoin keys: ${joinKeys.join(", ")}` : "";
+  return `${header}${keyHint}\n\n${sections.join("\n\n")}`;
+}
+
 export function metadataToContext(metadata: DataMetadata): string {
   const lines = [
     `Dataset: ${metadata.rowCount} rows, ${metadata.columns.length} columns`,
@@ -164,6 +200,18 @@ export function metadataToContext(metadata: DataMetadata): string {
     if (col.min !== undefined) desc += `, range: ${col.min}–${col.max}`;
     if (col.sample.length > 0) desc += ` — sample: ${col.sample.slice(0, 3).join(", ")}`;
     lines.push(desc);
+  }
+
+  // Warn about high-cardinality categorical columns
+  const highCardCols = metadata.columns.filter(
+    (c) => c.type === "string" && c.unique !== undefined && c.unique > 30
+  );
+  if (highCardCols.length > 0) {
+    lines.push("");
+    lines.push("⚠ High-cardinality columns:");
+    for (const col of highCardCols) {
+      lines.push(`  - ${col.name}: ${col.unique} unique values — too many for a categorical axis. Consider filtering to top/bottom N, binning, or using a different chart type.`);
+    }
   }
 
   const wideHints = detectWideFormat(metadata.columns);

@@ -1,12 +1,20 @@
 {
   "name": "multi-turn-3-steps",
   "description": "Three-step refinement: sort then add labels",
-  "csv": "sales.csv",
   "messages": [
     "Bar chart of revenue by product",
     "Sort descending",
     "Add the values as labels on each bar"
   ],
-  "tags": ["bar", "text", "multi-turn", "refinement", "composition"],
-  "rubric": "Final chart must be a bar chart sorted by revenue descending with text labels showing the revenue value on or near each bar. Must have all three refinements applied: bar chart, sorted descending, and text labels."
+  "tags": [
+    "bar",
+    "text",
+    "multi-turn",
+    "refinement",
+    "composition"
+  ],
+  "rubric": "Final chart must be a bar chart sorted by revenue descending with text labels showing the revenue value on or near each bar. Must have all three refinements applied: bar chart, sorted descending, and text labels.",
+  "csvs": {
+    "sales": "sales.csv"
+  }
 }

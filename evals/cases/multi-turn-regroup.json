@@ -1,11 +1,18 @@
 {
   "name": "multi-turn-regroup",
   "description": "Multi-turn: change the grouping dimension",
-  "csv": "sales.csv",
   "messages": [
     "Show revenue by product",
     "Actually, group it by region instead"
   ],
-  "tags": ["bar", "multi-turn", "refinement", "aggregation"],
-  "rubric": "Final chart must show revenue grouped by region (North, South, East, West), NOT by product. The first chart's grouping should be completely replaced, not combined."
+  "tags": [
+    "bar",
+    "multi-turn",
+    "refinement",
+    "aggregation"
+  ],
+  "rubric": "Final chart must show revenue grouped by region (North, South, East, West), NOT by product. The first chart's grouping should be completely replaced, not combined.",
+  "csvs": {
+    "sales": "sales.csv"
+  }
 }

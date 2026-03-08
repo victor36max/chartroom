@@ -9,12 +9,12 @@ import type { Result } from "vega-embed";
 
 interface ChartRendererProps {
   spec: ChartSpec;
-  data: Record<string, unknown>[];
+  datasets: Record<string, Record<string, unknown>[]>;
   themeId?: ThemeId;
   onViewReady?: (result: Result) => void;
 }
 
-export function ChartRenderer({ spec, data, themeId = "default", onViewReady }: ChartRendererProps) {
+export function ChartRenderer({ spec, datasets, themeId = "default", onViewReady }: ChartRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const resultRef = useRef<Result | null>(null);
 
@@ -24,7 +24,7 @@ export function ChartRenderer({ spec, data, themeId = "default", onViewReady }: 
 
     let cancelled = false;
 
-    renderVegaLite(container, spec as unknown as Record<string, unknown>, data, themeId)
+    renderVegaLite(container, spec as unknown as Record<string, unknown>, datasets, themeId)
       .then((result) => {
         if (cancelled) {
           result.view.finalize();
@@ -51,7 +51,7 @@ export function ChartRenderer({ spec, data, themeId = "default", onViewReady }: 
       setCurrentVegaResult(null);
       setExportView(null);
     };
-  }, [spec, data, themeId, onViewReady]);
+  }, [spec, datasets, themeId, onViewReady]);
 
   return (
     <div className="flex items-center justify-center p-6 h-full">

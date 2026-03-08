@@ -74,11 +74,11 @@ export function getThemeConfig(themeId: ThemeId): Config {
 export async function renderVegaLite(
   container: HTMLElement,
   spec: Record<string, unknown>,
-  data: Record<string, unknown>[],
+  datasets: Record<string, Record<string, unknown>[]>,
   themeId: ThemeId = "default"
 ): Promise<Result> {
   const cleaned = stripStyling(spec);
-  const withData = injectData(cleaned, data);
+  const withData = injectData(cleaned, datasets);
   const withDefaults = {
     width: 500,
     height: 300,

@@ -15,13 +15,13 @@ describe("validateSpec", () => {
         y: { field: "value", type: "quantitative" },
       },
     };
-    const result = validateSpec(spec, ROWS);
+    const result = validateSpec(spec, { csv: ROWS });
     expect(result.valid).toBe(true);
   });
 
   it("returns error for spec with missing mark", () => {
     const spec = { encoding: { x: { field: "category" } } };
-    const result = validateSpec(spec, ROWS);
+    const result = validateSpec(spec, { csv: ROWS });
     expect(result.valid).toBe(false);
     expect(result.error).toBeDefined();
   });
@@ -33,7 +33,7 @@ describe("validateSpec", () => {
         { mark: "rule", encoding: { y: { datum: 15 } } },
       ],
     };
-    const result = validateSpec(spec, ROWS);
+    const result = validateSpec(spec, { csv: ROWS });
     expect(result.valid).toBe(true);
   });
 
@@ -45,7 +45,7 @@ describe("validateSpec", () => {
         color: { field: "category", type: "nominal" },
       },
     };
-    const result = validateSpec(spec, ROWS);
+    const result = validateSpec(spec, { csv: ROWS });
     expect(result.valid).toBe(true);
   });
 
@@ -57,7 +57,7 @@ describe("validateSpec", () => {
         y: { field: "value", type: "quantitative" },
       },
     };
-    const result = validateSpec(spec, ROWS);
+    const result = validateSpec(spec, { csv: ROWS });
     expect(result.valid).toBe(true);
   });
 });

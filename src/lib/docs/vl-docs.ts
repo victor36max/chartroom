@@ -15,15 +15,18 @@ export const TOPIC_IDS = [
   "fold",
   "filter",
   "calculate",
+  "lookup",
   "layer",
   "facet",
   "repeat",
+  "concat",
   "color-scale",
   "position-scales",
   "styling",
   "layout-patterns",
   "composite-patterns",
   "editing-charts",
+  "pre-render-checklist",
 ] as const;
 
 export type TopicId = (typeof TOPIC_IDS)[number];
@@ -161,6 +164,13 @@ Interpolation options: linear, monotone, step, step-before, step-after, basis, c
 - \`filled: true\` fills the point (default is hollow circle)
 - \`shape\` encoding: circle, square, cross, diamond, triangle-up, etc.
 
+**Aggregated scatter (multiple rows per entity):**
+When each point represents an aggregate of many rows (e.g., one point per stock symbol from daily data), use a \`transform\` with explicit \`groupby\` — do NOT use inline \`aggregate\` alone:
+\`\`\`json
+{ "transform": [{ "aggregate": [{ "op": "mean", "field": "close", "as": "avg_price" }, { "op": "mean", "field": "volume", "as": "avg_volume" }], "groupby": ["symbol"] }], "mark": { "type": "point", "filled": true }, "encoding": { "x": { "field": "avg_price", "type": "quantitative" }, "y": { "field": "avg_volume", "type": "quantitative" }, "color": { "field": "symbol", "type": "nominal" } } }
+\`\`\`
+**WARNING:** Inline \`aggregate\` in encoding (without transform groupby) collapses ALL rows into a single global point. Always use transform + groupby for aggregated scatter plots.
+
 **Gotchas:**
 - Use \`point\` not \`dot\` (Observable Plot term)
 - \`filled: true\` is needed for filled circles`,
@@ -264,10 +274,23 @@ For horizontal bars use \`dx\` (not \`dy\`) and \`align: "left"\` to place label
 \`\`\`
 For dense datasets, use smaller fontSize (9-10) and offset labels away from points with dx/dy.
 
+**Labels from lookup fields on aggregated bars:**
+When labeling bars with a field from a lookup transform (e.g., manager name), the text mark must match the bar's aggregation to position correctly. Use \`aggregate: "min"\` (or "max") on the lookup field for the text encoding, and match the y aggregate:
+\`\`\`json
+{ "data": { "url": "orders" },
+  "transform": [{ "lookup": "region", "from": { "data": { "url": "regions" }, "key": "region", "fields": ["manager"] } }],
+  "layer": [
+    { "mark": "bar", "encoding": { "x": { "field": "region", "type": "nominal" }, "y": { "aggregate": "sum", "field": "revenue", "type": "quantitative" } } },
+    { "mark": { "type": "text", "dy": -8 }, "encoding": { "x": { "field": "region", "type": "nominal" }, "y": { "aggregate": "sum", "field": "revenue", "type": "quantitative" }, "text": { "aggregate": "min", "field": "manager" } } }
+  ]
+}
+\`\`\`
+
 **Gotchas:**
 - Always layer text with the chart mark — text alone is rarely useful
 - Use \`dy: -8\` to position labels above bars
-- Use \`dx: 7, align: "left"\` to position labels to the right of scatter points`,
+- Use \`dx: 7, align: "left"\` to position labels to the right of scatter points
+- For lookup fields on aggregated charts, aggregate the text field too (min/max) so each bar gets one label`,
   },
 
   tick: {
@@ -333,7 +356,8 @@ For dense datasets, use smaller fontSize (9-10) and offset labels away from poin
 - Always use \`theta\` for the value, not x/y
 - Always use \`color\` for the category
 - For labels, layer text with \`radius\` > outerRadius
-- \`stack: true\` on theta is needed for label positioning`,
+- \`stack: true\` on theta is needed for label positioning
+- Don't use a separate \`aggregate\` transform with arc — use inline \`aggregate\` in the theta encoding instead (e.g., \`"theta": { "aggregate": "sum", "field": "revenue" }\`)`,
   },
 
   boxplot: {
@@ -442,8 +466,13 @@ Combos: yearmonth, yearmonthdate, monthdate, hoursminutes
 "transform": [{ "aggregate": [{ "op": "mean", "field": "score", "as": "avg_score" }], "groupby": ["category"] }]
 \`\`\`
 
+**When to use transform vs inline aggregate:**
+- Inline aggregate (in encoding) works well for bars/lines — the categorical axis naturally defines the groups.
+- For **scatterplots**, use transform with explicit \`groupby\` — inline aggregate groups by ALL encoding channels simultaneously, which can collapse data to fewer points than expected (often just one global point).
+
 **Gotchas:**
-- Prefer inline \`aggregate\` in encoding over transform for simple cases
+- Prefer inline \`aggregate\` in encoding over transform for simple bar/line cases
+- For scatter plots with aggregation, ALWAYS use transform + groupby
 - \`count\` aggregate doesn't need a \`field\`
 - bin creates a range — the y axis should use \`aggregate: "count"\`
 - timeUnit groups dates — use with temporal type`,
@@ -592,6 +621,52 @@ For bottom N, change sort order to \`"ascending"\`.
 - Chain multiple calculates for complex derivations`,
   },
 
+  lookup: {
+    title: "Lookup Transform (Cross-Dataset Joins)",
+    content: `Joins fields from a secondary dataset into the primary dataset. This is a left join — rows without a match get null values.
+
+**Basic lookup (join two datasets):**
+\`\`\`json
+{
+  "data": { "url": "orders.csv" },
+  "transform": [{
+    "lookup": "product_id",
+    "from": {
+      "data": { "url": "products.csv" },
+      "key": "id",
+      "fields": ["name", "category"]
+    }
+  }],
+  "mark": "bar",
+  "encoding": {
+    "x": { "field": "name", "type": "nominal" },
+    "y": { "field": "amount", "type": "quantitative", "aggregate": "sum" },
+    "color": { "field": "category", "type": "nominal" }
+  }
+}
+\`\`\`
+
+**Properties:**
+- \`lookup\`: the field name in the primary dataset to match on
+- \`from.data\`: the secondary dataset reference (\`{ "url": "..." }\`)
+- \`from.key\`: the field name in the secondary dataset to match on
+- \`from.fields\`: array of field names to bring from secondary into primary. If omitted, all fields are included.
+- **IMPORTANT:** \`fields\` MUST be inside \`from\`, not at the top level. Wrong: \`{ "lookup": "x", "fields": [...], "from": {...} }\`. Correct: \`{ "lookup": "x", "from": { ..., "fields": [...] } }\`.
+
+**Common patterns:**
+- Orders + Products: lookup product_id, join product name/category
+- Sales + Regions: lookup region_code, join region name/population
+- Students + Courses: lookup course_id, join course name/credits
+
+**Multiple lookups:** Chain multiple lookup transforms to join more than two datasets:
+\`\`\`json
+"transform": [
+  { "lookup": "product_id", "from": { "data": { "url": "products.csv" }, "key": "id", "fields": ["name"] } },
+  { "lookup": "region_id", "from": { "data": { "url": "regions.csv" }, "key": "id", "fields": ["region_name"] } }
+]
+\`\`\``,
+  },
+
   layer: {
     title: "Layer Composition (multi-mark)",
     content: `Overlays multiple marks in the same view. Essential for combining chart types.
@@ -694,6 +769,38 @@ Key: use \`datum\` (not \`field\`) for constant-value reference lines. Use \`str
 - \`{ "repeat": "column" }\` in field references the repeated dimension
 - For layer repeat, use \`datum\` (not \`field\`) in color for series labels
 - Alternative to fold transform for multi-metric views`,
+  },
+
+  concat: {
+    title: "Concat Composition (side-by-side / stacked panels)",
+    content: `Creates multiple independent chart panels arranged side by side or vertically. Unlike facet (same spec, different data subsets), concat allows **different specs and different datasets** per panel.
+
+**Horizontal concat (side by side):**
+\`\`\`json
+{
+  "hconcat": [
+    { "data": { "url": "orders" }, "mark": "line", "encoding": { "x": { "field": "order_date", "type": "temporal", "timeUnit": "yearmonth" }, "y": { "aggregate": "sum", "field": "revenue", "type": "quantitative" } }, "title": "Monthly Revenue" },
+    { "data": { "url": "stocks" }, "mark": "line", "encoding": { "x": { "field": "date", "type": "temporal" }, "y": { "field": "close", "type": "quantitative" }, "color": { "field": "symbol", "type": "nominal" } }, "title": "Stock Prices" }
+  ]
+}
+\`\`\`
+
+**Vertical concat (stacked):**
+\`\`\`json
+{ "vconcat": [ { "mark": "bar", ... }, { "mark": "line", ... } ] }
+\`\`\`
+
+**When to use concat vs facet:**
+- **concat** — different chart types, different datasets, or different encodings per panel
+- **facet** — same chart type split by a category field (small multiples)
+
+**Each panel is a full spec:** Each element in \`hconcat\`/\`vconcat\` has its own \`data\`, \`mark\`, \`encoding\`, and optional \`transform\`.
+
+**Gotchas:**
+- Do NOT use facet when you want two panels showing different datasets — use hconcat/vconcat
+- Each panel can reference a different dataset via \`{ "url": "..." }\`
+- Panels have independent scales by default
+- Use \`resolve: { scale: { ... } }\` to share scales across panels if needed`,
   },
 
   "color-scale": {
@@ -957,6 +1064,44 @@ Add a layer with \`{ "mark": { "type": "text", "dy": -8 }, "encoding": { "text":
 **Remove stacking:** Add \`"stack": false\` or switch to grouped with \`xOffset\`.
 
 **Key principle:** Modify the minimum necessary. Don't rebuild from scratch.`,
+  },
+
+  "pre-render-checklist": {
+    title: "Pre-Render Checklist (Correctness & Style)",
+    content: `Verify these items BEFORE every \`render_chart\` call.
+
+### Correctness (SHOULD — verify before every render)
+1. **Type matching** — categories -> nominal/ordinal, numbers -> quantitative, dates -> temporal.
+2. **Aggregation** — if multiple rows per x-value, use \`aggregate\` on the quantitative channel. Don't aggregate when each row is one observation you want to plot individually.
+   - For **scatterplots with grouped data** (e.g., many rows per stock symbol), use \`transform\` with explicit \`groupby\` — inline aggregate alone collapses everything to a single point.
+   - **Large dataset scatter** — if dataset has >500 rows, a naive scatter will overplot. Either: aggregate by group first, use small opacity (0.2–0.3), bin into heatmap (\`rect\` mark), or explain the density issue to the user.
+   - **High cardinality** — if a nominal axis will show >30 unique values, filter to top/bottom N (aggregate → window rank → filter). Explain to the user why you filtered.
+3. **Reducer choice** — match the user's words:
+   - "average", "mean", "avg" -> \`"mean"\`
+   - "total", "sum", "combined" -> \`"sum"\`
+   - "count", "how many", "number of" -> \`"count"\`
+   When ambiguous, prefer \`"sum"\` for revenue/sales/counts, \`"mean"\` for scores/ratings/measurements.
+4. **Arc/pie charts** — use \`theta\` and \`color\`, not x/y.
+5. **Title** — always include a descriptive \`title\`.
+6. **Multi-series** — use \`color\` encoding for multi-series (not separate marks). Fold wide data first if needed.
+7. **Ordinal months/weekdays** — add explicit \`sort\` array for chronological order (e.g. \`["Jan","Feb",...,"Dec"]\`).
+8. **Sort bars by value** — put \`sort\` on the CATEGORICAL encoding channel, referencing the OTHER axis:
+   - Vertical bar sorted descending: \`"x": { "field": "category", "type": "nominal", "sort": "-y" }\`
+   - Horizontal bar sorted descending: \`"y": { "field": "category", "type": "nominal", "sort": "-x" }\`
+   Never put sort on the quantitative axis. Never use \`sort: "-x"\` on the x channel.
+9. **Rule layers** — put each layer's encoding inside the layer, not shared, to avoid rule marks inheriting categorical x/y.
+10. **Reference lines** — use \`layer\` with a \`rule\` mark. Horizontal: \`"y": { "datum": <value> }\`. Vertical: \`"x": { "datum": <value> }\`. Average: \`"y": { "aggregate": "mean", "field": "<col>" }\`.
+11. **Text labels on charts** — when the user requests labels (on scatter plots, bars, etc.), use \`layer\` with a \`text\` mark. For scatter labels, use \`dx\`/\`dy\` offsets to avoid overlapping points.
+   - **Transform field names** — in \`window\`, \`regression\`, \`joinaggregate\`, and \`calculate\` transforms, always use actual column names from the dataset (not abstract names like "x" or "y").
+   - **Legend for layered lines** — when overlaying lines with different meanings (e.g., raw + smoothed), use a shared \`color\` encoding with explicit domain/range, or fold the data, so a legend appears. Don't rely on hard-coded colors without a legend.
+12. **Top/bottom N filtering** — use aggregate → window (rank) → filter transforms. Look up \`filter\` docs for the pattern.
+
+### Style (PREFER — unless user asks otherwise)
+13. **Stacked vs grouped** — stacking is default when color is added to bars/areas. Only use \`xOffset\` for explicitly grouped/side-by-side requests.
+14. **Strip plots** — prefer \`tick\` mark for strip/rug plots. Ticks show distribution density better than points.
+15. **Dense line charts** — consider \`interpolate: "monotone"\` for smoother rendering with many data points.
+16. **Part-of-whole** — prefer arc/pie chart for "percentage of total" or "share" requests.
+17. **Tooltip** — \`tooltip: true\` in mark properties for interactivity, or explicit tooltip encoding for custom tooltips.`,
   },
 };
 

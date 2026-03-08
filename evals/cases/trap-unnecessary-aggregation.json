@@ -1,8 +1,17 @@
 {
   "name": "trap-unnecessary-aggregation",
   "description": "Trap: data already at correct granularity, aggregation is unnecessary",
-  "csv": "activity.csv",
-  "messages": ["Heatmap of activity count by day and hour"],
-  "tags": ["trap-case", "cell", "aggregation", "single-turn"],
-  "rubric": "activity.csv is ALREADY one row per (day, hour) pair. The model should use cell mark with x=hour, y=day, fill=count WITHOUT any group transform. If the model adds group with mean/sum, it still works (mean/sum of one value = that value), but it's unnecessary. BEST: cell with direct fill=count. ACCEPTABLE: cell with group aggregate that produces same result. FAIL: using aggregate instead of group (loses one dimension)."
+  "messages": [
+    "Heatmap of activity count by day and hour"
+  ],
+  "tags": [
+    "trap-case",
+    "cell",
+    "aggregation",
+    "single-turn"
+  ],
+  "rubric": "activity.csv is ALREADY one row per (day, hour) pair. The model should use cell mark with x=hour, y=day, fill=count WITHOUT any group transform. If the model adds group with mean/sum, it still works (mean/sum of one value = that value), but it's unnecessary. BEST: cell with direct fill=count. ACCEPTABLE: cell with group aggregate that produces same result. FAIL: using aggregate instead of group (loses one dimension).",
+  "csvs": {
+    "activity": "activity.csv"
+  }
 }

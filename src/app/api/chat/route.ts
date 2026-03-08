@@ -12,68 +12,11 @@ const openrouter = createOpenRouter({
 });
 import { buildSystemPrompt } from "@/lib/agent/system-prompt";
 import { createTools } from "@/lib/agent/tools";
+import { pruneOldToolResults } from "@/lib/agent/prune-context";
 import { resolveModelId, type ModelTier } from "@/lib/agent/models";
 
 export const maxDuration = 60;
 
-/**
- * Strip old render_chart tool calls and results, keeping only the latest.
- * Older chart renders get replaced with a short text summary to save context.
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function pruneOldCharts(messages: any[]): any[] {
-  const chartCallIds: string[] = [];
-  for (const msg of messages) {
-    if (msg.role !== "assistant" || typeof msg.content === "string") continue;
-    for (const part of msg.content) {
-      if (part.type === "tool-call" && part.toolName === "render_chart") {
-        chartCallIds.push(part.toolCallId);
-      }
-    }
-  }
-
-  if (chartCallIds.length <= 1) return messages;
-
-  // Keep last 5 specs, prune older ones
-  const staleSpecIds = new Set(chartCallIds.slice(0, -5));
-  // Keep only the latest image, prune all others
-  const staleImageIds = new Set(chartCallIds.slice(0, -1));
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return messages.map((msg: any) => {
-    if (msg.role === "assistant" && Array.isArray(msg.content)) {
-      return {
-        ...msg,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        content: msg.content.map((part: any) => {
-          if (
-            part.type === "tool-call" &&
-            part.toolName === "render_chart" &&
-            staleSpecIds.has(part.toolCallId)
-          ) {
-            return { ...part, input: { spec: "(pruned)" } };
-          }
-          return part;
-        }),
-      };
-    }
-
-    if (msg.role === "tool" && Array.isArray(msg.content)) {
-      return {
-        ...msg,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        content: msg.content.map((part: any) => {
-          if (part.type === "tool-result" && staleImageIds.has(part.toolCallId)) {
-            return { ...part, output: { type: "text", value: "Older chart — pruned to save context." } };
-          }
-          return part;
-        }),
-      };
-    }
-
-    return msg;
-  });
-}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function injectChartImages(messages: ModelMessage[]): any[] {
@@ -128,7 +71,7 @@ function injectChartImages(messages: ModelMessage[]): any[] {
 }
 
 export async function POST(req: Request) {
-  let body: { messages?: unknown; csvData?: unknown; dataContext?: unknown; tier?: unknown };
+  let body: { messages?: unknown; csvDatasets?: unknown; dataContext?: unknown; tier?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -143,10 +86,15 @@ export async function POST(req: Request) {
   const dataContext = typeof body.dataContext === "string" ? body.dataContext : undefined;
   const tier = (body.tier === "fast" || body.tier === "mid" || body.tier === "power" ? body.tier : "mid") as ModelTier;
 
-  const tools = createTools();
+  const csvDatasets: Record<string, Record<string, unknown>[]> =
+    body.csvDatasets && typeof body.csvDatasets === "object" && !Array.isArray(body.csvDatasets)
+      ? (body.csvDatasets as Record<string, Record<string, unknown>[]>)
+      : {};
+
+  const tools = createTools(csvDatasets);
 
   const modelMessages = await convertToModelMessages(messages);
-  const prunedMessages = pruneOldCharts(modelMessages);
+  const prunedMessages = pruneOldToolResults(modelMessages);
   const messagesWithImages = injectChartImages(prunedMessages);
 
   const result = streamText({

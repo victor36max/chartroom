@@ -1,8 +1,16 @@
 {
   "name": "pie-chart-categories",
   "description": "Pie chart showing product revenue distribution",
-  "csv": "sales.csv",
-  "messages": ["Create a pie chart showing the share of total revenue by product"],
-  "tags": ["pie", "single-turn", "aggregation"],
-  "rubric": "Should produce an arc mark with product as label and revenue as value. Slices should be labeled or have a legend."
+  "messages": [
+    "Create a pie chart showing the share of total revenue by product"
+  ],
+  "tags": [
+    "pie",
+    "single-turn",
+    "aggregation"
+  ],
+  "rubric": "Should produce an arc mark with product as label and revenue as value. Slices should be labeled or have a legend.",
+  "csvs": {
+    "sales": "sales.csv"
+  }
 }
