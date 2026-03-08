@@ -61,6 +61,19 @@
         "vitest": "^4.0.18",
       },
     },
+    "packages/renderer": {
+      "name": "@firechart/renderer",
+      "version": "0.1.0",
+      "dependencies": {
+        "@firechart/core": "workspace:*",
+        "esbuild": "^0.27.3",
+        "playwright": "^1.58.2",
+        "vega-embed": "^7.1.0",
+      },
+      "devDependencies": {
+        "typescript": "^5",
+      },
+    },
   },
   "trustedDependencies": [
     "sharp",
@@ -260,6 +273,8 @@
     "@exodus/bytes": ["@exodus/bytes@1.15.0", "", { "peerDependencies": { "@noble/hashes": "^1.8.0 || ^2.0.0" }, "optionalPeers": ["@noble/hashes"] }, "sha512-UY0nlA+feH81UGSHv92sLEPLCeZFjXOuHhrIo0HQydScuQc8s0A7kL/UdgwgDq8g8ilksmuoF35YVTNphV2aBQ=="],
 
     "@firechart/core": ["@firechart/core@workspace:packages/core"],
+
+    "@firechart/renderer": ["@firechart/renderer@workspace:packages/renderer"],
 
     "@floating-ui/core": ["@floating-ui/core@1.7.5", "", { "dependencies": { "@floating-ui/utils": "^0.2.11" } }, "sha512-1Ih4WTWyw0+lKyFMcBHGbb5U5FtuHJuujoyyr5zTaWS5EYMeT6Jb2AuDeftsCsEuchO+mM2ij5+q9crhydzLhQ=="],
 
