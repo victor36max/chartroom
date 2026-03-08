@@ -1,5 +1,17 @@
 import { initRenderer, buildBundle, closeRenderer } from "@firechart/renderer";
-import { resolveModelId, type ModelTier } from "@firechart/core";
+type ModelTier = "fast" | "mid" | "power";
+
+const MODEL_DEFAULTS: Record<ModelTier, { envKey: string; default: string }> = {
+  fast: { envKey: "MODEL_FAST", default: "qwen/qwen3.5-35b-a3b" },
+  mid: { envKey: "MODEL_MID", default: "qwen/qwen3.5-122b-a10b" },
+  power: { envKey: "MODEL_POWER", default: "qwen/qwen3.5-397b-a17b" },
+};
+
+function resolveModelId(tier: ModelTier): string {
+  const config = MODEL_DEFAULTS[tier];
+  return process.env[config.envKey] ?? config.default;
+}
+
 import { runCase } from "./run-case";
 import { judgeChart } from "./judge";
 import { writeReport } from "./report";

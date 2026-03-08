@@ -30,8 +30,11 @@ function injectChartImages(messages: ModelMessage[]): ModelMessage[] {
         // Check if this is a render_chart result with an image
         try {
           const output = part.output;
+          const raw = typeof output === "object" && output !== null && "type" in output
+            ? (output as { type: string; value?: unknown }).value
+            : output;
           const parsed =
-            typeof output === "string" ? JSON.parse(output) : output;
+            typeof raw === "string" ? JSON.parse(raw) : raw;
 
           if (parsed?.image && typeof parsed.image === "string") {
             const warningText = Array.isArray(parsed.warnings) && parsed.warnings.length > 0
@@ -39,24 +42,30 @@ function injectChartImages(messages: ModelMessage[]): ModelMessage[] {
               : "";
             return {
               ...part,
-              output: [
-                {
-                  type: "text",
-                  text: `Chart rendered successfully.${warningText} Here is a screenshot for evaluation:`,
-                },
-                {
-                  type: "image",
-                  data: parsed.image,
-                  mediaType: "image/png",
-                },
-              ],
+              output: {
+                type: "content" as const,
+                value: [
+                  {
+                    type: "text" as const,
+                    text: `Chart rendered successfully.${warningText} Here is a screenshot for evaluation:`,
+                  },
+                  {
+                    type: "file-data" as const,
+                    data: parsed.image,
+                    mediaType: "image/png",
+                  },
+                ],
+              },
             };
           }
 
           if (parsed?.success === false && parsed?.error) {
             return {
               ...part,
-              output: `Chart rendering failed with error: ${parsed.error}\nPlease fix the chart spec and try again.`,
+              output: {
+                type: "text" as const,
+                value: `Chart rendering failed with error: ${parsed.error}\nPlease fix the chart spec and try again.`,
+              },
             };
           }
         } catch {

@@ -12,7 +12,7 @@ import { parseCSV, fileNameToDatasetName, datasetsToContext } from "@/lib/csv/pa
 import { captureChart } from "@/components/chart/chart-capture";
 import { validateSpec } from "@/lib/chart/validate-spec";
 import type { ParsedCSV, DatasetMap, ChartSpec } from "@/types";
-import { MODEL_TIER_LABELS, type ModelTier } from "@/lib/agent/models";
+import { getModelTierLabels, type ModelTier } from "@/lib/agent/models";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Select as SelectPrimitive } from "radix-ui";
@@ -196,6 +196,8 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
     [handleFilesSelected]
   );
 
+  const modelTierLabels = getModelTierLabels();
+
   return (
     <div className="flex flex-col h-full">
       <div className="px-3 py-2 border-b flex items-center justify-between">
@@ -218,8 +220,8 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
                 value={t}
                 className="relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground"
               >
-                <SelectPrimitive.ItemText>{MODEL_TIER_LABELS[t].label}</SelectPrimitive.ItemText>
-                <span className="text-muted-foreground text-xs">{MODEL_TIER_LABELS[t].subtitle}</span>
+                <SelectPrimitive.ItemText>{modelTierLabels[t].label}</SelectPrimitive.ItemText>
+                <span className="text-muted-foreground text-xs">{modelTierLabels[t].subtitle}</span>
               </SelectPrimitive.Item>
             ))}
           </SelectContent>
