@@ -72,13 +72,23 @@ export function createTools(datasets: Record<string, Record<string, unknown>[]>)
         "layout-patterns (stacked/grouped/horizontal), composite-patterns (lollipop/pareto/dual-axis/trend-line), editing-charts",
       inputSchema: z.object({
         topics: z
-          .array(z.enum(TOPIC_IDS))
+          .array(z.string())
           .min(1)
           .max(3)
-          .describe("Topic(s) to look up, max 3"),
+          .describe("Topic(s) to look up, max 3. Valid: " + TOPIC_IDS.join(", ")),
       }),
       execute: async ({ topics }) => {
-        return { documentation: lookupDocs(topics as TopicId[]) };
+        const validSet = new Set<string>(TOPIC_IDS);
+        const valid = topics.filter((t) => validSet.has(t)) as TopicId[];
+        const invalid = topics.filter((t) => !validSet.has(t));
+        const parts: string[] = [];
+        if (invalid.length > 0) {
+          parts.push(`Unknown topic(s): ${invalid.join(", ")}. Valid topics: ${TOPIC_IDS.join(", ")}`);
+        }
+        if (valid.length > 0) {
+          parts.push(lookupDocs(valid));
+        }
+        return { documentation: parts.join("\n\n---\n\n") };
       },
     }),
   };

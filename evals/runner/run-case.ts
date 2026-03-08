@@ -89,7 +89,8 @@ export async function runCase(
         }
 
         screenshotBuffer = result.png;
-        const warnings = result.warnings?.length ? result.warnings : undefined;
+        const allWarnings = [...(validation.warnings || []), ...(result.warnings || [])];
+        const warnings = allWarnings.length ? allWarnings : undefined;
         return { success: true as const, image: result.png.toString("base64"), warnings };
       },
       // Convert tool result to multimodal content so the model sees the screenshot

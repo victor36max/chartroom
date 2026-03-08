@@ -576,15 +576,26 @@ This creates two new columns:
 "transform": [{ "filter": { "field": "price", "range": [10, 100] } }]
 \`\`\`
 
-**Top/bottom N (e.g. top 5 products by revenue):**
+**Top/bottom N (e.g. top 5 products by revenue) — complete spec:**
 \`\`\`json
-"transform": [
-  {"aggregate": [{"op": "sum", "field": "revenue", "as": "total"}], "groupby": ["product"]},
-  {"window": [{"op": "rank", "as": "rank"}], "sort": [{"field": "total", "order": "descending"}]},
-  {"filter": "datum.rank <= 5"}
-]
+{
+  "mark": "bar",
+  "transform": [
+    {"aggregate": [{"op": "sum", "field": "revenue", "as": "total"}], "groupby": ["product"]},
+    {"window": [{"op": "rank", "as": "rank"}], "sort": [{"field": "total", "order": "descending"}]},
+    {"filter": "datum.rank <= 5"}
+  ],
+  "encoding": {
+    "y": { "field": "product", "type": "nominal", "sort": "-x" },
+    "x": { "field": "total", "type": "quantitative" }
+  }
+}
 \`\`\`
 For bottom N, change sort order to \`"ascending"\`.
+**CRITICAL — common mistake:** After aggregate, the original column is GONE. Every subsequent reference must use the \`"as"\` alias.
+- WRONG: \`aggregate "as": "total"\` then encoding \`"field": "revenue"\` ← broken, "revenue" no longer exists
+- WRONG: \`aggregate "as": "total"\` then window sort \`"field": "revenue"\` ← broken
+- RIGHT: \`aggregate "as": "total"\` then window sort \`"field": "total"\` AND encoding \`"field": "total"\`
 
 **Expression syntax:** Use \`datum.fieldName\` to reference fields. Standard JS operators: ==, !=, >, <, >=, <=, &&, ||`,
   },
@@ -1027,7 +1038,26 @@ Use \`layer\` with \`resolve: { scale: { y: "independent" } }\`
   { "mark": "point" },
   { "mark": { "type": "line", "color": "red" }, "transform": [{ "regression": "y", "on": "x" }] }
 ] }
-\`\`\``,
+\`\`\`
+
+**Raw line + smoothed overlay (moving average):**
+Use \`window\` transform to compute the rolling average, then \`fold\` both fields so a legend appears automatically.
+\`\`\`json
+{ "transform": [
+    { "filter": "datum.symbol === 'AAPL'" },
+    { "window": [{ "op": "mean", "field": "close", "as": "ma7" }], "frame": [-3, 3] },
+    { "fold": ["close", "ma7"], "as": ["series", "value"] }
+  ],
+  "mark": "line",
+  "encoding": {
+    "x": { "field": "date", "type": "temporal" },
+    "y": { "field": "value", "type": "quantitative" },
+    "color": { "field": "series", "type": "nominal" },
+    "strokeDash": { "field": "series", "type": "nominal" }
+  }
+}
+\`\`\`
+For layered lines with different meanings (raw vs smoothed, actual vs predicted): use \`fold\` to reshape both fields into one column and encode \`color\` by the fold key. Do NOT use a top-level conditional \`color\` encoding — it gets inherited by all layers and produces unexpected results.`,
   },
 
   "editing-charts": {
@@ -1075,7 +1105,7 @@ Add a layer with \`{ "mark": { "type": "text", "dy": -8 }, "encoding": { "text":
 2. **Aggregation** — if multiple rows per x-value, use \`aggregate\` on the quantitative channel. Don't aggregate when each row is one observation you want to plot individually.
    - For **scatterplots with grouped data** (e.g., many rows per stock symbol), use \`transform\` with explicit \`groupby\` — inline aggregate alone collapses everything to a single point.
    - **Large dataset scatter** — if dataset has >500 rows, a naive scatter will overplot. Either: aggregate by group first, use small opacity (0.2–0.3), bin into heatmap (\`rect\` mark), or explain the density issue to the user.
-   - **High cardinality** — if a nominal axis will show >30 unique values, filter to top/bottom N (aggregate → window rank → filter). Explain to the user why you filtered.
+   - **High cardinality** — if a nominal axis will show >20 unique values, filter to top/bottom N. Look up \`filter\` docs for the exact top/bottom N pattern. Explain to the user why you filtered.
 3. **Reducer choice** — match the user's words:
    - "average", "mean", "avg" -> \`"mean"\`
    - "total", "sum", "combined" -> \`"sum"\`
@@ -1093,7 +1123,7 @@ Add a layer with \`{ "mark": { "type": "text", "dy": -8 }, "encoding": { "text":
 10. **Reference lines** — use \`layer\` with a \`rule\` mark. Horizontal: \`"y": { "datum": <value> }\`. Vertical: \`"x": { "datum": <value> }\`. Average: \`"y": { "aggregate": "mean", "field": "<col>" }\`.
 11. **Text labels on charts** — when the user requests labels (on scatter plots, bars, etc.), use \`layer\` with a \`text\` mark. For scatter labels, use \`dx\`/\`dy\` offsets to avoid overlapping points.
    - **Transform field names** — in \`window\`, \`regression\`, \`joinaggregate\`, and \`calculate\` transforms, always use actual column names from the dataset (not abstract names like "x" or "y").
-   - **Legend for layered lines** — when overlaying lines with different meanings (e.g., raw + smoothed), use a shared \`color\` encoding with explicit domain/range, or fold the data, so a legend appears. Don't rely on hard-coded colors without a legend.
+   - **Legend for layered lines** — when overlaying lines with different meanings (e.g., raw + smoothed), use \`fold\` to reshape both fields into one column, then encode \`color\` by the fold key. This produces an automatic legend. Do NOT use a top-level conditional \`color\` or hard-coded per-layer colors without a legend. See \`composite-patterns\` docs for the moving average overlay example.
 12. **Top/bottom N filtering** — use aggregate → window (rank) → filter transforms. Look up \`filter\` docs for the pattern.
 
 ### Style (PREFER — unless user asks otherwise)

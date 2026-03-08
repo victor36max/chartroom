@@ -49,7 +49,7 @@ export function pruneOldToolResults(messages: any[]): ModelMessage[] {
             return { ...part, output: { type: "text", value: "Older chart image — pruned to save context." } };
           }
           if (part.type === "tool-result" && staleDocIds.has(part.toolCallId)) {
-            return { ...part, output: "(docs from earlier turn — look up again if needed)" };
+            return { ...part, output: { type: "text", value: "(docs from earlier turn — look up again if needed)" } };
           }
           return part;
         }),

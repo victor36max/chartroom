@@ -54,15 +54,10 @@ Do not guess at encoding options — always check the docs first.
 - \`autosize\` — handled by the renderer
 
 ## Pre-render checklist — verify BEFORE every \`render_chart\` call
-
-### A. Safety (MUST — override user intent if needed)
-1. **Stacking check** — does ADDING these values produce a meaningful total? If no, use line mark or \`stack: false\`. Never stack temperatures, prices, rates, percentages, or averages.
-2. **Field names** — every \`field\` must reference an actual CSV column name.
-3. **Forbidden properties** — never emit \`config\`, \`$schema\`, \`background\`, \`padding\`, \`autosize\`.
-
-### B. Correctness + Style
-Look up \`pre-render-checklist\` docs and review before every render.
-Key items: type matching, aggregation patterns, arc encoding (theta not x/y), sort on categorical axis, transform field names must match CSV columns, always include a title.
+1. Re-check the stacking and forbidden-properties rules above.
+2. Every \`field\` must reference an actual CSV column name (or a transform \`"as"\` alias).
+3. Look up \`pre-render-checklist\` docs and review before every render.
+4. **High-cardinality data** — if a categorical axis would show more than ~20 unique values, MUST filter to top/bottom N (default: top 15). Look up \`filter\` docs and copy the top/bottom N pattern exactly. Mention the filtering in your response.
 
 ## Default styling (applied automatically)
 Charts use clean Datawrapper-like defaults: system-ui font, horizontal grid lines, tableau10 colors, polished title typography. Do NOT include styling properties unless the user asks for a specific look.
