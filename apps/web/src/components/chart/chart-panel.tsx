@@ -381,6 +381,7 @@ export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSele
                   editorValue={editorValue}
                   onChange={handleEditorChange}
                   columns={firstDataset?.metadata.columns ?? []}
+                  datasets={datasets}
                 />
               ) : (
                 <CodeMirror

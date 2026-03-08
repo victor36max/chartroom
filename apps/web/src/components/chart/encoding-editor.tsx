@@ -221,31 +221,54 @@ export function EncodingEditor({ spec, markType, columns, computedFields = [], o
               </Select>
             </div>
             {/* Label customization — shown when channel has a field */}
-            {channelSpec && field && (
-              <div className="grid grid-cols-3 gap-1.5">
-                <div className="space-y-0.5">
-                  <Label className="text-[10px] text-muted-foreground">Title</Label>
-                  <Input
-                    className="h-6 text-xs"
-                    placeholder="auto"
-                    value={(channelSpec?.title as string) ?? ""}
-                    onChange={(e) =>
-                      onUpdate((s) => {
-                        const enc = (s.encoding ?? {}) as SpecObj;
-                        const existing = (enc[channel] ?? {}) as SpecObj;
-                        if (e.target.value) existing.title = e.target.value;
-                        else delete existing.title;
-                        enc[channel] = existing;
-                        s.encoding = enc;
-                      })
-                    }
-                  />
-                </div>
-                {(AXIS_CHANNELS.has(channel) || LEGEND_CHANNELS.has(channel)) && (() => {
-                  const subKey = AXIS_CHANNELS.has(channel) ? "axis" : "legend";
-                  const sub = (channelSpec?.[subKey] ?? {}) as SpecObj;
-                  return (
+            {channelSpec && field && (() => {
+              const hasAxisOrLegend = AXIS_CHANNELS.has(channel) || LEGEND_CHANNELS.has(channel);
+              const subKey = AXIS_CHANNELS.has(channel) ? "axis" : "legend";
+              const sub = hasAxisOrLegend ? (channelSpec?.[subKey] ?? {}) as SpecObj : {};
+              return (
+                <div className={`grid gap-1.5 ${hasAxisOrLegend ? "grid-cols-[2fr_1fr_1fr_1fr]" : "grid-cols-1"}`}>
+                  <div className="space-y-0.5">
+                    <Label className="text-[10px] text-muted-foreground">Title</Label>
+                    <Input
+                      className="h-6 text-xs"
+                      placeholder="auto"
+                      value={(channelSpec?.title as string) ?? ""}
+                      onChange={(e) =>
+                        onUpdate((s) => {
+                          const enc = (s.encoding ?? {}) as SpecObj;
+                          const existing = (enc[channel] ?? {}) as SpecObj;
+                          if (e.target.value) existing.title = e.target.value;
+                          else delete existing.title;
+                          enc[channel] = existing;
+                          s.encoding = enc;
+                        })
+                      }
+                    />
+                  </div>
+                  {hasAxisOrLegend && (
                     <>
+                      <div className="space-y-0.5">
+                        <Label className="text-[10px] text-muted-foreground">Title size</Label>
+                        <Input
+                          className="h-6 text-xs"
+                          type="number"
+                          placeholder="auto"
+                          value={(sub.titleFontSize as number) ?? ""}
+                          onChange={(e) =>
+                            onUpdate((s) => {
+                              const enc = (s.encoding ?? {}) as SpecObj;
+                              const existing = (enc[channel] ?? {}) as SpecObj;
+                              const axisOrLegend = (existing[subKey] ?? {}) as SpecObj;
+                              if (e.target.value) axisOrLegend.titleFontSize = Number(e.target.value);
+                              else delete axisOrLegend.titleFontSize;
+                              if (Object.keys(axisOrLegend).length > 0) existing[subKey] = axisOrLegend;
+                              else delete existing[subKey];
+                              enc[channel] = existing;
+                              s.encoding = enc;
+                            })
+                          }
+                        />
+                      </div>
                       <div className="space-y-0.5">
                         <Label className="text-[10px] text-muted-foreground">Label size</Label>
                         <Input
@@ -291,10 +314,10 @@ export function EncodingEditor({ spec, markType, columns, computedFields = [], o
                         />
                       </div>
                     </>
-                  );
-                })()}
-              </div>
-            )}
+                  )}
+                </div>
+              );
+            })()}
           </div>
         );
       })}

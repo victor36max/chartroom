@@ -11,17 +11,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { MarkEditor } from "./mark-editor";
 import { EncodingEditor } from "./encoding-editor";
 import { LayerEditorCard } from "./layer-editor-card";
 import { TransformEditor } from "./transform-editor";
 import { getComputedFields } from "@/lib/chart/computed-fields";
-import type { ColumnMeta } from "@/types";
+import type { ColumnMeta, DatasetMap } from "@/types";
 
 interface VisualSpecEditorProps {
   editorValue: string;
   onChange: (value: string) => void;
   columns: ColumnMeta[];
+  datasets?: DatasetMap;
 }
 
 type SpecObj = Record<string, unknown>;
@@ -30,6 +38,7 @@ export function VisualSpecEditor({
   editorValue,
   onChange,
   columns,
+  datasets,
 }: VisualSpecEditorProps) {
   const spec: SpecObj | null = useMemo(() => {
     try {
@@ -306,6 +315,34 @@ export function VisualSpecEditor({
               />
             </div>
           </div>
+          {datasets && Object.keys(datasets).length > 0 && (
+            <div className="space-y-1">
+              <Label className="text-xs">Data</Label>
+              <Select
+                value={
+                  (typeof spec.data === "object" && spec.data !== null
+                    ? ((spec.data as Record<string, unknown>).url as string)
+                    : "") || "__none__"
+                }
+                onValueChange={(v) =>
+                  updateSpec((s) => {
+                    if (v === "__none__") delete s.data;
+                    else s.data = { url: v };
+                  })
+                }
+              >
+                <SelectTrigger size="sm" className="text-xs">
+                  <SelectValue placeholder="dataset" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__" className="text-xs text-muted-foreground">— none —</SelectItem>
+                  {Object.keys(datasets).map((name) => (
+                    <SelectItem key={name} value={name} className="text-xs">{name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </AccordionContent>
       </AccordionItem>
 
@@ -335,6 +372,7 @@ export function VisualSpecEditor({
           <TransformEditor
             transforms={((spec.transform ?? []) as Record<string, unknown>[])}
             columns={columns}
+            datasets={datasets}
             onChange={(transforms) =>
               updateSpec((s) => {
                 if (transforms.length === 0) delete s.transform;

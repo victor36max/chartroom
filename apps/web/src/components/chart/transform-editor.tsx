@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { ArrowUp, ArrowDown, X, Plus } from "lucide-react";
-import type { ColumnMeta } from "@/types";
+import type { ColumnMeta, DatasetMap } from "@/types";
 
 type TransformObj = Record<string, unknown>;
 
@@ -23,6 +23,7 @@ const TRANSFORM_TYPES = [
   { value: "aggregate", label: "Aggregate" },
   { value: "bin", label: "Bin" },
   { value: "window", label: "Window" },
+  { value: "lookup", label: "Lookup" },
 ] as const;
 
 const AGG_OPS = [
@@ -40,6 +41,7 @@ const NONE_VALUE = "__none__";
 interface TransformEditorProps {
   transforms: TransformObj[];
   columns: ColumnMeta[];
+  datasets?: DatasetMap;
   onChange: (transforms: TransformObj[]) => void;
 }
 
@@ -50,6 +52,7 @@ function getTransformType(t: TransformObj): string {
   if ("aggregate" in t) return "aggregate";
   if ("bin" in t) return "bin";
   if ("window" in t) return "window";
+  if ("lookup" in t) return "lookup";
   return "unknown";
 }
 
@@ -422,11 +425,124 @@ function WindowForm({ transform, columns, onChange }: { transform: TransformObj;
   );
 }
 
-function TransformCard({ transform, index, total, columns, onChange, onRemove, onMove }: {
+function LookupForm({ transform, columns, datasets, onChange }: { transform: TransformObj; columns: ColumnMeta[]; datasets?: DatasetMap; onChange: (t: TransformObj) => void }) {
+  const from = (transform.from ?? {}) as Record<string, unknown>;
+  const fromData = (from.data ?? {}) as Record<string, unknown>;
+  const fromFields = (Array.isArray(from.fields) ? from.fields : []) as string[];
+  const sourceUrl = (fromData.url as string) ?? "";
+  const datasetNames = datasets ? Object.keys(datasets) : [];
+  const sourceColumns = datasets && sourceUrl && datasets[sourceUrl]
+    ? datasets[sourceUrl].metadata.columns
+    : [];
+
+  return (
+    <div className="space-y-2">
+      <div className="grid grid-cols-2 gap-1.5">
+        <div className="space-y-0.5">
+          <Label className="text-[10px] text-muted-foreground">Lookup field</Label>
+          <Select
+            value={(transform.lookup as string) || NONE_VALUE}
+            onValueChange={(v) => onChange({ ...transform, lookup: v === NONE_VALUE ? "" : v })}
+          >
+            <SelectTrigger size="sm" className="text-xs">
+              <SelectValue placeholder="field" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NONE_VALUE} className="text-xs text-muted-foreground">— select —</SelectItem>
+              {columns.map((c) => (
+                <SelectItem key={c.name} value={c.name} className="text-xs">{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-0.5">
+          <Label className="text-[10px] text-muted-foreground">Source dataset</Label>
+          {datasetNames.length > 0 ? (
+            <Select
+              value={sourceUrl || NONE_VALUE}
+              onValueChange={(v) => {
+                const newUrl = v === NONE_VALUE ? "" : v;
+                onChange({ ...transform, from: { ...from, data: { ...fromData, url: newUrl }, key: "", fields: [] } });
+              }}
+            >
+              <SelectTrigger size="sm" className="text-xs">
+                <SelectValue placeholder="dataset" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NONE_VALUE} className="text-xs text-muted-foreground">— select —</SelectItem>
+                {datasetNames.map((name) => (
+                  <SelectItem key={name} value={name} className="text-xs">{name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input
+              className="h-7 text-xs font-mono"
+              placeholder="data.csv"
+              value={sourceUrl}
+              onChange={(e) => onChange({ ...transform, from: { ...from, data: { ...fromData, url: e.target.value } } })}
+            />
+          )}
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-1.5">
+        <div className="space-y-0.5">
+          <Label className="text-[10px] text-muted-foreground">Foreign key</Label>
+          {sourceColumns.length > 0 ? (
+            <Select
+              value={(from.key as string) || NONE_VALUE}
+              onValueChange={(v) => onChange({ ...transform, from: { ...from, key: v === NONE_VALUE ? "" : v } })}
+            >
+              <SelectTrigger size="sm" className="text-xs">
+                <SelectValue placeholder="key" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NONE_VALUE} className="text-xs text-muted-foreground">— select —</SelectItem>
+                {sourceColumns.map((c) => (
+                  <SelectItem key={c.name} value={c.name} className="text-xs">{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input
+              className="h-7 text-xs"
+              placeholder="key in source"
+              value={(from.key as string) ?? ""}
+              onChange={(e) => onChange({ ...transform, from: { ...from, key: e.target.value } })}
+            />
+          )}
+        </div>
+        <div className="space-y-0.5">
+          <Label className="text-[10px] text-muted-foreground">Fields to import</Label>
+          {sourceColumns.length > 0 ? (
+            <CheckboxGrid
+              columns={sourceColumns}
+              selected={fromFields}
+              onChange={(fields) => onChange({ ...transform, from: { ...from, fields } })}
+            />
+          ) : (
+            <Input
+              className="h-7 text-xs"
+              placeholder="field1, field2"
+              value={fromFields.join(", ")}
+              onChange={(e) => {
+                const fields = e.target.value.split(",").map((f) => f.trim()).filter(Boolean);
+                onChange({ ...transform, from: { ...from, fields } });
+              }}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TransformCard({ transform, index, total, columns, datasets, onChange, onRemove, onMove }: {
   transform: TransformObj;
   index: number;
   total: number;
   columns: ColumnMeta[];
+  datasets?: DatasetMap;
   onChange: (t: TransformObj) => void;
   onRemove: () => void;
   onMove: (direction: -1 | 1) => void;
@@ -466,13 +582,14 @@ function TransformCard({ transform, index, total, columns, onChange, onRemove, o
       {type === "aggregate" && <AggregateForm transform={transform} columns={columns} onChange={onChange} />}
       {type === "bin" && <BinForm transform={transform} columns={columns} onChange={onChange} />}
       {type === "window" && <WindowForm transform={transform} columns={columns} onChange={onChange} />}
+      {type === "lookup" && <LookupForm transform={transform} columns={columns} datasets={datasets} onChange={onChange} />}
     </div>
   );
 }
 
 const NONE_TRANSFORM = "__none__";
 
-export function TransformEditor({ transforms, columns, onChange }: TransformEditorProps) {
+export function TransformEditor({ transforms, columns, datasets, onChange }: TransformEditorProps) {
   const updateTransform = useCallback((index: number, updated: TransformObj) => {
     const newTransforms = transforms.map((t, i) => i === index ? updated : t);
     onChange(newTransforms);
@@ -498,6 +615,7 @@ export function TransformEditor({ transforms, columns, onChange }: TransformEdit
       aggregate: { aggregate: [], groupby: [] },
       bin: { bin: true, field: "", as: "" },
       window: { window: [], sort: [] },
+      lookup: { lookup: "", from: { data: { url: "" }, key: "", fields: [] } },
     };
     onChange([...transforms, defaults[type] ?? { filter: "" }]);
   }, [transforms, onChange]);
@@ -511,6 +629,7 @@ export function TransformEditor({ transforms, columns, onChange }: TransformEdit
           index={i}
           total={transforms.length}
           columns={columns}
+          datasets={datasets}
           onChange={(updated) => updateTransform(i, updated)}
           onRemove={() => removeTransform(i)}
           onMove={(dir) => moveTransform(i, dir)}
