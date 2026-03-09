@@ -89,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || !balanceFetchedRef.current) {
+        if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && !balanceFetchedRef.current) {
           balanceFetchedRef.current = true;
           fetchBalance();
         }
