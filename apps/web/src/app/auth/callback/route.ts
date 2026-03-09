@@ -33,17 +33,26 @@ export async function GET(request: Request) {
 
     const { error, data: { session } } = await supabase.auth.exchangeCodeForSession(code);
 
-    if (!error && session) {
+    if (error) {
+      console.error("[auth/callback] exchangeCodeForSession error:", error.message);
+      return NextResponse.redirect(`${origin}?error=auth&reason=${encodeURIComponent(error.message)}`);
+    }
+
+    if (session) {
       const user = session.user;
 
-      await upsertProfile({
-        id: user.id,
-        email: user.email,
-        displayName:
-          user.user_metadata.full_name ?? user.user_metadata.name ?? null,
-        avatarUrl: user.user_metadata.avatar_url ?? null,
-        freeCredits: FREE_CREDITS_USD,
-      });
+      try {
+        await upsertProfile({
+          id: user.id,
+          email: user.email,
+          displayName:
+            user.user_metadata.full_name ?? user.user_metadata.name ?? null,
+          avatarUrl: user.user_metadata.avatar_url ?? null,
+          freeCredits: FREE_CREDITS_USD,
+        });
+      } catch (e) {
+        console.error("[auth/callback] upsertProfile error:", e);
+      }
 
       return redirectTo;
     }
