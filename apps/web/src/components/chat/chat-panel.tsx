@@ -318,6 +318,13 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
         onStop={handleStop}
         onClear={handleClear}
         onSuggestionClick={(text) => {
+          if (isAuthEnabled()) {
+            if (!user) {
+              openLogin();
+              return;
+            }
+            if (balance !== null && balance <= 0) return;
+          }
           autoSendCountRef.current = 0;
           sendMessage({ text });
         }}
