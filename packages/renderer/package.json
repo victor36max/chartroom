@@ -23,8 +23,9 @@
     "playwright": "^1.58.2"
   },
   "devDependencies": {
+    "@types/node": "^25.3.5",
     "esbuild": "^0.27.3",
-    "vega-embed": "^7.1.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vega-embed": "^7.1.0"
   }
 }
