@@ -1,4 +1,4 @@
-# Firechart Competitive Analysis
+# Chartroom Competitive Analysis
 
 **Date:** 2026-03-06
 
@@ -13,7 +13,7 @@ The AI-powered charting space has four tiers:
 | Open-source dev tools | LIDA, chat2plot, PandasAI | Developers | Free + API |
 | Enterprise BI + AI | Tableau, Power BI, Metabase | Teams / enterprises | $10-75/user/mo |
 
-Firechart occupies a unique position: an **open-source web app** using **declarative JSON specs** (not code generation) with **vision feedback**. No existing tool combines all three.
+Chartroom occupies a unique position: an **open-source web app** using **declarative JSON specs** (not code generation) with **vision feedback**. No existing tool combines all three.
 
 ## Competitor Profiles
 
@@ -39,7 +39,7 @@ Firechart occupies a unique position: an **open-source web app** using **declara
 
 **LIDA (Microsoft Research)** — Four-module pipeline with self-evaluation. Grammar-agnostic code generation. Python library only (no web UI). Most architecturally similar in self-evaluation concept. Free.
 
-**chat2plot** — Declarative JSON spec approach (closest architectural match to Firechart). Python library, no web UI, no vision feedback, small community. Free.
+**chat2plot** — Declarative JSON spec approach (closest architectural match to Chartroom). Python library, no web UI, no vision feedback, small community. Free.
 
 **PandasAI** — Code generation for pandas DataFrames. Broad data source support. Visualization is secondary to data manipulation. 11k+ GitHub stars. Free.
 
@@ -57,7 +57,7 @@ Firechart occupies a unique position: an **open-source web app** using **declara
 
 | Tool | Architecture | CSV Upload | AI Chat | Vision Feedback | Spec Editing | Open Source | Price |
 |------|-------------|-----------|---------|----------------|-------------|-------------|-------|
-| **Firechart** | Declarative JSON | Yes (primary) | Multi-turn | Yes | Visual + JSON | Yes | Free |
+| **Chartroom** | Declarative JSON | Yes (primary) | Multi-turn | Yes | Visual + JSON | Yes | Free |
 | ChatGPT | Code gen (Python) | Yes | Multi-turn | Yes | No | No | $20/mo |
 | Julius AI | Code gen | Yes (primary) | Multi-turn | No | No | No | $20/mo |
 | chat2plot | Declarative JSON | Via API | Multi-turn | No | Via NL | Yes | Free |
@@ -65,7 +65,7 @@ Firechart occupies a unique position: an **open-source web app** using **declara
 | Metabase | SQL-first + AI | CSV upload | Metabot | No | Limited | Yes | Free-$85/mo |
 | Tableau | Drag-and-drop + AI | Yes | Agent | No | Full VizQL | No | $75/user/mo |
 
-## Firechart's Unique Differentiators
+## Chartroom's Unique Differentiators
 
 ### 1. Declarative spec approach (no code execution)
 
@@ -81,7 +81,7 @@ No competitor offers a side-by-side visual editor for AI-generated chart specs. 
 
 ### 4. Open-source web app (ready to use)
 
-LIDA and chat2plot are open-source but require developer setup (Python libraries). Firechart is a deployable Next.js app anyone can self-host. Metabase is the closest open-source web app competitor, but it's database-first BI.
+LIDA and chat2plot are open-source but require developer setup (Python libraries). Chartroom is a deployable Next.js app anyone can self-host. Metabase is the closest open-source web app competitor, but it's database-first BI.
 
 ### 5. Observable Plot output quality
 
@@ -103,17 +103,17 @@ Produces cleaner, more publication-ready charts than Matplotlib defaults from co
 | Approach | Tools | Pros | Cons |
 |----------|-------|------|------|
 | Code generation | ChatGPT, Julius, LIDA, PandasAI | Unlimited flexibility | Security risk, opaque, inconsistent |
-| Declarative spec | Firechart, chat2plot | Safe, editable, deterministic | Limited to spec expressiveness |
+| Declarative spec | Chartroom, chat2plot | Safe, editable, deterministic | Limited to spec expressiveness |
 | SQL generation | Metabase, Power BI Copilot | Works on live databases | Not for ad-hoc CSV |
 | Drag-and-drop + AI | Tableau, Power BI | Most control | Steep learning curve, expensive |
 
-Firechart's declarative approach trades flexibility for safety, editability, and predictability. This is the right trade-off for a focused CSV-to-chart tool.
+Chartroom's declarative approach trades flexibility for safety, editability, and predictability. This is the right trade-off for a focused CSV-to-chart tool.
 
 ## Strategic Recommendations
 
 ### Tier 1: Quick wins (reinforce existing advantages)
 
-**A. Polish the spec editing experience.** This is Firechart's most unique feature. Make it best-in-class: undo/redo, mark reordering via drag-and-drop, inline color pickers, "reset to AI version" button. Widens the moat against Julius/Vizly who give zero post-generation control.
+**A. Polish the spec editing experience.** This is Chartroom's most unique feature. Make it best-in-class: undo/redo, mark reordering via drag-and-drop, inline color pickers, "reset to AI version" button. Widens the moat against Julius/Vizly who give zero post-generation control.
 
 **B. Export to more formats.** Currently PNG/SVG. Add shareable URL (static HTML with embedded data + spec) and iframe embed snippet. Closes the gap with Chartbrew/Metabase at minimal cost.
 
@@ -138,7 +138,7 @@ Firechart's declarative approach trades flexibility for safety, editability, and
 - Notebook environment (becomes Hex)
 - Enterprise admin / governance (becomes Tableau)
 
-These would dilute Firechart's focus. Stay in the "CSV to beautiful chart in 30 seconds" lane.
+These would dilute Chartroom's focus. Stay in the "CSV to beautiful chart in 30 seconds" lane.
 
 ## Most Direct Competitors
 

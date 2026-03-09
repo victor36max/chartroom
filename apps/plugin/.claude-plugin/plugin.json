@@ -1,10 +1,10 @@
 {
-  "name": "firechart",
+  "name": "chartroom",
   "version": "0.1.0",
   "description": "AI-powered chart generation from CSV data using Vega-Lite",
   "author": {
     "name": "Victor Chan"
   },
-  "repository": "https://github.com/victor/firechart",
+  "repository": "https://github.com/victor/chartroom",
   "license": "MIT"
 }

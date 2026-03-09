@@ -1,5 +1,5 @@
 {
-  "name": "@firechart/renderer",
+  "name": "@chartroom/renderer",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",
@@ -19,7 +19,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@firechart/core": "workspace:*",
+    "@chartroom/core": "workspace:*",
     "playwright": "^1.58.2"
   },
   "devDependencies": {

@@ -1,10 +1,10 @@
 {
-  "name": "@firechart/plugin",
+  "name": "@chartroom/plugin",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/server.js",
   "bin": {
-    "firechart": "dist/server.js"
+    "chartroom": "dist/server.js"
   },
   "exports": {
     ".": {
@@ -22,8 +22,8 @@
     "build:bundle": "bun run --cwd ../../packages/renderer build:bundle"
   },
   "dependencies": {
-    "@firechart/core": "workspace:*",
-    "@firechart/renderer": "workspace:*",
+    "@chartroom/core": "workspace:*",
+    "@chartroom/renderer": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.12.1"
   },
   "devDependencies": {

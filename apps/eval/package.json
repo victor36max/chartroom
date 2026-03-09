@@ -1,5 +1,5 @@
 {
-  "name": "@firechart/eval",
+  "name": "@chartroom/eval",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -8,8 +8,8 @@
     "eval": "bun src/index.ts"
   },
   "dependencies": {
-    "@firechart/core": "workspace:*",
-    "@firechart/renderer": "workspace:*",
+    "@chartroom/core": "workspace:*",
+    "@chartroom/renderer": "workspace:*",
     "@openrouter/ai-sdk-provider": "^2.2.3",
     "ai": "^6.0.108",
     "papaparse": "^5.5.3",

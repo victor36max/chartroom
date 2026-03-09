@@ -2,15 +2,15 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Restructure Firechart into a Bun workspace monorepo with shared packages (`@firechart/core`, `@firechart/renderer`) and three apps (`apps/web`, `apps/eval`, `apps/plugin`), then build a Claude Code plugin that provides the full Firechart chart-generation experience.
+**Goal:** Restructure Chartroom into a Bun workspace monorepo with shared packages (`@chartroom/core`, `@chartroom/renderer`) and three apps (`apps/web`, `apps/eval`, `apps/plugin`), then build a Claude Code plugin that provides the full Chartroom chart-generation experience.
 
-**Architecture:** Extract Node-compatible logic (CSV parsing, spec validation, data injection, docs, types, themes, system prompt) into `@firechart/core`. Extract Playwright-based headless rendering into `@firechart/renderer`. Move the web app to `apps/web/`, evals to `apps/eval/`, and build a new MCP server + skill-based Claude Code plugin at `apps/plugin/`.
+**Architecture:** Extract Node-compatible logic (CSV parsing, spec validation, data injection, docs, types, themes, system prompt) into `@chartroom/core`. Extract Playwright-based headless rendering into `@chartroom/renderer`. Move the web app to `apps/web/`, evals to `apps/eval/`, and build a new MCP server + skill-based Claude Code plugin at `apps/plugin/`.
 
 **Tech Stack:** Bun workspaces, TypeScript, Vega-Lite, Playwright, MCP SDK, Vitest
 
 ---
 
-## Phase 1: Extract `@firechart/core`
+## Phase 1: Extract `@chartroom/core`
 
 ### Task 1.1: Set up workspace root + core package skeleton
 
@@ -32,7 +32,7 @@ mkdir -p packages/core/docs
 
 ```json
 {
-  "name": "@firechart/core",
+  "name": "@chartroom/core",
   "version": "0.1.0",
   "private": true,
   "main": "src/index.ts",
@@ -115,7 +115,7 @@ bun install
 
 ```bash
 git add packages/core/ package.json bun.lock
-git commit -m "chore: set up workspace root and @firechart/core skeleton"
+git commit -m "chore: set up workspace root and @chartroom/core skeleton"
 ```
 
 ---
@@ -954,7 +954,7 @@ export function buildSystemPrompt(options: SystemPromptOptions): string {
   const { context, dataContext } = options;
 
   const identity = context === "web"
-    ? "You are Firechart, a data visualization assistant that creates charts using Vega-Lite v6."
+    ? "You are Chartroom, a data visualization assistant that creates charts using Vega-Lite v6."
     : "You are a data visualization assistant that creates charts using Vega-Lite v6.";
 
   const toolInstructions = context === "web"
@@ -1156,7 +1156,7 @@ Expected: No errors
 
 ---
 
-## Phase 2: Extract `@firechart/renderer`
+## Phase 2: Extract `@chartroom/renderer`
 
 ### Task 2.1: Create renderer package
 
@@ -1179,7 +1179,7 @@ mkdir -p packages/renderer/src
 
 ```json
 {
-  "name": "@firechart/renderer",
+  "name": "@chartroom/renderer",
   "version": "0.1.0",
   "private": true,
   "main": "src/index.ts",
@@ -1188,7 +1188,7 @@ mkdir -p packages/renderer/src
     "build:bundle": "bun src/build-bundle.ts"
   },
   "dependencies": {
-    "@firechart/core": "workspace:*",
+    "@chartroom/core": "workspace:*",
     "playwright": "^1.58.2",
     "esbuild": "^0.27.3",
     "vega-embed": "^7.1.0"
@@ -1243,11 +1243,11 @@ Copy from `evals/runner/renderer-page.html`:
 
 **Step 5: Create `packages/renderer/src/bundle-entry.ts`**
 
-Adapted from `evals/runner/bundle-entry.ts` — imports from `@firechart/core`:
+Adapted from `evals/runner/bundle-entry.ts` — imports from `@chartroom/core`:
 
 ```typescript
 import embed from "vega-embed";
-import { stripStyling, injectData, getThemeConfig } from "@firechart/core";
+import { stripStyling, injectData, getThemeConfig } from "@chartroom/core";
 
 (window as unknown as Record<string, unknown>).renderVegaLite = async (
   spec: Record<string, unknown>,
@@ -1461,7 +1461,7 @@ mv .env.example apps/web/ 2>/dev/null || true
 
 ```json
 {
-  "name": "@firechart/web",
+  "name": "@chartroom/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -1473,7 +1473,7 @@ mv .env.example apps/web/ 2>/dev/null || true
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@firechart/core": "workspace:*",
+    "@chartroom/core": "workspace:*",
     "@ai-sdk/react": "^3.0.110",
     "@codemirror/lang-json": "^6.0.2",
     "@openrouter/ai-sdk-provider": "^2.2.3",
@@ -1533,17 +1533,17 @@ git commit -m "refactor: move web app to apps/web/"
 
 ---
 
-### Task 3.2: Update web app imports to use @firechart/core
+### Task 3.2: Update web app imports to use @chartroom/core
 
 **Files to modify in `apps/web/src/`:**
 
 The key changes:
-1. Files that import from `@/types` → import shared types from `@firechart/core`
+1. Files that import from `@/types` → import shared types from `@chartroom/core`
 2. Files that import from `@/lib/csv/parser` → keep importing locally (the local parser.ts will re-export from core or stay as-is since it uses browser File API)
-3. `tools.ts` → import `createVlSpecSchema` from `@firechart/core` instead of defining schemas inline
-4. `system-prompt.ts` → import `buildSystemPrompt` from `@firechart/core`
-5. `render-vega.ts` → import `getThemeConfig` from `@firechart/core` instead of defining locally
-6. `inject-data.ts`, `strip-config.ts`, `validate-spec.ts` → these files in web can become thin re-exports from `@firechart/core`, OR the imports in consuming files can change directly to `@firechart/core`
+3. `tools.ts` → import `createVlSpecSchema` from `@chartroom/core` instead of defining schemas inline
+4. `system-prompt.ts` → import `buildSystemPrompt` from `@chartroom/core`
+5. `render-vega.ts` → import `getThemeConfig` from `@chartroom/core` instead of defining locally
+6. `inject-data.ts`, `strip-config.ts`, `validate-spec.ts` → these files in web can become thin re-exports from `@chartroom/core`, OR the imports in consuming files can change directly to `@chartroom/core`
 
 **Step 1: Update `apps/web/src/lib/agent/tools.ts`**
 
@@ -1552,7 +1552,7 @@ Replace the schema definitions with imports from core:
 ```typescript
 import { tool } from "ai";
 import { z } from "zod";
-import { TOPIC_IDS, lookupDocs, type TopicId, createVlSpecSchema, vlUnitSchema } from "@firechart/core";
+import { TOPIC_IDS, lookupDocs, type TopicId, createVlSpecSchema, vlUnitSchema } from "@chartroom/core";
 
 export function createTools(datasets: Record<string, Record<string, unknown>[]>) {
   const datasetNames = Object.keys(datasets);
@@ -1609,7 +1609,7 @@ export function createTools(datasets: Record<string, Record<string, unknown>[]>)
 **Step 2: Update `apps/web/src/lib/agent/system-prompt.ts`**
 
 ```typescript
-import { buildSystemPrompt as coreBuildSystemPrompt } from "@firechart/core";
+import { buildSystemPrompt as coreBuildSystemPrompt } from "@chartroom/core";
 
 export function buildSystemPrompt(dataContext: string | undefined): string {
   return coreBuildSystemPrompt({ context: "web", dataContext });
@@ -1622,8 +1622,8 @@ Replace the local `getThemeConfig` and `DEFAULT_CONFIG` with imports from core:
 
 ```typescript
 import embed, { type Result } from "vega-embed";
-import type { ThemeId } from "@firechart/core";
-import { injectData, stripStyling, getThemeConfig } from "@firechart/core";
+import type { ThemeId } from "@chartroom/core";
+import { injectData, stripStyling, getThemeConfig } from "@chartroom/core";
 
 export async function renderVegaLite(
   container: HTMLElement,
@@ -1662,37 +1662,37 @@ export type {
   DataMetadata,
   ParsedCSV,
   DatasetMap,
-} from "@firechart/core";
+} from "@chartroom/core";
 ```
 
 **Step 5: Update validate-spec import in route.ts or wherever it's used**
 
 Any file importing `@/lib/chart/validate-spec` can either:
 - Keep importing locally (the file can re-export from core), or
-- Import directly from `@firechart/core`
+- Import directly from `@chartroom/core`
 
 The simplest: make `apps/web/src/lib/chart/validate-spec.ts` a re-export:
 
 ```typescript
-export { validateSpec } from "@firechart/core";
+export { validateSpec } from "@chartroom/core";
 ```
 
 Similarly for `apps/web/src/lib/chart/inject-data.ts`:
 
 ```typescript
-export { injectData } from "@firechart/core";
+export { injectData } from "@chartroom/core";
 ```
 
 And `apps/web/src/lib/chart/strip-config.ts`:
 
 ```typescript
-export { stripStyling } from "@firechart/core";
+export { stripStyling } from "@chartroom/core";
 ```
 
 And `apps/web/src/lib/docs/vl-docs.ts`:
 
 ```typescript
-export { TOPIC_IDS, lookupDocs, type TopicId } from "@firechart/core";
+export { TOPIC_IDS, lookupDocs, type TopicId } from "@chartroom/core";
 ```
 
 **Step 6: Run bun install, build, test, lint**
@@ -1710,7 +1710,7 @@ All should pass.
 
 ```bash
 git add -A
-git commit -m "refactor(web): update imports to use @firechart/core"
+git commit -m "refactor(web): update imports to use @chartroom/core"
 ```
 
 ---
@@ -1721,15 +1721,15 @@ git commit -m "refactor(web): update imports to use @firechart/core"
 
 ```json
 {
-  "name": "firechart",
+  "name": "chartroom",
   "private": true,
   "workspaces": ["packages/*", "apps/*"],
   "scripts": {
-    "dev": "bun --filter @firechart/web dev",
-    "build": "bun --filter @firechart/web build",
-    "lint": "bun --filter @firechart/web lint",
+    "dev": "bun --filter @chartroom/web dev",
+    "build": "bun --filter @chartroom/web build",
+    "lint": "bun --filter @chartroom/web lint",
     "test": "bun --filter '*' test",
-    "eval": "bun --filter @firechart/eval eval"
+    "eval": "bun --filter @chartroom/eval eval"
   },
   "devDependencies": {
     "typescript": "^5"
@@ -1776,21 +1776,21 @@ mv evals/runner/report.ts apps/eval/src/
 mv evals/runner/types.ts apps/eval/src/
 ```
 
-Note: `render.ts` and `bundle-entry.ts` are NOT moved — they're now in `@firechart/renderer`.
+Note: `render.ts` and `bundle-entry.ts` are NOT moved — they're now in `@chartroom/renderer`.
 
 **Step 3: Create `apps/eval/package.json`**
 
 ```json
 {
-  "name": "@firechart/eval",
+  "name": "@chartroom/eval",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "eval": "bun src/index.ts"
   },
   "dependencies": {
-    "@firechart/core": "workspace:*",
-    "@firechart/renderer": "workspace:*",
+    "@chartroom/core": "workspace:*",
+    "@chartroom/renderer": "workspace:*",
     "@openrouter/ai-sdk-provider": "^2.2.3",
     "ai": "^6.0.108",
     "papaparse": "^5.5.3",
@@ -1828,7 +1828,7 @@ Note: `render.ts` and `bundle-entry.ts` are NOT moved — they're now in `@firec
 
 `apps/eval/src/types.ts`:
 ```typescript
-import type { ChartSpec } from "@firechart/core";
+import type { ChartSpec } from "@chartroom/core";
 // rest unchanged
 ```
 
@@ -1836,31 +1836,31 @@ import type { ChartSpec } from "@firechart/core";
 ```typescript
 import { generateText, stepCountIs, type ModelMessage, type ToolSet } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { buildSystemPrompt, extractMetadata, datasetsToContext, validateSpec, type DatasetMap, type ChartSpec } from "@firechart/core";
-import { renderChart } from "@firechart/renderer";
+import { buildSystemPrompt, extractMetadata, datasetsToContext, validateSpec, type DatasetMap, type ChartSpec } from "@chartroom/core";
+import { renderChart } from "@chartroom/renderer";
 // createTools stays imported from web or needs to be duplicated/extracted
 // Actually, createTools uses AI SDK's tool() — it should stay in each app
 // For eval, we need a local createTools or import from web
 ```
 
 This is a tricky dependency — `createTools` uses AI SDK `tool()` function. Options:
-1. Import from `@firechart/web` (creates circular workspace dep)
+1. Import from `@chartroom/web` (creates circular workspace dep)
 2. Duplicate in eval (small amount of code)
 3. Extract to core without the `tool()` wrapper
 
-Best option: **duplicate in eval** since it's small and eval needs custom `execute` functions anyway. The schema comes from `@firechart/core`.
+Best option: **duplicate in eval** since it's small and eval needs custom `execute` functions anyway. The schema comes from `@chartroom/core`.
 
 Update `apps/eval/src/run-case.ts`:
-- Import `createVlSpecSchema`, `TOPIC_IDS`, `lookupDocs` from `@firechart/core`
-- Import `renderChart` from `@firechart/renderer`
+- Import `createVlSpecSchema`, `TOPIC_IDS`, `lookupDocs` from `@chartroom/core`
+- Import `renderChart` from `@chartroom/renderer`
 - Define `createTools` locally (or import from a local `tools.ts`)
-- Replace `../../src/lib/agent/` imports → `@firechart/core`
-- Replace `../../src/types` imports → `@firechart/core`
-- Replace `./render` import → `@firechart/renderer`
+- Replace `../../src/lib/agent/` imports → `@chartroom/core`
+- Replace `../../src/types` imports → `@chartroom/core`
+- Replace `./render` import → `@chartroom/renderer`
 
 `apps/eval/src/index.ts` — update imports:
 - Replace `../../src/lib/agent/models` → local copy or inline (it's 15 lines of config)
-- Replace `./render` → `@firechart/renderer`
+- Replace `./render` → `@chartroom/renderer`
 
 **Step 6: Clean up old evals directory**
 
@@ -1914,7 +1914,7 @@ mkdir -p apps/plugin/skills/chart
 
 ```json
 {
-  "name": "@firechart/plugin",
+  "name": "@chartroom/plugin",
   "version": "0.1.0",
   "private": true,
   "main": "src/server.ts",
@@ -1923,8 +1923,8 @@ mkdir -p apps/plugin/skills/chart
     "build:bundle": "bun run --cwd ../../packages/renderer build:bundle"
   },
   "dependencies": {
-    "@firechart/core": "workspace:*",
-    "@firechart/renderer": "workspace:*",
+    "@chartroom/core": "workspace:*",
+    "@chartroom/renderer": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.12.1"
   },
   "devDependencies": {
@@ -1960,7 +1960,7 @@ mkdir -p apps/plugin/skills/chart
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import type { ParsedCSV, DatasetMap } from "@firechart/core";
+import type { ParsedCSV, DatasetMap } from "@chartroom/core";
 import { registerLoadCsv } from "./tools/load-csv";
 import { registerValidateChart } from "./tools/validate-chart";
 import { registerRenderChart } from "./tools/render-chart";
@@ -1970,7 +1970,7 @@ import { registerOpenInteractive } from "./tools/open-interactive";
 const datasets: DatasetMap = {};
 
 const server = new McpServer({
-  name: "firechart",
+  name: "chartroom",
   version: "0.1.0",
 });
 
@@ -2009,7 +2009,7 @@ git commit -m "feat(plugin): create MCP server skeleton"
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import fs from "fs";
-import { parseCSVString, metadataToContext, datasetsToContext, type DatasetMap, type ParsedCSV } from "@firechart/core";
+import { parseCSVString, metadataToContext, datasetsToContext, type DatasetMap, type ParsedCSV } from "@chartroom/core";
 
 export function registerLoadCsv(server: McpServer, datasets: DatasetMap) {
   server.tool(
@@ -2058,7 +2058,7 @@ git commit -m "feat(plugin): implement load_csv MCP tool"
 ```typescript
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { validateSpec, type DatasetMap } from "@firechart/core";
+import { validateSpec, type DatasetMap } from "@chartroom/core";
 
 export function registerValidateChart(server: McpServer, datasets: DatasetMap) {
   server.tool(
@@ -2110,8 +2110,8 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import fs from "fs";
 import path from "path";
-import { type DatasetMap, type ThemeId } from "@firechart/core";
-import { initRenderer, renderChart as rendererRenderChart, closeRenderer } from "@firechart/renderer";
+import { type DatasetMap, type ThemeId } from "@chartroom/core";
+import { initRenderer, renderChart as rendererRenderChart, closeRenderer } from "@chartroom/renderer";
 import type { Browser, Page } from "playwright";
 
 let browser: Browser | null = null;
@@ -2158,7 +2158,7 @@ export function registerRenderChart(server: McpServer, datasets: DatasetMap) {
         }
 
         // Save PNG
-        const tmpDir = "/tmp/firechart";
+        const tmpDir = "/tmp/chartroom";
         fs.mkdirSync(tmpDir, { recursive: true });
         const filePath = outputPath ?? path.join(tmpDir, `chart-${Date.now()}.png`);
         fs.writeFileSync(filePath, result.png);
@@ -2203,7 +2203,7 @@ import { z } from "zod";
 import fs from "fs";
 import path from "path";
 import { exec } from "child_process";
-import { injectData, stripStyling, getThemeConfig, type DatasetMap, type ThemeId } from "@firechart/core";
+import { injectData, stripStyling, getThemeConfig, type DatasetMap, type ThemeId } from "@chartroom/core";
 
 function openInBrowser(filePath: string) {
   const cmd = process.platform === "darwin" ? "open"
@@ -2238,7 +2238,7 @@ export function registerOpenInteractive(server: McpServer, datasets: DatasetMap)
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Firechart — Interactive View</title>
+  <title>Chartroom — Interactive View</title>
   <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
   <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
   <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
@@ -2258,7 +2258,7 @@ export function registerOpenInteractive(server: McpServer, datasets: DatasetMap)
 </body>
 </html>`;
 
-        const tmpDir = "/tmp/firechart";
+        const tmpDir = "/tmp/chartroom";
         fs.mkdirSync(tmpDir, { recursive: true });
         const filePath = path.join(tmpDir, `interactive-${Date.now()}.html`);
         fs.writeFileSync(filePath, html);
@@ -2304,7 +2304,7 @@ allowed-tools: Read, Bash(open *)
 
 # Chart Generation Workflow
 
-You have access to Firechart MCP tools for creating Vega-Lite charts from CSV data.
+You have access to Chartroom MCP tools for creating Vega-Lite charts from CSV data.
 
 ## Available MCP Tools
 
@@ -2363,7 +2363,7 @@ Add to SKILL.md:
 ```markdown
 ## Reference Documentation
 
-The full Vega-Lite documentation is available in the `@firechart/core` package at `packages/core/src/docs.ts`.
+The full Vega-Lite documentation is available in the `@chartroom/core` package at `packages/core/src/docs.ts`.
 Read the `lookupDocs()` function output for specific topics as needed.
 ```
 
@@ -2374,7 +2374,7 @@ This isn't needed for the monorepo setup — the user will add the MCP server vi
 ```json
 {
   "mcpServers": {
-    "firechart": {
+    "chartroom": {
       "command": "bun",
       "args": ["run", "--cwd", "${CLAUDE_PLUGIN_ROOT}", "start"]
     }
@@ -2410,7 +2410,7 @@ Should start without errors and wait for stdio input.
 **Step 3: Register with Claude Code**
 
 ```bash
-claude mcp add firechart -- bun run --cwd apps/plugin start
+claude mcp add chartroom -- bun run --cwd apps/plugin start
 ```
 
 **Step 4: Test in Claude Code**
@@ -2444,7 +2444,7 @@ Update the commands section, architecture section, and key files table to reflec
 Add:
 ```
 packages/renderer/src/bundle/
-/tmp/firechart/
+/tmp/chartroom/
 apps/eval/results/
 ```
 

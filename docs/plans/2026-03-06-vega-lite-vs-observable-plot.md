@@ -1,6 +1,6 @@
 # Vega-Lite vs Observable Plot: Comparison for AI Chart Generation
 
-A comprehensive comparison of the two leading declarative visualization libraries, evaluated through the lens of building an AI-powered chart generator (like Firechart).
+A comprehensive comparison of the two leading declarative visualization libraries, evaluated through the lens of building an AI-powered chart generator (like Chartroom).
 
 ## Architecture & Philosophy
 
@@ -10,7 +10,7 @@ A comprehensive comparison of the two leading declarative visualization librarie
 
 Key architectural difference: Observable Plot specs are JavaScript objects with function references (transforms like `Plot.groupX()` return functions). Vega-Lite specs are pure JSON — no functions, fully serializable.
 
-In Firechart, `spec-to-plot.ts` bridges this gap: the AI emits pure JSON, and the translation layer converts it to Plot function calls. This means Firechart has essentially built a mini Vega-Lite on top of Observable Plot — a declarative JSON grammar that compiles to imperative Plot calls.
+In Chartroom, `spec-to-plot.ts` bridges this gap: the AI emits pure JSON, and the translation layer converts it to Plot function calls. This means Chartroom has essentially built a mini Vega-Lite on top of Observable Plot — a declarative JSON grammar that compiles to imperative Plot calls.
 
 ## AI-Friendliness
 
@@ -28,11 +28,11 @@ In Firechart, `spec-to-plot.ts` bridges this gap: the AI emits pure JSON, and th
 - **Simpler spec format** — fewer nesting levels. A bar chart is ~5 fields vs ~12 in Vega-Lite.
 - **Less verbose** — specs are ~40-60% smaller. Fewer tokens = faster generation, lower cost.
 - **Multi-mark composition is simpler** — push to marks array vs. `layer` with encoding inheritance.
-- **Firechart's validation catches errors** — the 663-line `spec-to-plot.ts` with 4 validation checks prevents many mistakes.
+- **Chartroom's validation catches errors** — the 663-line `spec-to-plot.ts` with 4 validation checks prevents many mistakes.
 
 ### Error Surface Comparison
 
-| Error type | Observable Plot (via Firechart) | Vega-Lite |
+| Error type | Observable Plot (via Chartroom) | Vega-Lite |
 |---|---|---|
 | Wrong aggregation direction | Caught by auto-fix in spec-to-plot | Explicit in encoding (less error-prone) |
 | Missing column | Caught by validation | Runtime error (no built-in check) |
@@ -140,8 +140,8 @@ Observable Plot is the better fit when your product IS the chart output. You bui
 
 This is a close call. Both are defensible choices. The libraries converge on capability — the difference is in philosophy (imperative simplicity vs. declarative completeness) and aesthetics (beautiful defaults vs. powerful theming).
 
-## Firechart-Specific Context
+## Chartroom-Specific Context
 
-Firechart currently uses Observable Plot with a well-tested translation layer (`spec-to-plot.ts`, 663 lines) and extensive AI documentation (`plot-docs.ts`, 1000+ lines). The integration is moderately tight but well-isolated — Plot is imported in exactly one file.
+Chartroom currently uses Observable Plot with a well-tested translation layer (`spec-to-plot.ts`, 663 lines) and extensive AI documentation (`plot-docs.ts`, 1000+ lines). The integration is moderately tight but well-isolated — Plot is imported in exactly one file.
 
 Migration to Vega-Lite is not justified given: the existing system works well, produces good charts, and the translation layer + validation effectively provide most of Vega-Lite's declarative benefits. The sunk cost is real — not just code, but tuned validation rules, AI documentation, and battle-tested edge case handling.

@@ -1,9 +1,9 @@
 import Papa from "papaparse";
-import type { ParsedCSV } from "@firechart/core";
-import { extractMetadata } from "@firechart/core";
+import type { ParsedCSV } from "@chartroom/core";
+import { extractMetadata } from "@chartroom/core";
 
 // Re-export shared functions from core
-export { extractMetadata, metadataToContext, datasetsToContext, fileNameToDatasetName } from "@firechart/core";
+export { extractMetadata, metadataToContext, datasetsToContext, fileNameToDatasetName } from "@chartroom/core";
 
 // Browser-only: parse a File object
 export function parseCSV(file: File): Promise<ParsedCSV> {

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Firechart",
+  title: "Chartroom",
   description: "AI-powered chart generation from CSV data",
 };
 

@@ -2,11 +2,11 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Create a script that generates `apps/plugin/skills/chart/SKILL.md` and `docs/*.md` from `@firechart/core`, making core the single source of truth for all documentation.
+**Goal:** Create a script that generates `apps/plugin/skills/chart/SKILL.md` and `docs/*.md` from `@chartroom/core`, making core the single source of truth for all documentation.
 
 **Architecture:** Add `TOOL_DESCRIPTIONS` to `packages/core/src/docs.ts`, update `tools.ts` to reference it, then create a generation script in `apps/plugin/scripts/generate-skill.ts` that assembles SKILL.md from core exports and writes doc files from `DOC_CHUNKS`.
 
-**Tech Stack:** TypeScript, Bun, `@firechart/core`
+**Tech Stack:** TypeScript, Bun, `@chartroom/core`
 
 ---
 
@@ -103,11 +103,11 @@ Note: `lookup_docs` description stays inline — it's web-specific and not an MC
 
 **Step 1: Update each file to import and use TOOL_DESCRIPTIONS**
 
-For each tool file, import `TOOL_DESCRIPTIONS` from `@firechart/core` and replace the inline description string.
+For each tool file, import `TOOL_DESCRIPTIONS` from `@chartroom/core` and replace the inline description string.
 
 Example for `load-csv.ts`:
 ```typescript
-import { parseCSVString, metadataToContext, datasetsToContext, TOOL_DESCRIPTIONS, type DatasetMap } from "@firechart/core";
+import { parseCSVString, metadataToContext, datasetsToContext, TOOL_DESCRIPTIONS, type DatasetMap } from "@chartroom/core";
 
 // In server.tool() call:
 server.tool(
@@ -133,7 +133,7 @@ import {
   TOOL_DESCRIPTIONS,
   TOPIC_IDS,
   DOC_CHUNKS,
-} from "@firechart/core";
+} from "@chartroom/core";
 
 const SKILL_DIR = path.resolve(import.meta.dir, "../skills/chart");
 const DOCS_DIR = path.join(SKILL_DIR, "docs");
@@ -173,7 +173,7 @@ allowed-tools: Read, Bash(open *)
 
 # Chart Generation Workflow
 
-You have access to Firechart MCP tools for creating Vega-Lite charts from CSV data.
+You have access to Chartroom MCP tools for creating Vega-Lite charts from CSV data.
 
 ## Available MCP Tools
 

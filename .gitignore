@@ -48,5 +48,5 @@ packages/renderer/src/bundle/
 # eval results
 apps/eval/results/
 
-# firechart temp
-/tmp/firechart/
+# chartroom temp
+/tmp/chartroom/

@@ -1,15 +1,15 @@
 {
-  "name": "firechart",
+  "name": "chartroom",
   "private": true,
   "workspaces": ["packages/*", "apps/*"],
   "scripts": {
-    "dev": "bun run --filter @firechart/web dev",
-    "build": "bun run --filter @firechart/web build",
+    "dev": "bun run --filter @chartroom/web dev",
+    "build": "bun run --filter @chartroom/web build",
     "lint": "bun run --filter '*' lint",
     "typecheck": "bun run --filter '*' typecheck",
     "test": "bun run --filter '*' test",
-    "eval": "bun run --filter @firechart/eval eval",
-    "build:packages": "bun run --filter @firechart/core build && bun run --filter @firechart/renderer build && bun run --filter @firechart/plugin build"
+    "eval": "bun run --filter @chartroom/eval eval",
+    "build:packages": "bun run --filter @chartroom/core build && bun run --filter @chartroom/renderer build && bun run --filter @chartroom/plugin build"
   },
   "devDependencies": {
     "eslint": "^10.0.3",

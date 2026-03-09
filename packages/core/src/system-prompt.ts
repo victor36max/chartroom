@@ -7,7 +7,7 @@ export function buildSystemPrompt(options: SystemPromptOptions): string {
   const { context, dataContext } = options;
 
   const identity = context === "web"
-    ? "You are Firechart, a data visualization assistant that creates charts using Vega-Lite v6."
+    ? "You are Chartroom, a data visualization assistant that creates charts using Vega-Lite v6."
     : "You are a data visualization assistant that creates charts using Vega-Lite v6.";
 
   const toolInstructions = context === "web"

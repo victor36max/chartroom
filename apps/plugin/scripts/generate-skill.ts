@@ -4,7 +4,7 @@ import {
   buildSystemPrompt,
   TOPIC_IDS,
   DOC_CHUNKS,
-} from "@firechart/core";
+} from "@chartroom/core";
 
 // Plugin-specific tool descriptions (these are MCP tools, not shared with web)
 const TOOL_DESCRIPTIONS = {
@@ -56,7 +56,7 @@ allowed-tools: Read, Bash(open *)
 
 # Chart Generation Workflow
 
-You have access to Firechart MCP tools for creating Vega-Lite charts from CSV data.
+You have access to Chartroom MCP tools for creating Vega-Lite charts from CSV data.
 
 ## Available MCP Tools
 

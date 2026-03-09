@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import fs from "fs";
-import { parseCSVString, metadataToContext, datasetsToContext, type DatasetMap } from "@firechart/core";
+import { parseCSVString, metadataToContext, datasetsToContext, type DatasetMap } from "@chartroom/core";
 
 export function registerLoadCsv(server: McpServer, datasets: DatasetMap) {
   server.tool(

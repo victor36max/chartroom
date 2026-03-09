@@ -43,7 +43,7 @@ export default function Home() {
   return (
     <div className="flex h-screen flex-col">
       <header className="border-b px-4 py-2">
-        <h1 className="text-lg font-semibold">Firechart</h1>
+        <h1 className="text-lg font-semibold">Chartroom</h1>
       </header>
       <div className="flex flex-1 overflow-hidden">
         <div className="w-[420px] min-w-[320px] border-r flex flex-col">

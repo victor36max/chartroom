@@ -1,1 +1,1 @@
-export { injectData } from "@firechart/core";
+export { injectData } from "@chartroom/core";

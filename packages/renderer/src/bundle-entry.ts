@@ -1,5 +1,5 @@
 import embed from "vega-embed";
-import { injectData, getThemeConfig } from "@firechart/core";
+import { injectData, getThemeConfig } from "@chartroom/core";
 
 (window as unknown as Record<string, unknown>).renderVegaLite = async (
   spec: Record<string, unknown>,

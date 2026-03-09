@@ -1,6 +1,6 @@
 import embed, { type Result } from "vega-embed";
-import type { ThemeId } from "@firechart/core";
-import { injectData, getThemeConfig } from "@firechart/core";
+import type { ThemeId } from "@chartroom/core";
+import { injectData, getThemeConfig } from "@chartroom/core";
 
 export async function renderVegaLite(
   container: HTMLElement,

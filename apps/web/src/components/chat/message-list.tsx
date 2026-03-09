@@ -48,7 +48,7 @@ export function MessageList({ messages, status }: MessageListProps) {
     return (
       <div className="flex-1 flex items-center justify-center p-8 text-center">
         <div className="text-muted-foreground">
-          <p className="text-lg font-medium">Welcome to Firechart</p>
+          <p className="text-lg font-medium">Welcome to Chartroom</p>
           <p className="text-sm mt-1">
             Upload a CSV file and describe the chart you want to create.
           </p>

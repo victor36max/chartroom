@@ -1,1 +1,1 @@
-export { createTools } from "@firechart/core";
+export { createTools } from "@chartroom/core";

@@ -1,4 +1,4 @@
-import type { ChartSpec } from "@firechart/core";
+import type { ChartSpec } from "@chartroom/core";
 
 export interface EvalCase {
   name: string;

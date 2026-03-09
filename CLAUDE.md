@@ -21,24 +21,24 @@ Always run `bun run lint`, `bun run build`, and `bun run test` to verify changes
 
 ## Architecture
 
-Firechart is a **Bun workspace monorepo** with shared packages and multiple apps. It lets users upload CSVs and generate [Vega-Lite](https://vega.github.io/vega-lite/) charts via AI.
+Chartroom is a **Bun workspace monorepo** with shared packages and multiple apps. It lets users upload CSVs and generate [Vega-Lite](https://vega.github.io/vega-lite/) charts via AI.
 
 ### Monorepo structure
 
 ```
 packages/
-  core/         @firechart/core     — Shared logic: types, CSV parsing, spec validation,
+  core/         @chartroom/core     — Shared logic: types, CSV parsing, spec validation,
                                        data injection, themes, docs, system prompt, Zod schemas,
                                        AI tools, model config
-  renderer/     @firechart/renderer — Playwright-based headless Vega-Lite → PNG rendering
+  renderer/     @chartroom/renderer — Playwright-based headless Vega-Lite → PNG rendering
 
 apps/
-  web/          @firechart/web      — Next.js 16 App Router web app
-  eval/         @firechart/eval     — Eval runner (cases, judge, reports)
-  plugin/       @firechart/plugin   — Claude Code MCP server + /chart skill
+  web/          @chartroom/web      — Next.js 16 App Router web app
+  eval/         @chartroom/eval     — Eval runner (cases, judge, reports)
+  plugin/       @chartroom/plugin   — Claude Code MCP server + /chart skill
 ```
 
-### `@firechart/core` (packages/core)
+### `@chartroom/core` (packages/core)
 
 Node-compatible shared logic (`ai` SDK is an optional peer dependency):
 - **Types**: `ChartSpec`, `ThemeId`, `ColumnMeta`, `DataMetadata`, `ParsedCSV`, `DatasetMap`
@@ -51,14 +51,14 @@ Node-compatible shared logic (`ai` SDK is an optional peer dependency):
 - **AI tools**: `createTools` (render_chart + lookup_docs tool defs), `pruneOldToolResults`
 - **Models**: `resolveModelId`, `MODEL_TIERS`, `MODEL_TIER_LABELS`, `DEFAULT_TIER`
 
-### `@firechart/renderer` (packages/renderer)
+### `@chartroom/renderer` (packages/renderer)
 
 Headless chart rendering via Playwright + vega-embed:
 - `initRenderer()` → launches Chromium, loads HTML page with bundled vega-embed
 - `renderChart(page, spec, datasets, themeId)` → returns `{ png, warnings }` or `{ error }`
 - Bundle built with esbuild: `bun run build:bundle`
 
-### `@firechart/web` (apps/web)
+### `@chartroom/web` (apps/web)
 
 Next.js 16 App Router web app. Two-panel layout:
 - **Left**: ChatPanel (420px) — chat UI + CSV upload
@@ -68,24 +68,24 @@ AI layer uses Vercel AI SDK (`streamText`, `useChat`) with OpenRouter.
 - `render_chart` — client-side tool (no `execute`), renders via `renderVegaLite`, captures PNG
 - `lookup_docs` — server-side tool, queries core docs
 
-Shared logic imported from `@firechart/core`. Local files in `lib/chart/`, `lib/csv/`, `lib/docs/` are thin re-exports.
+Shared logic imported from `@chartroom/core`. Local files in `lib/chart/`, `lib/csv/`, `lib/docs/` are thin re-exports.
 
-### `@firechart/plugin` (apps/plugin)
+### `@chartroom/plugin` (apps/plugin)
 
 Claude Code MCP server providing chart generation tools:
 - **`load_csv`** — parse CSV file, return column metadata
 - **`validate_chart`** — validate Vega-Lite spec via compiler
-- **`render_chart`** — render spec to PNG via `@firechart/renderer`
+- **`render_chart`** — render spec to PNG via `@chartroom/renderer`
 - **`open_interactive`** — open chart in browser with tooltips
 
 Skill: `/chart` — guided workflow for chart generation from CSV data. Vega-Lite reference docs in `skills/chart/docs/`.
 
-### `@firechart/eval` (apps/eval)
+### `@chartroom/eval` (apps/eval)
 
 Eval runner for automated chart quality assessment:
 - Loads eval cases from `cases/` (JSON) and data from `data/` (CSV)
 - Runs agentic loop with `generateText` + `createTools` from core
-- Renders charts via `@firechart/renderer`, judges via vision model
+- Renders charts via `@chartroom/renderer`, judges via vision model
 - Generates HTML reports in `results/`
 
 ### Key files

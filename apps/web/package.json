@@ -1,5 +1,5 @@
 {
-  "name": "@firechart/web",
+  "name": "@chartroom/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -12,7 +12,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@firechart/core": "workspace:*",
+    "@chartroom/core": "workspace:*",
     "@ai-sdk/react": "^3.0.110",
     "@codemirror/lang-json": "^6.0.2",
     "@openrouter/ai-sdk-provider": "^2.2.3",

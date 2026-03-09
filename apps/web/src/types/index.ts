@@ -5,4 +5,4 @@ export type {
   DataMetadata,
   ParsedCSV,
   DatasetMap,
-} from "@firechart/core";
+} from "@chartroom/core";

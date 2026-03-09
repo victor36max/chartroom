@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { validateSpec, type DatasetMap } from "@firechart/core";
+import { validateSpec, type DatasetMap } from "@chartroom/core";
 
 export function registerValidateChart(server: McpServer, datasets: DatasetMap) {
   server.tool(

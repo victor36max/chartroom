@@ -1,7 +1,7 @@
 {
   "mcpServers": {
-    "firechart": {
-      "command": "/Users/victor/Documents/firechart/apps/plugin/start.sh",
+    "chartroom": {
+      "command": "/Users/victor/Documents/chartroom/apps/plugin/start.sh",
       "args": []
     }
   }

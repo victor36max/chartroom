@@ -3,7 +3,7 @@ import { z } from "zod";
 import fs from "fs";
 import path from "path";
 import { exec } from "child_process";
-import { injectData, getThemeConfig, type DatasetMap, type ThemeId } from "@firechart/core";
+import { injectData, getThemeConfig, type DatasetMap, type ThemeId } from "@chartroom/core";
 
 function openInBrowser(filePath: string) {
   const cmd = process.platform === "darwin" ? "open"
@@ -37,7 +37,7 @@ export function registerOpenInteractive(server: McpServer, datasets: DatasetMap)
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Firechart — Interactive View</title>
+  <title>Chartroom — Interactive View</title>
   <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
   <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
   <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
@@ -57,7 +57,7 @@ export function registerOpenInteractive(server: McpServer, datasets: DatasetMap)
 </body>
 </html>`;
 
-        const tmpDir = "/tmp/firechart";
+        const tmpDir = "/tmp/chartroom";
         fs.mkdirSync(tmpDir, { recursive: true });
         const filePath = path.join(tmpDir, `interactive-${Date.now()}.html`);
         fs.writeFileSync(filePath, html);

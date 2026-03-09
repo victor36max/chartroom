@@ -483,7 +483,7 @@ import type { ThemeId } from "@/types";
 import { injectData } from "./inject-data";
 import { stripStyling } from "./strip-config";
 
-// Datawrapper-like defaults matching the current Firechart aesthetic
+// Datawrapper-like defaults matching the current Chartroom aesthetic
 const DEFAULT_CONFIG: Config = {
   font: "system-ui, -apple-system, sans-serif",
   axis: {

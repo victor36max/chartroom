@@ -1,1 +1,1 @@
-export { pruneOldToolResults } from "@firechart/core";
+export { pruneOldToolResults } from "@chartroom/core";

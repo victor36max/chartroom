@@ -1,4 +1,4 @@
-import { initRenderer, buildBundle, closeRenderer } from "@firechart/renderer";
+import { initRenderer, buildBundle, closeRenderer } from "@chartroom/renderer";
 type ModelTier = "fast" | "mid" | "power";
 
 const MODEL_DEFAULTS: Record<ModelTier, { envKey: string; default: string }> = {

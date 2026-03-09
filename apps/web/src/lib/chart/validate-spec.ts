@@ -1,1 +1,1 @@
-export { validateSpec } from "@firechart/core";
+export { validateSpec } from "@chartroom/core";

@@ -2,7 +2,7 @@
 
 ## Context
 
-Firechart currently supports PNG and SVG export via Vega Embed's native `Result.view` API. Users need PDF export for print-ready, vector-quality chart output. The export UI is a simple popover dropdown in the chart panel toolbar.
+Chartroom currently supports PNG and SVG export via Vega Embed's native `Result.view` API. Users need PDF export for print-ready, vector-quality chart output. The export UI is a simple popover dropdown in the chart panel toolbar.
 
 ## Design
 

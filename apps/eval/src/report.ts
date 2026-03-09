@@ -105,7 +105,7 @@ function buildHtml(results: CaseResult[], summary: EvalSummary): string {
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Firechart Eval Report</title>
+  <title>Chartroom Eval Report</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: system-ui, -apple-system, sans-serif; background: #f5f5f5; color: #333; padding: 24px; }
@@ -134,7 +134,7 @@ function buildHtml(results: CaseResult[], summary: EvalSummary): string {
 </head>
 <body>
   <div class="header">
-    <h1>Firechart Eval Report</h1>
+    <h1>Chartroom Eval Report</h1>
     <div class="summary">
       <span><strong>${summary.passed}/${summary.totalCases}</strong> passed</span>
       <span>Avg score: <strong>${summary.avgScore.toFixed(1)}/25</strong></span>

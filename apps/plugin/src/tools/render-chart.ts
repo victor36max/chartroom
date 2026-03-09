@@ -3,8 +3,8 @@ import { z } from "zod";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { type DatasetMap } from "@firechart/core";
-import { initRenderer, renderChart as rendererRenderChart } from "@firechart/renderer";
+import { type DatasetMap } from "@chartroom/core";
+import { initRenderer, renderChart as rendererRenderChart } from "@chartroom/renderer";
 import type { Browser, Page } from "playwright";
 
 let browser: Browser | null = null;
@@ -53,7 +53,7 @@ export function registerRenderChart(server: McpServer, datasets: DatasetMap) {
         const { png, warnings } = result as { png: Buffer; warnings: string[] };
 
         // Save PNG
-        const tmpDir = path.join(os.tmpdir(), "firechart");
+        const tmpDir = path.join(os.tmpdir(), "chartroom");
         fs.mkdirSync(tmpDir, { recursive: true });
         const filePath = outputPath ?? path.join(tmpDir, `chart-${Date.now()}.png`);
         fs.writeFileSync(filePath, png);

@@ -9,8 +9,8 @@ import {
   validateSpec,
   type DatasetMap,
   type ChartSpec,
-} from "@firechart/core";
-import { renderChart } from "@firechart/renderer";
+} from "@chartroom/core";
+import { renderChart } from "@chartroom/renderer";
 import type { EvalCase, CaseResult } from "./types";
 import type { Page } from "playwright";
 import Papa from "papaparse";
