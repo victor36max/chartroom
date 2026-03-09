@@ -153,8 +153,8 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
 
   useEffect(() => {
     onStatusChange?.(status);
-    // Refresh balance after chat response completes
-    if (status === "ready" && user) {
+    // Refresh balance after assistant chat response completes
+    if (status === "ready" && user && messages.length > 0 && messages[messages.length - 1].role === "assistant") {
       refreshBalance();
     }
   }, [status, onStatusChange, user, refreshBalance]);
