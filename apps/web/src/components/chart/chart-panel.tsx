@@ -7,6 +7,9 @@ import { DataTable } from "@/components/data/data-table";
 import { exportChartAsPng, exportChartAsSvg } from "@/lib/chart/export-chart";
 import { validateSpec } from "@/lib/chart/validate-spec";
 import { Download, Check, Code, X, SlidersHorizontal, Palette, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Select as ShadSelect, SelectContent as ShadSelectContent, SelectItem as ShadSelectItem, SelectTrigger as ShadSelectTrigger, SelectValue as ShadSelectValue } from "@/components/ui/select";
 import CodeMirror from "@uiw/react-codemirror";
 import { json } from "@codemirror/lang-json";
 import { VisualSpecEditor } from "./visual-spec-editor";
@@ -163,45 +166,42 @@ export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSele
           {hasChart && (
             <div className="flex items-center gap-1 mr-1">
               <Palette className="h-3.5 w-3.5 text-muted-foreground" />
-              <select
-                value={themeId}
-                onChange={(e) => onThemeChange?.(e.target.value as ThemeId)}
-                className="text-xs border rounded px-1.5 py-1 bg-background"
-              >
-                {THEME_OPTIONS.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
+              <ShadSelect value={themeId} onValueChange={(v) => onThemeChange?.(v as ThemeId)}>
+                <ShadSelectTrigger size="sm" className="w-[130px] text-xs">
+                  <ShadSelectValue />
+                </ShadSelectTrigger>
+                <ShadSelectContent>
+                  {THEME_OPTIONS.map((t) => (
+                    <ShadSelectItem key={t.value} value={t.value} className="text-xs">
+                      {t.label}
+                    </ShadSelectItem>
+                  ))}
+                </ShadSelectContent>
+              </ShadSelect>
             </div>
           )}
           {hasChart && (
-            <button
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={() => setJsonPanelOpen(!jsonPanelOpen)}
-              className={`p-1.5 rounded-md transition-colors ${
-                jsonPanelOpen
-                  ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
-              }`}
-              title={jsonPanelOpen ? "Close spec editor" : "Open spec editor"}
+              className={jsonPanelOpen ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}
+              aria-label={jsonPanelOpen ? "Close spec editor" : "Open spec editor"}
             >
               <Code className="h-4 w-4" />
-            </button>
+            </Button>
           )}
           {hasChart && (
             <div className="relative" ref={exportRef}>
-              <button
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 onClick={() => setExportOpen(!exportOpen)}
-                className={`p-1.5 rounded-md transition-colors ${
-                  exportOpen
-                    ? "bg-muted text-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                }`}
-                title="Export chart"
+                className={exportOpen ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}
+                aria-label="Export chart"
               >
                 <Download className="h-4 w-4" />
-              </button>
+              </Button>
               {exportOpen && (
                 <div className="absolute right-0 top-full mt-1 z-50 w-48 rounded-md border bg-popover p-3 shadow-md space-y-3">
                   <div className="flex gap-0 rounded-md bg-muted p-0.5">
@@ -221,7 +221,7 @@ export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSele
                   </div>
                   {exportFormat === "png" && (
                     <div className="space-y-1">
-                      <label className="text-xs font-medium">Scale</label>
+                      <Label className="text-xs font-medium">Scale</Label>
                       <div className="flex gap-1">
                         {[1, 2].map((s) => (
                           <button
@@ -239,7 +239,7 @@ export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSele
                       </div>
                     </div>
                   )}
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <Label className="flex items-center gap-2">
                     <input
                       type="checkbox"
                       checked={exportTransparent}
@@ -247,8 +247,10 @@ export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSele
                       className="h-3.5 w-3.5 rounded border-muted-foreground accent-primary"
                     />
                     <span className="text-xs">Transparent background</span>
-                  </label>
-                  <button
+                  </Label>
+                  <Button
+                    size="sm"
+                    className="w-full"
                     onClick={() => {
                       if (exportFormat === "png") {
                         exportChartAsPng({ pixelRatio: exportScale, transparent: exportTransparent });
@@ -257,10 +259,9 @@ export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSele
                       }
                       setExportOpen(false);
                     }}
-                    className="w-full h-7 rounded text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                   >
                     Export {exportFormat.toUpperCase()}
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -269,7 +270,7 @@ export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSele
       </div>
       <div className="flex flex-1 overflow-hidden">
         <div className={`${jsonPanelOpen ? "w-1/2" : "w-full"} flex flex-col overflow-hidden transition-all`}>
-          <TabsContent value="chart" className="flex-1 m-0 overflow-auto relative">
+          <TabsContent value="chart" className="flex-1 m-0 overflow-auto relative" onClick={() => jsonPanelOpen && handleCloseJsonPanel()}>
             {isLoading && (
               <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 pointer-events-none">
                 <div className="flex items-center gap-2 text-muted-foreground">
@@ -367,21 +368,23 @@ export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSele
                 </button>
               </div>
               <div className="flex items-center gap-1">
-                <button
+                <Button
+                  size="sm"
                   onClick={handleApply}
-                  className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                  title="Apply edits and send the updated spec to the AI conversation"
+                  aria-label="Apply edits and send the updated spec to the AI conversation"
                 >
                   <Check className="h-3.5 w-3.5" />
                   Apply to Chat
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
                   onClick={handleCloseJsonPanel}
-                  className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                  title="Close editor"
+                  className="text-muted-foreground hover:text-foreground"
+                  aria-label="Close editor"
                 >
                   <X className="h-3.5 w-3.5" />
-                </button>
+                </Button>
               </div>
             </div>
             <div className="flex-1 overflow-auto">

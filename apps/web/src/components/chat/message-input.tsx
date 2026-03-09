@@ -4,12 +4,20 @@ import { useCallback, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
+const SUGGESTIONS = [
+  "Surprise me with a chart",
+  "What patterns do you see?",
+  "Visualize the key trends",
+  "Summarize this dataset",
+];
+
 interface MessageInputProps {
   input: string;
   onInputChange: (value: string) => void;
   onSubmit: (e: FormEvent) => void;
   onStop: () => void;
   onClear: () => void;
+  onSuggestionClick: (text: string) => void;
   isBusy: boolean;
   hasCSV: boolean;
   hasMessages: boolean;
@@ -21,6 +29,7 @@ export function MessageInput({
   onSubmit,
   onStop,
   onClear,
+  onSuggestionClick,
   isBusy,
   hasCSV,
   hasMessages,
@@ -35,8 +44,24 @@ export function MessageInput({
     [onSubmit]
   );
 
+  const showSuggestions = hasCSV && !hasMessages && !isBusy;
+
   return (
     <div className="border-t p-3">
+      {showSuggestions && (
+        <div className="mb-2 flex flex-wrap gap-2 animate-in fade-in duration-300">
+          {SUGGESTIONS.map((text) => (
+            <button
+              key={text}
+              type="button"
+              onClick={() => onSuggestionClick(text)}
+              className="rounded-full border px-3 py-1 text-xs text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+            >
+              {text}
+            </button>
+          ))}
+        </div>
+      )}
       <form onSubmit={onSubmit} className="flex gap-2">
         <Textarea
           value={input}

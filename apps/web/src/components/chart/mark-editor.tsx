@@ -83,7 +83,7 @@ export function MarkEditor({ spec, onUpdate }: MarkEditorProps) {
           }
           className="rounded border-input"
         />
-        <Label htmlFor={`mark-tooltip-${markType}`} className="text-xs cursor-pointer">
+        <Label htmlFor={`mark-tooltip-${markType}`} className="text-xs">
           Enable tooltips
         </Label>
       </div>

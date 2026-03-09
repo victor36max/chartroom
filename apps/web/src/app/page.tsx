@@ -3,11 +3,17 @@
 import { useState, useRef, useCallback } from "react";
 import { ChatPanel, type ChatPanelHandle } from "@/components/chat/chat-panel";
 import { ChartPanel } from "@/components/chart/chart-panel";
+import { isAuthEnabled } from "@/lib/utils";
+import { useAuth } from "@/components/auth/auth-provider";
+import { LoginModal } from "@/components/auth/login-modal";
+import { AccountDropdown } from "@/components/auth/account-dropdown";
+import { Button } from "@/components/ui/button";
 import { DEFAULT_TIER, type ModelTier } from "@/lib/agent/models";
 import { parseCSV, fileNameToDatasetName } from "@/lib/csv/parser";
 import type { ParsedCSV, DatasetMap, ChartSpec, ThemeId } from "@/types";
 
 export default function Home() {
+  const { user, isLoading: authLoading, openLogin } = useAuth();
   const [datasets, setDatasets] = useState<DatasetMap>({});
   const [currentChart, setCurrentChart] = useState<ChartSpec | null>(null);
   const [tier, setTier] = useState<ModelTier>(DEFAULT_TIER);
@@ -47,8 +53,20 @@ export default function Home() {
 
   return (
     <div className="flex h-screen flex-col">
-      <header className="border-b px-4 py-2">
+      <header className="border-b px-4 py-2 flex items-center justify-between">
         <h1 className="text-lg font-semibold">⛵ Chartroom</h1>
+        <div className="flex items-center gap-2">
+          {isAuthEnabled() && !authLoading && (
+            user ? (
+              <AccountDropdown />
+            ) : (
+              <Button variant="ghost" size="sm" onClick={openLogin}>
+                Sign in
+              </Button>
+            )
+          )}
+        </div>
+        {isAuthEnabled() && <LoginModal />}
       </header>
       <div className="flex flex-1 overflow-hidden">
         <div className="w-[420px] min-w-[320px] border-r flex flex-col">

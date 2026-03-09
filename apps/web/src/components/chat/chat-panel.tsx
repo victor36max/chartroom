@@ -8,6 +8,7 @@ import {
 } from "ai";
 import { MessageList } from "./message-list";
 import { MessageInput } from "./message-input";
+import { toast } from "sonner";
 import { parseCSV, fileNameToDatasetName, datasetsToContext } from "@/lib/csv/parser";
 import { captureChart } from "@/components/chart/chart-capture";
 import { validateSpec } from "@/lib/chart/validate-spec";
@@ -17,7 +18,10 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Select as SelectPrimitive } from "radix-ui";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { X } from "lucide-react";
+import { X, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { isAuthEnabled } from "@/lib/utils";
+import { useAuth } from "@/components/auth/auth-provider";
 
 export interface ChatPanelHandle {
   sendSpecEdit: (spec: ChartSpec) => void;
@@ -39,6 +43,7 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
   { datasets, onCSVParsed, onDatasetRemoved, onChartSpec, tier, onTierChange, onStatusChange },
   ref
 ) {
+  const { user, balance, openLogin, refreshBalance } = useAuth();
   const [input, setInput] = useState("");
   const [csvError, setCsvError] = useState<string | null>(null);
   const datasetsRef = useRef(datasets);
@@ -53,6 +58,13 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
   const MAX_AUTO_SENDS = 5;
 
   const { messages, sendMessage, stop, setMessages, status, addToolOutput } = useChat({
+    onError(error) {
+      if (error.message?.includes("402")) {
+        toast.error("No credits remaining. Add credits to continue.");
+      } else {
+        toast.error("Something went wrong — please try again.");
+      }
+    },
     // eslint-disable-next-line react-hooks/refs -- body() is only called on send, not during render
     transport: new DefaultChatTransport({
       api: "/api/chat",
@@ -149,7 +161,11 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
 
   useEffect(() => {
     onStatusChange?.(status);
-  }, [status, onStatusChange]);
+    // Refresh balance after chat response completes
+    if (status === "ready" && user) {
+      refreshBalance();
+    }
+  }, [status, onStatusChange, user, refreshBalance]);
 
   const handleStop = useCallback(() => {
     stop();
@@ -164,11 +180,18 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
     (e: FormEvent) => {
       e.preventDefault();
       if (!input.trim()) return;
+      if (isAuthEnabled()) {
+        if (!user) {
+          openLogin();
+          return;
+        }
+        if (balance !== null && balance <= 0) return;
+      }
       autoSendCountRef.current = 0;
       sendMessage({ text: input });
       setInput("");
     },
-    [input, sendMessage]
+    [input, sendMessage, user, balance, openLogin]
   );
 
   const handleFilesSelected = useCallback(
@@ -235,35 +258,39 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
           <div className="flex items-center gap-2">
             <Popover>
               <PopoverTrigger asChild>
-                <button type="button" className="cursor-pointer">
+                <Button variant="ghost" size="sm" className="h-auto px-0 hover:bg-transparent">
                   <Badge variant="secondary" className="text-xs hover:bg-secondary/80 transition-colors">
                     {datasetNames.length} dataset{datasetNames.length > 1 ? "s" : ""} ▾
                   </Badge>
-                </button>
+                </Button>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-56 p-2">
                 <div className="space-y-1">
                   {datasetNames.map((name) => (
                     <div key={name} className="flex items-center justify-between px-2 py-1 rounded text-sm">
                       <span className="truncate">{name}</span>
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
                         onClick={() => onDatasetRemoved(name)}
-                        className="text-muted-foreground hover:text-foreground transition-colors ml-2 shrink-0"
+                        className="ml-2 shrink-0 text-muted-foreground hover:text-foreground"
+                        aria-label={`Remove ${name}`}
                       >
                         <X className="h-3.5 w-3.5" />
-                      </button>
+                      </Button>
                     </div>
                   ))}
                 </div>
                 <div className="border-t mt-1 pt-1">
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => headerFileInputRef.current?.click()}
-                    className="w-full text-left px-2 py-1 rounded text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                    className="w-full justify-start text-muted-foreground hover:text-foreground"
                   >
-                    + Add CSV
-                  </button>
+                    <Plus className="h-3.5 w-3.5" />
+                    Add CSV
+                  </Button>
                 </div>
               </PopoverContent>
             </Popover>
@@ -272,18 +299,25 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
             </span>
           </div>
         ) : (
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => headerFileInputRef.current?.click()}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="text-xs text-muted-foreground hover:text-foreground"
           >
-            + Add CSV
-          </button>
+            <Plus className="h-3.5 w-3.5" />
+            Add CSV
+          </Button>
         )}
       </div>
       <MessageList messages={messages} status={status} />
       {csvError && (
         <p className="px-3 py-1 text-xs text-destructive border-t">{csvError}</p>
+      )}
+      {isAuthEnabled() && user && balance !== null && balance <= 0 && (
+        <p className="px-3 py-1 text-xs text-muted-foreground border-t">
+          No credits remaining. Add credits to continue.
+        </p>
       )}
       <MessageInput
         input={input}
@@ -291,6 +325,10 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
         onSubmit={handleSubmit}
         onStop={handleStop}
         onClear={handleClear}
+        onSuggestionClick={(text) => {
+          autoSendCountRef.current = 0;
+          sendMessage({ text });
+        }}
         isBusy={isBusy}
         hasCSV={hasCSV}
         hasMessages={hasMessages}

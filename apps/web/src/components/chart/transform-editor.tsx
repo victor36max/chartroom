@@ -66,7 +66,7 @@ function CheckboxGrid({ columns, selected, onChange }: {
       {columns.map((c) => {
         const checked = selected.includes(c.name);
         return (
-          <label key={c.name} className="flex items-center gap-0.5 text-[10px] cursor-pointer">
+          <Label key={c.name} className="flex items-center gap-0.5 text-[10px]">
             <input
               type="checkbox"
               checked={checked}
@@ -77,7 +77,7 @@ function CheckboxGrid({ columns, selected, onChange }: {
               className="rounded border-input h-3 w-3"
             />
             {c.name}
-          </label>
+          </Label>
         );
       })}
     </div>
@@ -211,12 +211,15 @@ function AggregateForm({ transform, columns, onChange }: { transform: TransformO
               value={agg.as ?? ""}
               onChange={(e) => updateAgg(i, { as: e.target.value })}
             />
-            <button
+            <Button
+              variant="ghost"
+              size="icon-xs"
               onClick={() => onChange({ ...transform, aggregate: aggregations.filter((_, j) => j !== i) })}
-              className="text-muted-foreground hover:text-destructive p-0.5"
+              className="text-muted-foreground hover:text-destructive"
+              aria-label="Remove aggregation"
             >
               <X className="h-3 w-3" />
-            </button>
+            </Button>
           </div>
         ))}
         <Button
@@ -334,12 +337,15 @@ function WindowForm({ transform, columns, onChange }: { transform: TransformObj;
               value={w.as ?? ""}
               onChange={(e) => updateOp(i, { as: e.target.value })}
             />
-            <button
+            <Button
+              variant="ghost"
+              size="icon-xs"
               onClick={() => onChange({ ...transform, window: windowOps.filter((_, j) => j !== i) })}
-              className="text-muted-foreground hover:text-destructive p-0.5"
+              className="text-muted-foreground hover:text-destructive"
+              aria-label="Remove window operation"
             >
               <X className="h-3 w-3" />
-            </button>
+            </Button>
           </div>
         ))}
         <Button
@@ -554,26 +560,35 @@ function TransformCard({ transform, index, total, columns, datasets, onChange, o
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-medium bg-muted px-1.5 py-0.5 rounded">{type}</span>
         <div className="flex items-center gap-0.5">
-          <button
+          <Button
+            variant="ghost"
+            size="icon-xs"
             onClick={() => onMove(-1)}
             disabled={index === 0}
-            className="p-0.5 rounded text-muted-foreground hover:text-foreground disabled:opacity-30"
+            className="text-muted-foreground hover:text-foreground"
+            aria-label="Move transform up"
           >
             <ArrowUp className="h-3 w-3" />
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-xs"
             onClick={() => onMove(1)}
             disabled={index === total - 1}
-            className="p-0.5 rounded text-muted-foreground hover:text-foreground disabled:opacity-30"
+            className="text-muted-foreground hover:text-foreground"
+            aria-label="Move transform down"
           >
             <ArrowDown className="h-3 w-3" />
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-xs"
             onClick={onRemove}
-            className="p-0.5 rounded text-muted-foreground hover:text-destructive"
+            className="text-muted-foreground hover:text-destructive"
+            aria-label="Remove transform"
           >
             <X className="h-3 w-3" />
-          </button>
+          </Button>
         </div>
       </div>
       {type === "filter" && <FilterForm transform={transform} onChange={onChange} />}
