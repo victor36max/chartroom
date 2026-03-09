@@ -3,6 +3,7 @@
 import { type UIMessage } from "ai";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useEffect, useRef } from "react";
+import ReactMarkdown from "react-markdown";
 
 interface MessageListProps {
   messages: UIMessage[];
@@ -123,11 +124,17 @@ function MessageBubbleGroup({ message }: { message: UIMessage }) {
             : "bg-muted"
         }`}
       >
-        {textParts.map((part, i) => (
-          <p key={i} className="whitespace-pre-wrap">
-            {part.type === "text" ? part.text : null}
-          </p>
-        ))}
+        {textParts.map((part, i) =>
+          part.type === "text" ? (
+            isUser ? (
+              <p key={i} className="whitespace-pre-wrap">{part.text}</p>
+            ) : (
+              <div key={i} className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-headings:my-2 prose-pre:my-2">
+                <ReactMarkdown>{part.text}</ReactMarkdown>
+              </div>
+            )
+          ) : null
+        )}
       </div>
     </div>
   );
