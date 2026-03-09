@@ -185,7 +185,7 @@ export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSele
               variant="ghost"
               size="icon-sm"
               onClick={() => setJsonPanelOpen(!jsonPanelOpen)}
-              className={jsonPanelOpen ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}
+              className={`hidden md:inline-flex ${jsonPanelOpen ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`}
               aria-label={jsonPanelOpen ? "Close spec editor" : "Open spec editor"}
             >
               <Code className="h-4 w-4" />
