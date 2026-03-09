@@ -2,6 +2,8 @@
 export type {
   ChartSpec,
   ThemeId,
+  CategoricalInfo,
+  DateGranularity,
   ColumnMeta,
   DataMetadata,
   ParsedCSV,

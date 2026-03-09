@@ -189,7 +189,7 @@ describe("validateSpec", () => {
       }
     });
 
-    it("warns when encoding references pre-aggregate column after aggregate", () => {
+    it("warns with specific aggregate message when field is dropped by aggregate transform", () => {
       const spec = {
         data: { url: "stocks.csv" },
         mark: "bar",
@@ -204,7 +204,59 @@ describe("validateSpec", () => {
       const result = validateSpec(spec, { "stocks.csv": STOCKS });
       expect(result.valid).toBe(true);
       if (result.valid) {
-        expect(result.warnings.some(w => w.includes("volume"))).toBe(true);
+        expect(result.warnings.some(w =>
+          w.includes("volume") && w.includes("aggregate") && w.includes("groupby")
+        )).toBe(true);
+      }
+    });
+
+    it("warns with specific aggregate message for scatter plot missing groupby field", () => {
+      const STOCK_DATA = [
+        { symbol: "AAPL", sector: "Tech", close: 150, marketCap: 3000 },
+        { symbol: "GOOG", sector: "Tech", close: 140, marketCap: 2000 },
+        { symbol: "JNJ", sector: "Health", close: 160, marketCap: 500 },
+      ];
+      const spec = {
+        mark: { type: "point", filled: true },
+        transform: [
+          { aggregate: [{ op: "mean", field: "close", as: "avg_close" }, { op: "mean", field: "marketCap", as: "avg_cap" }], groupby: ["symbol"] },
+        ],
+        encoding: {
+          x: { field: "avg_cap", type: "quantitative" },
+          y: { field: "avg_close", type: "quantitative" },
+          color: { field: "sector", type: "nominal" },
+        },
+      };
+      const result = validateSpec(spec, { csv: STOCK_DATA });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w =>
+          w.includes("sector") && w.includes("aggregate") && w.includes('groupby')
+        )).toBe(true);
+      }
+    });
+
+    it("no warning when aggregate groupby includes all encoded fields", () => {
+      const STOCK_DATA = [
+        { symbol: "AAPL", sector: "Tech", close: 150, marketCap: 3000 },
+        { symbol: "GOOG", sector: "Tech", close: 140, marketCap: 2000 },
+      ];
+      const spec = {
+        mark: { type: "point", filled: true },
+        transform: [
+          { aggregate: [{ op: "mean", field: "close", as: "avg_close" }, { op: "mean", field: "marketCap", as: "avg_cap" }], groupby: ["symbol", "sector"] },
+        ],
+        encoding: {
+          x: { field: "avg_cap", type: "quantitative" },
+          y: { field: "avg_close", type: "quantitative" },
+          color: { field: "sector", type: "nominal" },
+          tooltip: { field: "symbol", type: "nominal" },
+        },
+      };
+      const result = validateSpec(spec, { csv: STOCK_DATA });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("aggregate") && w.includes("groupby"))).toBe(false);
       }
     });
 
@@ -222,6 +274,255 @@ describe("validateSpec", () => {
       expect(result.valid).toBe(true);
       if (result.valid) {
         expect(result.warnings.some(w => w.includes("not in") || w.includes("not found"))).toBe(false);
+      }
+    });
+  });
+
+  describe("spec pattern linting", () => {
+    it("warns when rule layer inherits shared categorical encoding", () => {
+      const spec = {
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+        },
+        layer: [
+          { mark: "bar" },
+          { mark: "rule", encoding: { y: { datum: 15 } } },
+        ],
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("rule mark") && w.includes("categorical"))).toBe(true);
+      }
+    });
+
+    it("no warning when rule layer has no shared categorical encoding", () => {
+      const spec = {
+        layer: [
+          { mark: "bar", encoding: { x: { field: "category", type: "nominal" }, y: { field: "value", type: "quantitative" } } },
+          { mark: "rule", encoding: { y: { datum: 15 } } },
+        ],
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("rule mark"))).toBe(false);
+      }
+    });
+
+    it("warns when point mark uses inline aggregate without transform groupby", () => {
+      const spec = {
+        mark: "point",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { aggregate: "mean", field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Point/scatter") && w.includes("inline aggregate"))).toBe(true);
+      }
+    });
+
+    it("no warning when point mark uses transform groupby", () => {
+      const spec = {
+        mark: "point",
+        transform: [
+          { aggregate: [{ op: "mean", field: "value", as: "avg_value" }], groupby: ["category"] },
+        ],
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "avg_value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Point/scatter"))).toBe(false);
+      }
+    });
+
+    it("warns on high cardinality nominal axis", () => {
+      const manyCategories = Array.from({ length: 25 }, (_, i) => ({
+        category: `cat_${i}`,
+        value: i * 10,
+      }));
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: manyCategories });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("25 unique values") && w.includes("filtering"))).toBe(true);
+      }
+    });
+
+    it("no warning on low cardinality nominal axis", () => {
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("unique values"))).toBe(false);
+      }
+    });
+
+    it("warns when shape encoding has more than 6 unique values", () => {
+      const manyCompanies = Array.from({ length: 8 }, (_, i) => ({
+        company: `Company_${i}`,
+        sector: i < 4 ? "Tech" : "Finance",
+        price: (i + 1) * 10,
+        marketCap: (i + 1) * 100,
+      }));
+      const spec = {
+        mark: { type: "point", filled: true },
+        transform: [
+          { aggregate: [{ op: "mean", field: "price", as: "avg_price" }, { op: "mean", field: "marketCap", as: "avg_cap" }], groupby: ["company", "sector"] },
+        ],
+        encoding: {
+          x: { field: "avg_price", type: "quantitative" },
+          y: { field: "avg_cap", type: "quantitative" },
+          color: { field: "sector", type: "nominal" },
+          shape: { field: "company", type: "nominal" },
+        },
+      };
+      const result = validateSpec(spec, { csv: manyCompanies });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("shape") && w.includes("8 unique values") && w.includes("6"))).toBe(true);
+      }
+    });
+
+    it("no warning when shape encoding has 6 or fewer unique values", () => {
+      const fewCompanies = Array.from({ length: 5 }, (_, i) => ({
+        company: `Company_${i}`,
+        price: (i + 1) * 10,
+      }));
+      const spec = {
+        mark: { type: "point", filled: true },
+        encoding: {
+          x: { field: "price", type: "quantitative" },
+          y: { field: "price", type: "quantitative" },
+          shape: { field: "company", type: "nominal" },
+        },
+      };
+      const result = validateSpec(spec, { csv: fewCompanies });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("shape"))).toBe(false);
+      }
+    });
+
+    it("warns when color encoding has more than 20 nominal values", () => {
+      const manyCategories = Array.from({ length: 25 }, (_, i) => ({
+        cat: `cat_${i}`,
+        value: i * 10,
+      }));
+      const spec = {
+        mark: { type: "point", filled: true },
+        encoding: {
+          x: { field: "value", type: "quantitative" },
+          y: { field: "value", type: "quantitative" },
+          color: { field: "cat", type: "nominal" },
+        },
+      };
+      const result = validateSpec(spec, { csv: manyCategories });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("color") && w.includes("25 unique values"))).toBe(true);
+      }
+    });
+  });
+
+  describe("composition spec linting", () => {
+    it("warns on unknown field in hconcat sub-spec", () => {
+      const spec = {
+        hconcat: [
+          {
+            mark: "bar",
+            encoding: {
+              x: { field: "nonexistent", type: "nominal" },
+              y: { field: "value", type: "quantitative" },
+            },
+          },
+        ],
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("nonexistent") && w.includes("not found"))).toBe(true);
+      }
+    });
+
+    it("warns on unknown field in facet inner spec", () => {
+      const spec = {
+        facet: { field: "category", type: "nominal" },
+        spec: {
+          mark: "bar",
+          encoding: {
+            x: { field: "category", type: "nominal" },
+            y: { field: "missing_field", type: "quantitative" },
+          },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("missing_field") && w.includes("not found"))).toBe(true);
+      }
+    });
+
+    it("warns on aggregate missing alias in vconcat sub-spec", () => {
+      const spec = {
+        vconcat: [
+          {
+            mark: "bar",
+            transform: [
+              { aggregate: [{ op: "sum", field: "value" }], groupby: ["category"] },
+            ],
+            encoding: {
+              x: { field: "category", type: "nominal" },
+              y: { field: "value", type: "quantitative" },
+            },
+          },
+        ],
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("missing"))).toBe(true);
+      }
+    });
+  });
+
+  describe("layer-level scatter check", () => {
+    it("warns when point mark inside layer uses inline aggregate without transform groupby", () => {
+      const spec = {
+        layer: [
+          {
+            mark: "point",
+            encoding: {
+              x: { field: "category", type: "nominal" },
+              y: { aggregate: "mean", field: "value", type: "quantitative" },
+            },
+          },
+        ],
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Point/scatter") && w.includes("inline aggregate"))).toBe(true);
       }
     });
   });

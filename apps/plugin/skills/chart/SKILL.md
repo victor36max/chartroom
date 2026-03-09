@@ -64,18 +64,11 @@ Read the relevant reference docs before creating any chart. Look up:
 3. Any layout or composition pattern (layout-patterns, composite-patterns, layer, facet, repeat, concat)
 Do not guess at encoding options — always check the docs first.
 
-## NEVER emit these properties — they are applied automatically:
-- `config` — theme is applied at render time
-- `$schema` — version is handled by the renderer
-- `background` — controlled by the theme
-- `padding` — handled by the container
-- `autosize` — handled by the renderer
-
 ## Pre-render checklist — verify BEFORE every `render_chart` call
-1. Re-check the stacking and forbidden-properties rules above.
+1. Re-check the stacking rules above.
 2. Every `field` must reference an actual CSV column name (or a transform `"as"` alias).
 3. Look up `pre-render-checklist` docs and review before every render.
-4. **High-cardinality data** — if a categorical axis would show more than ~20 unique values, MUST filter to top/bottom N (default: top 15). Look up `filter` docs and copy the top/bottom N pattern exactly. Mention the filtering in your response.
+4. **High-cardinality data** — if a categorical axis would show more than ~20 unique values, consider filtering to top/bottom N. Look up `filter` docs for the pattern. Mention any filtering in your response.
 
 ## Default styling (applied automatically)
 Charts use clean Datawrapper-like defaults: system-ui font, horizontal grid lines, tableau10 colors, polished title typography. Do NOT include styling properties unless the user asks for a specific look.

@@ -138,7 +138,7 @@ export async function POST(req: Request) {
       system: buildSystemPrompt(dataContext),
       messages: messagesWithImages,
       tools,
-      stopWhen: stepCountIs(5),
+      stopWhen: stepCountIs(10),
     });
   } catch (err) {
     console.error("Failed to start chat stream:", err);

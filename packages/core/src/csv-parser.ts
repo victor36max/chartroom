@@ -1,5 +1,5 @@
 import Papa from "papaparse";
-import type { ParsedCSV, ColumnMeta, DataMetadata, DatasetMap } from "./types";
+import type { ParsedCSV, ColumnMeta, DataMetadata, DatasetMap, DateGranularity } from "./types";
 
 // Matches common date formats: YYYY-MM-DD, YYYY-MM, YYYY-MM-DDTHH:mm, YYYY/MM/DD, MM/DD/YYYY
 const ISO_DATE_RE = /^(\d{4}[-/]\d{2}([-/]\d{2})?(T\d{2}:\d{2}(:\d{2})?)?|\d{1,2}\/\d{1,2}\/\d{4})$/;
@@ -60,6 +60,17 @@ function inferType(values: unknown[]): ColumnMeta["type"] {
   return "string";
 }
 
+function inferDateGranularity(sample: string): DateGranularity {
+  // YYYY-MM (no day part)
+  if (/^\d{4}[-/]\d{2}$/.test(sample)) return "month";
+  // Has time with seconds (HH:MM:SS)
+  if (/T\d{2}:\d{2}:\d{2}/.test(sample)) return "minute";
+  // Has time without seconds (HH:MM)
+  if (/T\d{2}:\d{2}/.test(sample)) return "hour";
+  // YYYY-MM-DD or MM/DD/YYYY (date only)
+  return "day";
+}
+
 export function extractMetadata(data: Record<string, unknown>[]): DataMetadata {
   if (data.length === 0) return { rowCount: 0, columns: [] };
 
@@ -76,10 +87,15 @@ export function extractMetadata(data: Record<string, unknown>[]): DataMetadata {
     const values = colValues.get(name)!;
     const type = inferType(values);
     const nonNull = values.filter((v) => v != null && v !== "");
-    const unique = new Set(nonNull).size;
+    const uniqueSet = new Set(nonNull);
+    const unique = uniqueSet.size;
     const sample = nonNull.slice(0, 5);
 
     const col: ColumnMeta = { name, type, sample, unique };
+
+    if (type === "string" && unique <= 20) {
+      col.categorical = { values: ([...uniqueSet] as string[]).sort() };
+    }
 
     if (type === "number") {
       let min = Infinity;
@@ -94,6 +110,17 @@ export function extractMetadata(data: Record<string, unknown>[]): DataMetadata {
         col.min = min;
         col.max = max;
       }
+    }
+
+    if (type === "date" && nonNull.length > 0) {
+      const dateStrings = (nonNull as string[]).slice().sort(
+        (a, b) => new Date(a).getTime() - new Date(b).getTime()
+      );
+      col.dateRange = {
+        min: dateStrings[0],
+        max: dateStrings[dateStrings.length - 1],
+        granularity: inferDateGranularity(dateStrings[0]),
+      };
     }
 
     return col;
@@ -206,7 +233,14 @@ export function metadataToContext(metadata: DataMetadata): string {
     let desc = `- ${col.name} (${col.type})`;
     if (col.unique !== undefined) desc += ` — ${col.unique} unique values`;
     if (col.min !== undefined) desc += `, range: ${col.min}–${col.max}`;
-    if (col.sample.length > 0) desc += ` — sample: ${col.sample.slice(0, 3).join(", ")}`;
+    if (col.dateRange) {
+      desc += `, range: ${col.dateRange.min} to ${col.dateRange.max}, granularity: ${col.dateRange.granularity}`;
+    }
+    if (col.categorical) {
+      desc += `: ${col.categorical.values.join(", ")}`;
+    } else if (!col.dateRange && col.sample.length > 0) {
+      desc += ` — sample: ${col.sample.slice(0, 3).join(", ")}`;
+    }
     lines.push(desc);
   }
 

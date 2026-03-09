@@ -15,6 +15,12 @@ export type ThemeId =
   | "urbaninstitute"
   | "vox";
 
+export interface CategoricalInfo {
+  values: string[];
+}
+
+export type DateGranularity = "year" | "quarter" | "month" | "week" | "day" | "hour" | "minute";
+
 export interface ColumnMeta {
   name: string;
   type: "string" | "number" | "date" | "boolean";
@@ -23,6 +29,8 @@ export interface ColumnMeta {
   min?: number | string;
   max?: number | string;
   computed?: boolean;
+  categorical?: CategoricalInfo;
+  dateRange?: { min: string; max: string; granularity: DateGranularity };
 }
 
 export interface DataMetadata {

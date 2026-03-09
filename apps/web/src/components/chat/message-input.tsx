@@ -98,7 +98,7 @@ export function MessageInput({
         )}
       </form>
       {hasCSV && hasMessages && !isBusy && (
-        <div className="mt-1 flex justify-end">
+        <div className="mt-1 flex justify-start">
           <button
             type="button"
             onClick={onClear}

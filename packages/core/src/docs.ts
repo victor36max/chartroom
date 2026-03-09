@@ -1101,37 +1101,35 @@ Add a layer with \`{ "mark": { "type": "text", "dy": -8 }, "encoding": { "text":
     content: `Verify these items BEFORE every \`render_chart\` call.
 
 ### Correctness (SHOULD — verify before every render)
-1. **Type matching** — categories -> nominal/ordinal, numbers -> quantitative, dates -> temporal.
-2. **Aggregation** — if multiple rows per x-value, use \`aggregate\` on the quantitative channel. Don't aggregate when each row is one observation you want to plot individually.
-   - For **scatterplots with grouped data** (e.g., many rows per stock symbol), use \`transform\` with explicit \`groupby\` — inline aggregate alone collapses everything to a single point.
+1. **Type matching** — prefer matching encoding types to data: categories -> nominal/ordinal, numbers -> quantitative, dates -> temporal. Vega-Lite can coerce, but explicit types prevent surprises.
+2. **Scatterplot aggregation** — for scatterplots with grouped data (e.g., many rows per stock symbol), use \`transform\` with explicit \`groupby\` — inline aggregate alone collapses everything to a single point.
    - **Large dataset scatter** — if dataset has >500 rows, a naive scatter will overplot. Either: aggregate by group first, use small opacity (0.2–0.3), bin into heatmap (\`rect\` mark), or explain the density issue to the user.
-   - **High cardinality** — if a nominal axis will show >20 unique values, filter to top/bottom N. Look up \`filter\` docs for the exact top/bottom N pattern. Explain to the user why you filtered.
+   - **High cardinality** — if a nominal axis will show >20 unique values, consider filtering to top/bottom N. Look up \`filter\` docs for the pattern. Mention any filtering in your response.
 3. **Reducer choice** — match the user's words:
    - "average", "mean", "avg" -> \`"mean"\`
    - "total", "sum", "combined" -> \`"sum"\`
    - "count", "how many", "number of" -> \`"count"\`
    When ambiguous, prefer \`"sum"\` for revenue/sales/counts, \`"mean"\` for scores/ratings/measurements.
-4. **Arc/pie charts** — use \`theta\` and \`color\`, not x/y.
-5. **Title** — always include a descriptive \`title\`.
-6. **Multi-series** — use \`color\` encoding for multi-series (not separate marks). Fold wide data first if needed.
-7. **Ordinal months/weekdays** — add explicit \`sort\` array for chronological order (e.g. \`["Jan","Feb",...,"Dec"]\`).
-8. **Sort bars by value** — put \`sort\` on the CATEGORICAL encoding channel, referencing the OTHER axis:
+4. **Title** — always include a descriptive \`title\`.
+5. **Multi-series** — use \`color\` encoding for multi-series (not separate marks). Fold wide data first if needed.
+6. **Ordinal months/weekdays** — add explicit \`sort\` array for chronological order (e.g. \`["Jan","Feb",...,"Dec"]\`).
+7. **Sort bars by value** — put \`sort\` on the CATEGORICAL encoding channel, referencing the OTHER axis:
    - Vertical bar sorted descending: \`"x": { "field": "category", "type": "nominal", "sort": "-y" }\`
    - Horizontal bar sorted descending: \`"y": { "field": "category", "type": "nominal", "sort": "-x" }\`
-   Never put sort on the quantitative axis. Never use \`sort: "-x"\` on the x channel.
-9. **Rule layers** — put each layer's encoding inside the layer, not shared, to avoid rule marks inheriting categorical x/y.
-10. **Reference lines** — use \`layer\` with a \`rule\` mark. Horizontal: \`"y": { "datum": <value> }\`. Vertical: \`"x": { "datum": <value> }\`. Average: \`"y": { "aggregate": "mean", "field": "<col>" }\`.
-11. **Text labels on charts** — when the user requests labels (on scatter plots, bars, etc.), use \`layer\` with a \`text\` mark. For scatter labels, use \`dx\`/\`dy\` offsets to avoid overlapping points.
+   Don't use \`sort: "-x"\` on the x channel (self-referencing, meaningless).
+8. **Rule layers** — put each layer's encoding inside the layer, not shared, to avoid rule marks inheriting categorical x/y.
+9. **Reference lines** — use \`layer\` with a \`rule\` mark. Horizontal: \`"y": { "datum": <value> }\`. Vertical: \`"x": { "datum": <value> }\`. Average: \`"y": { "aggregate": "mean", "field": "<col>" }\`.
+10. **Text labels on charts** — when the user requests labels (on scatter plots, bars, etc.), use \`layer\` with a \`text\` mark. For scatter labels, use \`dx\`/\`dy\` offsets to avoid overlapping points.
    - **Transform field names** — in \`window\`, \`regression\`, \`joinaggregate\`, and \`calculate\` transforms, always use actual column names from the dataset (not abstract names like "x" or "y").
    - **Legend for layered lines** — when overlaying lines with different meanings (e.g., raw + smoothed), use \`fold\` to reshape both fields into one column, then encode \`color\` by the fold key. This produces an automatic legend. Do NOT use a top-level conditional \`color\` or hard-coded per-layer colors without a legend. See \`composite-patterns\` docs for the moving average overlay example.
-12. **Top/bottom N filtering** — use aggregate → window (rank) → filter transforms. Look up \`filter\` docs for the pattern.
+11. **Top/bottom N filtering** — use aggregate → window (rank) → filter transforms. Look up \`filter\` docs for the pattern.
 
 ### Style (PREFER — unless user asks otherwise)
-13. **Stacked vs grouped** — stacking is default when color is added to bars/areas. Only use \`xOffset\` for explicitly grouped/side-by-side requests.
-14. **Strip plots** — prefer \`tick\` mark for strip/rug plots. Ticks show distribution density better than points.
-15. **Dense line charts** — consider \`interpolate: "monotone"\` for smoother rendering with many data points.
-16. **Part-of-whole** — prefer arc/pie chart for "percentage of total" or "share" requests.
-17. **Tooltip** — \`tooltip: true\` in mark properties for interactivity, or explicit tooltip encoding for custom tooltips.`,
+12. **Stacked vs grouped** — stacking is default when color is added to bars/areas. Only use \`xOffset\` for explicitly grouped/side-by-side requests.
+13. **Strip plots** — prefer \`tick\` mark for strip/rug plots. Ticks show distribution density better than points.
+14. **Dense line charts** — consider \`interpolate: "monotone"\` for smoother rendering with many data points.
+15. **Part-of-whole** — prefer arc/pie chart for "percentage of total" or "share" requests.
+16. **Tooltip** — \`tooltip: true\` in mark properties for interactivity, or explicit tooltip encoding for custom tooltips.`,
   },
 };
 

@@ -109,6 +109,96 @@ describe("extractMetadata", () => {
     const meta = extractMetadata(data);
     expect(meta.columns[0].type).toBe("number");
   });
+
+  it("extracts categorical info for string columns with ≤20 unique values", () => {
+    const data = [
+      { region: "North", value: 1 },
+      { region: "South", value: 2 },
+      { region: "East", value: 3 },
+      { region: "North", value: 4 },
+    ];
+    const meta = extractMetadata(data);
+    const regionCol = meta.columns.find((c) => c.name === "region")!;
+    expect(regionCol.categorical).toEqual({ values: ["East", "North", "South"] });
+  });
+
+  it("does not extract categorical info for string columns with >20 unique values", () => {
+    const data = Array.from({ length: 21 }, (_, i) => ({ label: `item-${i}` }));
+    const meta = extractMetadata(data);
+    const col = meta.columns.find((c) => c.name === "label")!;
+    expect(col.categorical).toBeUndefined();
+  });
+
+  it("does not extract categorical info for number columns", () => {
+    const data = [
+      { score: 1 },
+      { score: 2 },
+      { score: 3 },
+    ];
+    const meta = extractMetadata(data);
+    const col = meta.columns.find((c) => c.name === "score")!;
+    expect(col.categorical).toBeUndefined();
+  });
+
+  it("extracts dateRange with day granularity for YYYY-MM-DD dates", () => {
+    const data = [
+      { date: "2023-01-15", val: 1 },
+      { date: "2023-06-20", val: 2 },
+      { date: "2023-12-01", val: 3 },
+    ];
+    const meta = extractMetadata(data);
+    const dateCol = meta.columns.find((c) => c.name === "date")!;
+    expect(dateCol.dateRange).toEqual({
+      min: "2023-01-15",
+      max: "2023-12-01",
+      granularity: "day",
+    });
+  });
+
+  it("extracts dateRange with month granularity for YYYY-MM dates", () => {
+    const data = [
+      { month: "2023-01", val: 1 },
+      { month: "2023-06", val: 2 },
+      { month: "2023-12", val: 3 },
+    ];
+    const meta = extractMetadata(data);
+    const col = meta.columns.find((c) => c.name === "month")!;
+    expect(col.dateRange).toEqual({
+      min: "2023-01",
+      max: "2023-12",
+      granularity: "month",
+    });
+  });
+
+  it("extracts dateRange with day granularity for MM/DD/YYYY dates", () => {
+    const data = [
+      { date: "01/15/2023", val: 1 },
+      { date: "06/20/2023", val: 2 },
+    ];
+    const meta = extractMetadata(data);
+    const col = meta.columns.find((c) => c.name === "date")!;
+    expect(col.dateRange).toBeDefined();
+    expect(col.dateRange!.granularity).toBe("day");
+  });
+
+  it("extracts correct dateRange min/max for MM/DD/YYYY dates", () => {
+    const data = [
+      { date: "12/25/2022", val: 1 },
+      { date: "01/01/2024", val: 2 },
+      { date: "06/15/2023", val: 3 },
+    ];
+    const meta = extractMetadata(data);
+    const col = meta.columns.find((c) => c.name === "date")!;
+    expect(col.dateRange).toBeDefined();
+    expect(col.dateRange!.min).toBe("12/25/2022");
+    expect(col.dateRange!.max).toBe("01/01/2024");
+  });
+
+  it("does not extract dateRange for non-date columns", () => {
+    const data = [{ name: "Alice" }, { name: "Bob" }];
+    const meta = extractMetadata(data);
+    expect(meta.columns[0].dateRange).toBeUndefined();
+  });
 });
 
 // --- metadataToContext ---
@@ -153,6 +243,32 @@ describe("metadataToContext", () => {
     ];
     const ctx = metadataToContext(extractMetadata(data));
     expect(ctx).not.toContain("Wide-format");
+  });
+
+  it("shows full value list for categorical columns", () => {
+    const data = [
+      { status: "active", val: 1 },
+      { status: "inactive", val: 2 },
+      { status: "pending", val: 3 },
+    ];
+    const ctx = metadataToContext(extractMetadata(data));
+    expect(ctx).toContain("active, inactive, pending");
+    // The status line should show values, not sample
+    const statusLine = ctx.split("\n").find((l) => l.includes("status"))!;
+    expect(statusLine).not.toContain("sample:");
+  });
+
+  it("shows date range and granularity for date columns", () => {
+    const data = [
+      { date: "2023-01-01", val: 1 },
+      { date: "2023-06-15", val: 2 },
+      { date: "2023-12-31", val: 3 },
+    ];
+    const ctx = metadataToContext(extractMetadata(data));
+    const dateLine = ctx.split("\n").find((l) => l.includes("date (date)"))!;
+    expect(dateLine).toContain("range: 2023-01-01 to 2023-12-31");
+    expect(dateLine).toContain("granularity: day");
+    expect(dateLine).not.toContain("sample:");
   });
 
   it("does not show wide-format hints for unrelated numeric columns", () => {

@@ -17,7 +17,24 @@ function createWarningLogger(warnings: string[]): LoggerInterface {
   return self;
 }
 
-/** Collect all field references from encoding channels (including nested layers) */
+/** Collect sub-specs from composition operators (layer, concat, facet, repeat) */
+function getSubSpecs(spec: Record<string, unknown>): Array<Record<string, unknown>> {
+  const subs: Array<Record<string, unknown>> = [];
+  for (const key of ["layer", "hconcat", "vconcat", "concat"] as const) {
+    const arr = spec[key];
+    if (Array.isArray(arr)) {
+      for (const item of arr) {
+        if (item && typeof item === "object") subs.push(item as Record<string, unknown>);
+      }
+    }
+  }
+  // facet/repeat wrap a single inner spec
+  const inner = spec.spec as Record<string, unknown> | undefined;
+  if (inner && typeof inner === "object") subs.push(inner);
+  return subs;
+}
+
+/** Collect all field references from encoding channels (including nested compositions) */
 function collectEncodingFields(spec: Record<string, unknown>): string[] {
   const fields: string[] = [];
   const enc = spec.encoding as Record<string, Record<string, unknown>> | undefined;
@@ -28,11 +45,8 @@ function collectEncodingFields(spec: Record<string, unknown>): string[] {
       }
     }
   }
-  const layers = spec.layer as Array<Record<string, unknown>> | undefined;
-  if (Array.isArray(layers)) {
-    for (const layer of layers) {
-      fields.push(...collectEncodingFields(layer));
-    }
+  for (const sub of getSubSpecs(spec)) {
+    fields.push(...collectEncodingFields(sub));
   }
   return fields;
 }
@@ -41,40 +55,46 @@ function collectEncodingFields(spec: Record<string, unknown>): string[] {
 function lintTransforms(spec: Record<string, unknown>): string[] {
   const warnings: string[] = [];
   const transforms = spec.transform as Array<Record<string, unknown>> | undefined;
-  if (!Array.isArray(transforms)) return warnings;
 
-  // Track aggregate aliases: original field → alias
-  const aliasMap = new Map<string, string>();
+  if (Array.isArray(transforms)) {
+    // Track aggregate aliases: original field → alias
+    const aliasMap = new Map<string, string>();
 
-  for (const t of transforms) {
-    if (Array.isArray(t.aggregate)) {
-      for (const agg of t.aggregate as Array<Record<string, unknown>>) {
-        if (agg.field && !agg.as) {
+    for (const t of transforms) {
+      if (Array.isArray(t.aggregate)) {
+        for (const agg of t.aggregate as Array<Record<string, unknown>>) {
+          if (agg.field && !agg.as) {
+            warnings.push(
+              `Aggregate transform on "${agg.field}" is missing "as" alias. ` +
+              `After aggregate, the field becomes "${agg.op}_${agg.field}" (not "${agg.field}"). ` +
+              `Add "as": "total" (or similar) and use that alias in window sort and encoding.`
+            );
+          } else if (typeof agg.field === "string" && typeof agg.as === "string") {
+            aliasMap.set(agg.field, agg.as);
+          }
+        }
+      }
+    }
+
+    // Check if encoding references original field instead of the alias
+    if (aliasMap.size > 0) {
+      const encFields = collectEncodingFields(spec);
+      for (const field of encFields) {
+        const alias = aliasMap.get(field);
+        if (alias) {
           warnings.push(
-            `Aggregate transform on "${agg.field}" is missing "as" alias. ` +
-            `After aggregate, the field becomes "${agg.op}_${agg.field}" (not "${agg.field}"). ` +
-            `Add "as": "total" (or similar) and use that alias in window sort and encoding.`
+            `Encoding references "${field}" but an aggregate transform renamed it to "${alias}". ` +
+            `After aggregate, the original column "${field}" no longer exists. ` +
+            `Change the encoding field to "${alias}" and remove any inline "aggregate" on that channel.`
           );
-        } else if (typeof agg.field === "string" && typeof agg.as === "string") {
-          aliasMap.set(agg.field, agg.as);
         }
       }
     }
   }
 
-  // Check if encoding references original field instead of the alias
-  if (aliasMap.size > 0) {
-    const encFields = collectEncodingFields(spec);
-    for (const field of encFields) {
-      const alias = aliasMap.get(field);
-      if (alias) {
-        warnings.push(
-          `Encoding references "${field}" but an aggregate transform renamed it to "${alias}". ` +
-          `After aggregate, the original column "${field}" no longer exists. ` +
-          `Change the encoding field to "${alias}" and remove any inline "aggregate" on that channel.`
-        );
-      }
-    }
+  // Recurse into sub-specs
+  for (const sub of getSubSpecs(spec)) {
+    warnings.push(...lintTransforms(sub));
   }
 
   return warnings;
@@ -181,6 +201,143 @@ function buildAvailableFields(
   return available;
 }
 
+/** Extract mark type from a mark spec (handles string and object forms) */
+function getMarkType(mark: unknown): string | null {
+  if (typeof mark === "string") return mark;
+  if (mark && typeof mark === "object" && typeof (mark as Record<string, unknown>).type === "string") {
+    return (mark as Record<string, unknown>).type as string;
+  }
+  return null;
+}
+
+/** Get encoding channel info: { field, type, aggregate, sort } */
+function getChannelInfo(enc: Record<string, unknown>, channel: string): Record<string, unknown> | null {
+  const ch = enc[channel];
+  if (ch && typeof ch === "object") return ch as Record<string, unknown>;
+  return null;
+}
+
+/** Lint for common spec patterns that produce silently wrong output */
+function lintSpecPatterns(
+  spec: Record<string, unknown>,
+  datasets: Record<string, Record<string, unknown>[]>
+): string[] {
+  const warnings: string[] = [];
+
+  // --- Rule mark in layer with shared categorical encoding ---
+  const layers = spec.layer as Array<Record<string, unknown>> | undefined;
+  const topEnc = spec.encoding as Record<string, unknown> | undefined;
+  if (Array.isArray(layers) && topEnc) {
+    const hasRuleLayer = layers.some((l) => getMarkType(l.mark) === "rule");
+    if (hasRuleLayer) {
+      const xInfo = getChannelInfo(topEnc, "x");
+      const yInfo = getChannelInfo(topEnc, "y");
+      const xIsCategorical = xInfo && (xInfo.type === "nominal" || xInfo.type === "ordinal");
+      const yIsCategorical = yInfo && (yInfo.type === "nominal" || yInfo.type === "ordinal");
+      if (xIsCategorical || yIsCategorical) {
+        warnings.push(
+          `A rule mark in a layer inherits shared categorical encoding. ` +
+          `This renders vertical/horizontal lines at each category instead of a single reference line. ` +
+          `Move each layer's encoding inside the layer object instead of sharing at top level.`
+        );
+      }
+    }
+  }
+
+  // --- Scatter (point) with inline aggregate but no transform groupby ---
+  // Check top-level mark and marks inside layers
+  const specsToCheck: Array<Record<string, unknown>> = [spec];
+  if (Array.isArray(layers)) {
+    for (const l of layers) {
+      if (l && typeof l === "object") specsToCheck.push(l);
+    }
+  }
+  for (const s of specsToCheck) {
+    const sMarkType = getMarkType(s.mark);
+    const sEnc = s.encoding as Record<string, Record<string, unknown>> | undefined;
+    if (sMarkType === "point" && sEnc) {
+      const hasInlineAggregate = Object.values(sEnc).some(
+        (ch) => ch && typeof ch === "object" && typeof ch.aggregate === "string"
+      );
+      const transforms = (s.transform ?? spec.transform) as Array<Record<string, unknown>> | undefined;
+      const hasTransformGroupby = Array.isArray(transforms) && transforms.some(
+        (t) => Array.isArray(t.aggregate) && Array.isArray(t.groupby) && (t.groupby as string[]).length > 0
+      );
+      if (hasInlineAggregate && !hasTransformGroupby) {
+        warnings.push(
+          `Point/scatter mark with inline aggregate may collapse all data to a single point. ` +
+          `Use a transform with explicit "groupby" instead of inline aggregate in encoding.`
+        );
+      }
+    }
+  }
+
+  // --- High cardinality checks (axis, shape, color) ---
+  const enc = spec.encoding as Record<string, Record<string, unknown>> | undefined;
+  if (enc) {
+    const primaryKey = getPrimaryDatasetKey(spec, datasets);
+    const rows = primaryKey ? datasets[primaryKey] : undefined;
+
+    for (const [channel, chSpec] of Object.entries(enc)) {
+      if (!chSpec || typeof chSpec !== "object") continue;
+      const chType = (chSpec as Record<string, unknown>).type;
+      const chField = (chSpec as Record<string, unknown>).field;
+      if (typeof chField !== "string") continue;
+
+      // Count unique values for this field in the dataset
+      let uniqueCount: number | null = null;
+      if (rows && rows.length > 0) {
+        const uniqueValues = new Set(rows.map((r) => r[chField]));
+        uniqueCount = uniqueValues.size;
+      }
+
+      // High cardinality nominal axis (x/y)
+      if ((channel === "x" || channel === "y") && chType === "nominal" && uniqueCount !== null && uniqueCount > 20) {
+        warnings.push(
+          `Field "${chField}" on ${channel}-axis has ${uniqueCount} unique values. ` +
+          `Consider filtering to top/bottom N for readability.`
+        );
+      }
+
+      // Shape channel: Vega-Lite only has 6 built-in shapes
+      if (channel === "shape" && uniqueCount !== null && uniqueCount > 6) {
+        warnings.push(
+          `Field "${chField}" in shape encoding has ${uniqueCount} unique values, but Vega-Lite only supports 6 distinct shapes. ` +
+          `Values beyond 6 will reuse shapes, making them indistinguishable. ` +
+          `Consider using color instead, or filter to ≤6 categories.`
+        );
+      }
+
+      // Color channel with nominal type: warn if too many categories for legend
+      if (channel === "color" && chType === "nominal" && uniqueCount !== null && uniqueCount > 20) {
+        warnings.push(
+          `Field "${chField}" in color encoding has ${uniqueCount} unique values. ` +
+          `The legend will be very long and colors hard to distinguish. ` +
+          `Consider filtering to top/bottom N or grouping smaller categories.`
+        );
+      }
+    }
+  }
+
+  // Recurse into sub-specs (hconcat, vconcat, concat, facet/repeat inner spec)
+  for (const sub of getSubSpecs(spec)) {
+    warnings.push(...lintSpecPatterns(sub, datasets));
+  }
+
+  return warnings;
+}
+
+/** Find the groupby array from the first aggregate transform, if any */
+function findAggregateGroupby(transforms: Array<Record<string, unknown>> | undefined): string[] | null {
+  if (!Array.isArray(transforms)) return null;
+  for (const t of transforms) {
+    if (Array.isArray(t.aggregate)) {
+      return (t.groupby as string[]) ?? [];
+    }
+  }
+  return null;
+}
+
 /** Check that every encoding field is available in the primary dataset or created by transforms */
 function lintFieldReferences(
   spec: Record<string, unknown>,
@@ -194,15 +351,23 @@ function lintFieldReferences(
   const primaryColumns = getColumns(datasets, primaryKey);
   if (primaryColumns.size === 0) return warnings;
 
-  const available = buildAvailableFields(
-    primaryColumns,
-    spec.transform as Array<Record<string, unknown>> | undefined
-  );
+  const transforms = spec.transform as Array<Record<string, unknown>> | undefined;
+  const available = buildAvailableFields(primaryColumns, transforms);
+  const aggregateGroupby = findAggregateGroupby(transforms);
 
   const encFields = collectEncodingFields(spec);
 
   for (const field of encFields) {
     if (available.has(field)) continue;
+
+    // Check if the field exists in the original dataset but was dropped by aggregate
+    if (aggregateGroupby !== null && primaryColumns.has(field)) {
+      warnings.push(
+        `Field "${field}" exists in the dataset but is not available after the aggregate transform. ` +
+        `Add "${field}" to the aggregate's "groupby" array to preserve it.`
+      );
+      continue;
+    }
 
     // Check if field exists in another dataset
     let foundIn: string | null = null;
@@ -255,6 +420,7 @@ export function validateSpec(
     // Lint for common transform issues before compiling
     warnings.push(...lintTransforms(spec));
     warnings.push(...lintFieldReferences(spec, datasets));
+    warnings.push(...lintSpecPatterns(spec, datasets));
     vl.compile(fullSpec as unknown as vl.TopLevelSpec, {
       logger: createWarningLogger(warnings),
     });
