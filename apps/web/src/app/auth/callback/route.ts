@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import { upsertProfile } from "@/lib/db/queries";
 
 const FREE_CREDITS_USD = parseFloat(process.env.FREE_CREDITS_USD ?? "1.00");
@@ -9,26 +10,42 @@ export async function GET(request: Request) {
   const code = searchParams.get("code");
 
   if (code) {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const cookieStore = await cookies();
+    const redirectTo = NextResponse.redirect(origin);
 
-    if (!error) {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (user) {
-        await upsertProfile({
-          id: user.id,
-          email: user.email,
-          displayName:
-            user.user_metadata.full_name ?? user.user_metadata.name ?? null,
-          avatarUrl: user.user_metadata.avatar_url ?? null,
-          freeCredits: FREE_CREDITS_USD,
-        });
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+              redirectTo.cookies.set(name, value, options);
+            });
+          },
+        },
       }
+    );
 
-      return NextResponse.redirect(origin);
+    const { error, data: { session } } = await supabase.auth.exchangeCodeForSession(code);
+
+    if (!error && session) {
+      const user = session.user;
+
+      await upsertProfile({
+        id: user.id,
+        email: user.email,
+        displayName:
+          user.user_metadata.full_name ?? user.user_metadata.name ?? null,
+        avatarUrl: user.user_metadata.avatar_url ?? null,
+        freeCredits: FREE_CREDITS_USD,
+      });
+
+      return redirectTo;
     }
   }
 
