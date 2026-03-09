@@ -6,7 +6,7 @@ import { ChartRenderer } from "@/components/chart/chart-renderer";
 import { DataTable } from "@/components/data/data-table";
 import { exportChartAsPng, exportChartAsSvg } from "@/lib/chart/export-chart";
 import { validateSpec } from "@/lib/chart/validate-spec";
-import { Download, Check, Code, X, SlidersHorizontal, Palette, Loader2 } from "lucide-react";
+import { Download, Check, Code, X, SlidersHorizontal, Palette, Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select as ShadSelect, SelectContent as ShadSelectContent, SelectItem as ShadSelectItem, SelectTrigger as ShadSelectTrigger, SelectValue as ShadSelectValue } from "@/components/ui/select";
@@ -155,7 +155,7 @@ export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSele
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
-      <div className="border-b px-4 flex items-center justify-between">
+      <div className="border-b px-4 py-1.5 flex items-center justify-between">
         <TabsList className="h-10">
           <TabsTrigger value="chart">Chart</TabsTrigger>
           <TabsTrigger value="data" disabled={!hasData}>
@@ -282,26 +282,27 @@ export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSele
             {hasChart ? (
               <ChartRenderer spec={displaySpec!} datasets={datasetsRows} themeId={themeId} />
             ) : hasData ? (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
+                <span className="text-2xl">💬</span>
                 <p className="text-sm">Ask the AI to create a chart from your data</p>
               </div>
             ) : (
-              <div
-                className="flex items-center justify-center h-full"
-                onDrop={(e: DragEvent<HTMLDivElement>) => {
+              <button
+                type="button"
+                className="flex flex-col items-center justify-center h-full w-full gap-2 cursor-pointer"
+                onClick={() => dropzoneInputRef.current?.click()}
+                onDrop={(e: DragEvent<HTMLButtonElement>) => {
                   e.preventDefault();
                   const csvFiles = Array.from(e.dataTransfer.files).filter((f) => f.name.endsWith(".csv"));
                   if (csvFiles.length > 0) onFilesSelected?.(csvFiles);
                 }}
-                onDragOver={(e: DragEvent<HTMLDivElement>) => e.preventDefault()}
+                onDragOver={(e: DragEvent<HTMLButtonElement>) => e.preventDefault()}
               >
-                <button
-                  type="button"
-                  onClick={() => dropzoneInputRef.current?.click()}
-                  className="rounded-lg border-2 border-dashed border-muted-foreground/25 px-12 py-10 text-sm text-muted-foreground hover:border-muted-foreground/50 transition-colors cursor-pointer"
-                >
-                  Drop CSV file(s) here or click to upload
-                </button>
+                <Upload className="h-8 w-8 text-muted-foreground/50" />
+                <div className="text-center">
+                  <p className="text-sm font-medium text-muted-foreground">Drop CSV files here or click to upload</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">Your data stays in your browser</p>
+                </div>
                 <input
                   ref={dropzoneInputRef}
                   type="file"
@@ -316,7 +317,7 @@ export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSele
                   }}
                   className="hidden"
                 />
-              </div>
+              </button>
             )}
           </TabsContent>
           <TabsContent value="data" className="flex-1 m-0 overflow-hidden flex flex-col">

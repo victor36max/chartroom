@@ -73,7 +73,7 @@ export function MessageInput({
               : "Upload a CSV to get started"
           }
           disabled={!hasCSV || isBusy}
-          className="min-h-[44px] max-h-[120px] resize-none"
+          className="min-h-[36px] max-h-[120px] resize-none"
           rows={1}
         />
         {isBusy ? (

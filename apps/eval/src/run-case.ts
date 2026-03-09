@@ -66,7 +66,7 @@ export async function runCase(
   const system = buildSystemPrompt({ context: "web", dataContext });
 
   // Build eval tools — add execute + toModelOutput to render_chart
-  const baseTools = createTools(datasets);
+  const baseTools = createTools(Object.keys(datasets));
   let capturedSpec: ChartSpec | undefined;
   let screenshotBuffer: Buffer | undefined;
 

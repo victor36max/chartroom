@@ -47,11 +47,36 @@ export function MessageList({ messages, status }: MessageListProps) {
   if (messages.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center p-8 text-center">
-        <div className="text-muted-foreground">
-          <p className="text-lg font-medium">Welcome to Chartroom</p>
-          <p className="text-sm mt-1">
-            Upload a CSV file and describe the chart you want to create.
-          </p>
+        <div className="space-y-6 max-w-sm">
+          <div>
+            <p className="text-lg font-medium">Welcome to Chartroom</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Upload one or more CSVs and describe the chart you want.
+            </p>
+          </div>
+          <div className="space-y-3 text-sm text-left">
+            <div className="flex gap-3 items-start">
+              <span className="text-base leading-5">💬</span>
+              <div>
+                <p className="font-medium">Natural language to charts</p>
+                <p className="text-muted-foreground text-xs">Describe what you want in plain English — get publication-ready Vega-Lite charts.</p>
+              </div>
+            </div>
+            <div className="flex gap-3 items-start">
+              <span className="text-base leading-5">🔒</span>
+              <div>
+                <p className="font-medium">Your data stays in your browser</p>
+                <p className="text-muted-foreground text-xs">CSV data never leaves your machine. Only column metadata is sent to the AI.</p>
+              </div>
+            </div>
+            <div className="flex gap-3 items-start">
+              <span className="text-base leading-5">🎨</span>
+              <div>
+                <p className="font-medium">Edit visually or with code</p>
+                <p className="text-muted-foreground text-xs">Fine-tune charts with a visual editor, or drop into JSON for full control.</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

@@ -9,7 +9,7 @@ import {
 import { MessageList } from "./message-list";
 import { MessageInput } from "./message-input";
 import { toast } from "sonner";
-import { parseCSV, fileNameToDatasetName, datasetsToContext } from "@/lib/csv/parser";
+import { parseCSV, datasetsToContext } from "@/lib/csv/parser";
 import { captureChart } from "@/components/chart/chart-capture";
 import { validateSpec } from "@/lib/chart/validate-spec";
 import type { ParsedCSV, DatasetMap, ChartSpec } from "@/types";
@@ -36,8 +36,6 @@ interface ChatPanelProps {
   onTierChange: (tier: ModelTier) => void;
   onStatusChange?: (status: string) => void;
 }
-
-const MAX_CSV_ROWS = 5000;
 
 export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function ChatPanel(
   { datasets, onCSVParsed, onDatasetRemoved, onChartSpec, tier, onTierChange, onStatusChange },
@@ -70,15 +68,9 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
       api: "/api/chat",
       body: () => {
         const ds = datasetsRef.current;
-        const entries = Object.entries(ds);
-        if (entries.length === 0) return { tier };
-        return {
-          tier,
-          csvDatasets: Object.fromEntries(
-            entries.map(([name, parsed]) => [name, parsed.data.slice(0, MAX_CSV_ROWS)])
-          ),
-          dataContext: datasetsToContext(ds),
-        };
+        const dataContext = datasetsToContext(ds);
+        if (!dataContext) return { tier };
+        return { tier, dataContext };
       },
     }),
     sendAutomaticallyWhen: (messages) => {
@@ -203,7 +195,7 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
           setCsvError("Failed to parse CSV: " + result.errors[0]);
           continue;
         }
-        const name = fileNameToDatasetName(file.name);
+        const name = file.name;
         onCSVParsed(name, result);
       }
     },

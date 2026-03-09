@@ -3,7 +3,7 @@ import type { ParsedCSV } from "@chartroom/core";
 import { extractMetadata } from "@chartroom/core";
 
 // Re-export shared functions from core
-export { extractMetadata, metadataToContext, datasetsToContext, fileNameToDatasetName } from "@chartroom/core";
+export { extractMetadata, metadataToContext, datasetsToContext } from "@chartroom/core";
 
 // Browser-only: parse a File object
 export function parseCSV(file: File): Promise<ParsedCSV> {

@@ -15,7 +15,6 @@ export {
   extractMetadata,
   metadataToContext,
   datasetsToContext,
-  fileNameToDatasetName,
 } from "./csv-parser";
 
 // Spec utilities

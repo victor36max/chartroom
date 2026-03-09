@@ -103,7 +103,7 @@ export async function POST(req: Request) {
     userId = session.user.id;
   }
 
-  let body: { messages?: unknown; csvDatasets?: unknown; dataContext?: unknown; tier?: unknown };
+  let body: { messages?: unknown; dataContext?: unknown; tier?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -118,12 +118,12 @@ export async function POST(req: Request) {
   const dataContext = typeof body.dataContext === "string" ? body.dataContext : undefined;
   const tier = (body.tier === "fast" || body.tier === "mid" || body.tier === "power" ? body.tier : "mid") as ModelTier;
 
-  const csvDatasets: Record<string, Record<string, unknown>[]> =
-    body.csvDatasets && typeof body.csvDatasets === "object" && !Array.isArray(body.csvDatasets)
-      ? (body.csvDatasets as Record<string, Record<string, unknown>[]>)
-      : {};
+  // Extract dataset names from dataContext (contains `"url": "name"` patterns)
+  const datasetNames: string[] = dataContext
+    ? [...dataContext.matchAll(/"url":\s*"([^"]+)"/g)].map(m => m[1])
+    : [];
 
-  const tools = createTools(csvDatasets);
+  const tools = createTools(datasetNames);
 
   const modelMessages = await convertToModelMessages(messages);
   const prunedMessages = pruneOldToolResults(modelMessages);

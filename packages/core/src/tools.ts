@@ -3,8 +3,7 @@ import { z } from "zod";
 import { TOPIC_IDS, lookupDocs, type TopicId } from "./docs";
 import { createVlSpecSchema } from "./spec-schema";
 
-export function createTools(datasets: Record<string, Record<string, unknown>[]>) {
-  const datasetNames = Object.keys(datasets);
+export function createTools(datasetNames: string[]) {
   const vlSpecSchema = createVlSpecSchema(datasetNames);
 
   return {

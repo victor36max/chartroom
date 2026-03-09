@@ -163,10 +163,6 @@ function detectWideFormat(columns: ColumnMeta[]): string[] {
   return hints;
 }
 
-export function fileNameToDatasetName(fileName: string): string {
-  return fileName;
-}
-
 export function datasetsToContext(datasets: DatasetMap): string {
   const entries = Object.entries(datasets);
   if (entries.length === 0) return "";
