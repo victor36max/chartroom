@@ -10,20 +10,12 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient();
-    try {
+
     const { error, data: { session } } = await supabase.auth.exchangeCodeForSession(code);
-    console.log("session", session); 
-    console.log("error", error);
-    console.log("code", code);
 
     if (!error && session) {
       const user = session.user;
 
-      console.log("user", user);
-
-
-
-      try {
       await upsertProfile({
         id: user.id,
         email: user.email,
@@ -32,15 +24,8 @@ export async function GET(request: Request) {
         avatarUrl: user.user_metadata.avatar_url ?? null,
         freeCredits: FREE_CREDITS_USD,
       });
-      } catch (error) {
-        console.error("Error upserting profile:", error);
-        return NextResponse.redirect(`${origin}?error=auth`);
-      }
-        return NextResponse.redirect(origin);
-      }
-    } catch (error) {
-      console.error("Error exchanging code for session:", error);
-      return NextResponse.redirect(`${origin}?error=auth`);
+
+      return NextResponse.redirect(origin);
     }
   }
 
