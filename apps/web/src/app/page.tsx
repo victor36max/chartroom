@@ -87,7 +87,7 @@ export default function Home() {
         {isAuthEnabled() && <LoginModal />}
       </header>
       <div className="flex flex-1 flex-col md:flex-row overflow-hidden">
-        <div className={`${mobileTab === "chat" ? "flex" : "hidden"} md:flex flex-col flex-1 md:flex-none md:w-[420px] md:min-w-[320px] md:border-r`}>
+        <div className={`${mobileTab === "chat" ? "flex" : "hidden"} md:flex flex-col flex-1 md:flex-none md:w-[420px] md:min-w-[320px] md:border-r overflow-hidden`}>
           <ChatPanel
             ref={chatRef}
             datasets={datasets}
