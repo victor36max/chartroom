@@ -7,6 +7,7 @@ import {
   useState,
   useCallback,
   type ReactNode,
+  useRef,
 } from "react";
 import { isAuthEnabled } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -53,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthEnabled() && typeof window !== "undefined"
   );
   const [loginOpen, setLoginOpen] = useState(false);
+  const balanceFetchedRef = useRef(false);
 
   const fetchBalance = useCallback(async () => {
     if (!isAuthEnabled()) return;
@@ -73,13 +75,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const supabase = getSupabase();
     if (!supabase) return;
 
-    let balanceFetched = false;
-
     supabase.auth.getUser().then((result) => {
       setUser(result.data.user);
       setIsLoading(false);
-      if (result.data.user && !balanceFetched) {
-        balanceFetched = true;
+      if (result.data.user && !balanceFetchedRef.current) {
+        balanceFetchedRef.current = true;
         fetchBalance();
       }
     });
@@ -89,10 +89,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+        if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || !balanceFetchedRef.current) {
+          balanceFetchedRef.current = true;
           fetchBalance();
         }
       } else {
+        balanceFetchedRef.current = false;
         setBalance(null);
       }
     });
@@ -104,6 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await getSupabase()?.auth.signOut();
     setUser(null);
     setBalance(null);
+    balanceFetchedRef.current = false;
   }, []);
 
   const openLogin = useCallback(() => setLoginOpen(true), []);
