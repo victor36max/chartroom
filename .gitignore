@@ -48,5 +48,11 @@ packages/renderer/src/bundle/
 # eval results
 apps/eval/results/
 
+# eval cases & data (keep basic example)
+apps/eval/cases/*
+!apps/eval/cases/bar-chart-basic.json
+apps/eval/data/*
+!apps/eval/data/sales.csv
+
 # chartroom temp
 /tmp/chartroom/
