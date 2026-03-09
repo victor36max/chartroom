@@ -73,18 +73,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const supabase = getSupabase();
     if (!supabase) return;
 
+    let balanceFetched = false;
+
     supabase.auth.getUser().then((result) => {
       setUser(result.data.user);
       setIsLoading(false);
-      if (result.data.user) fetchBalance();
+      if (result.data.user && !balanceFetched) {
+        balanceFetched = true;
+        fetchBalance();
+      }
     });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchBalance();
+        if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+          fetchBalance();
+        }
       } else {
         setBalance(null);
       }
