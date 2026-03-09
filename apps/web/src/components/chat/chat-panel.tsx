@@ -30,12 +30,13 @@ interface ChatPanelProps {
   onChartSpec: (spec: ChartSpec) => void;
   tier: ModelTier;
   onTierChange: (tier: ModelTier) => void;
+  onStatusChange?: (status: string) => void;
 }
 
 const MAX_CSV_ROWS = 5000;
 
 export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function ChatPanel(
-  { datasets, onCSVParsed, onDatasetRemoved, onChartSpec, tier, onTierChange },
+  { datasets, onCSVParsed, onDatasetRemoved, onChartSpec, tier, onTierChange, onStatusChange },
   ref
 ) {
   const [input, setInput] = useState("");
@@ -145,6 +146,10 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
 
   const isBusy = status === "submitted" || status === "streaming";
   const hasMessages = messages.length > 0;
+
+  useEffect(() => {
+    onStatusChange?.(status);
+  }, [status, onStatusChange]);
 
   const handleStop = useCallback(() => {
     stop();

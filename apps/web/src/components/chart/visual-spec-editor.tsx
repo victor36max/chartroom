@@ -245,41 +245,43 @@ export function VisualSpecEditor({
             <Label className="text-xs">Padding</Label>
             <div className="grid grid-cols-4 gap-1.5">
               {(["top", "right", "bottom", "left"] as const).map((side) => (
-                <Input
-                  key={side}
-                  className="h-7 text-xs"
-                  type="number"
-                  placeholder={side[0].toUpperCase() + side.slice(1)}
-                  value={
-                    typeof spec.padding === "object" && spec.padding !== null
-                      ? ((spec.padding as Record<string, number>)[side] ?? "")
-                      : typeof spec.padding === "number"
-                        ? spec.padding
-                        : ""
-                  }
-                  onChange={(e) =>
-                    updateSpec((s) => {
-                      const val = e.target.value ? Number(e.target.value) : undefined;
-                      // Normalize current padding to object
-                      const pad: Record<string, number> =
-                        typeof s.padding === "number"
-                          ? { top: s.padding, right: s.padding, bottom: s.padding, left: s.padding }
-                          : typeof s.padding === "object" && s.padding !== null
-                            ? { ...(s.padding as Record<string, number>) }
-                            : {};
-                      if (val !== undefined) {
-                        pad[side] = val;
-                      } else {
-                        delete pad[side];
-                      }
-                      if (Object.keys(pad).length === 0) {
-                        delete s.padding;
-                      } else {
-                        s.padding = pad;
-                      }
-                    })
-                  }
-                />
+                <div key={side} className="space-y-0.5">
+                  <span className="text-[10px] text-muted-foreground capitalize">{side}</span>
+                  <Input
+                    className="h-7 text-xs"
+                    type="number"
+                    placeholder="auto"
+                    value={
+                      typeof spec.padding === "object" && spec.padding !== null
+                        ? ((spec.padding as Record<string, number>)[side] ?? "")
+                        : typeof spec.padding === "number"
+                          ? spec.padding
+                          : ""
+                    }
+                    onChange={(e) =>
+                      updateSpec((s) => {
+                        const val = e.target.value ? Number(e.target.value) : undefined;
+                        // Normalize current padding to object
+                        const pad: Record<string, number> =
+                          typeof s.padding === "number"
+                            ? { top: s.padding, right: s.padding, bottom: s.padding, left: s.padding }
+                            : typeof s.padding === "object" && s.padding !== null
+                              ? { ...(s.padding as Record<string, number>) }
+                              : {};
+                        if (val !== undefined) {
+                          pad[side] = val;
+                        } else {
+                          delete pad[side];
+                        }
+                        if (Object.keys(pad).length === 0) {
+                          delete s.padding;
+                        } else {
+                          s.padding = pad;
+                        }
+                      })
+                    }
+                  />
+                </div>
               ))}
             </div>
           </div>

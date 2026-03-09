@@ -6,7 +6,7 @@ import { ChartRenderer } from "@/components/chart/chart-renderer";
 import { DataTable } from "@/components/data/data-table";
 import { exportChartAsPng, exportChartAsSvg } from "@/lib/chart/export-chart";
 import { validateSpec } from "@/lib/chart/validate-spec";
-import { Download, Check, Code, X, SlidersHorizontal, Palette } from "lucide-react";
+import { Download, Check, Code, X, SlidersHorizontal, Palette, Loader2 } from "lucide-react";
 import CodeMirror from "@uiw/react-codemirror";
 import { json } from "@codemirror/lang-json";
 import { VisualSpecEditor } from "./visual-spec-editor";
@@ -19,6 +19,7 @@ interface ChartPanelProps {
   onFilesSelected?: (files: File[]) => void;
   themeId: ThemeId;
   onThemeChange?: (themeId: ThemeId) => void;
+  isLoading?: boolean;
 }
 
 const THEME_OPTIONS: { value: ThemeId; label: string }[] = [
@@ -37,7 +38,7 @@ const THEME_OPTIONS: { value: ThemeId; label: string }[] = [
 
 const jsonExtensions = [json()];
 
-export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSelected, themeId, onThemeChange }: ChartPanelProps) {
+export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSelected, themeId, onThemeChange, isLoading }: ChartPanelProps) {
   const datasetEntries = Object.entries(datasets);
   const hasData = datasetEntries.length > 0;
   const firstDataset = hasData ? datasetEntries[0][1] : null;
@@ -268,7 +269,15 @@ export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSele
       </div>
       <div className="flex flex-1 overflow-hidden">
         <div className={`${jsonPanelOpen ? "w-1/2" : "w-full"} flex flex-col overflow-hidden transition-all`}>
-          <TabsContent value="chart" className="flex-1 m-0 overflow-auto">
+          <TabsContent value="chart" className="flex-1 m-0 overflow-auto relative">
+            {isLoading && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 pointer-events-none">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm">AI is working...</span>
+                </div>
+              </div>
+            )}
             {hasChart ? (
               <ChartRenderer spec={displaySpec!} datasets={datasetsRows} themeId={themeId} />
             ) : hasData ? (
@@ -361,10 +370,10 @@ export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSele
                 <button
                   onClick={handleApply}
                   className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                  title="Apply changes to AI"
+                  title="Apply edits and send the updated spec to the AI conversation"
                 >
                   <Check className="h-3.5 w-3.5" />
-                  Apply
+                  Apply to Chat
                 </button>
                 <button
                   onClick={handleCloseJsonPanel}
