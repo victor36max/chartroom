@@ -1,10 +1,10 @@
 {
   "name": "chartroom",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "AI-powered chart generation from CSV data using Vega-Lite",
   "author": {
     "name": "Victor Chan"
   },
-  "repository": "https://github.com/victor/chartroom",
+  "repository": "https://github.com/victor36max/chartroom",
   "license": "MIT"
 }
