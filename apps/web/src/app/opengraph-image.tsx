@@ -20,31 +20,8 @@ export default async function OgImage() {
           fontFamily: "sans-serif",
         }}
       >
-        {/* Simple chart icon */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-end",
-            gap: "12px",
-            marginBottom: "40px",
-          }}
-        >
-          {[120, 80, 160, 100, 140].map((h, i) => (
-            <div
-              key={i}
-              style={{
-                width: "36px",
-                height: `${h}px`,
-                borderRadius: "6px",
-                background:
-                  i === 2
-                    ? "linear-gradient(to top, #3b82f6, #60a5fa)"
-                    : "linear-gradient(to top, #1e3a5f, #2563eb)",
-                opacity: i === 2 ? 1 : 0.6,
-              }}
-            />
-          ))}
-        </div>
+        {/* Logo emoji */}
+        <div style={{ fontSize: "120px", marginBottom: "40px" }}>⛵</div>
 
         {/* Title */}
         <div
