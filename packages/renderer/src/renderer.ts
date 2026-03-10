@@ -4,10 +4,19 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// Resolve from package root so paths work both from src/ (dev) and dist/ (published)
-const PKG_ROOT = path.resolve(__dirname, "..");
-const BUNDLE_PATH = path.resolve(PKG_ROOT, "src/bundle/renderer.js");
-const HTML_PAGE = path.resolve(PKG_ROOT, "src/renderer-page.html");
+
+// Bundled (npm): assets at dist/renderer/  |  Dev (workspace): assets at packages/renderer/src/
+const bundledRoot = path.resolve(__dirname, "renderer");
+const devRoot = path.resolve(__dirname, "../../renderer/src");
+const localRoot = path.resolve(__dirname, "..", "src");
+const RENDERER_ROOT = fs.existsSync(path.resolve(bundledRoot, "renderer-page.html"))
+  ? bundledRoot
+  : fs.existsSync(path.resolve(devRoot, "renderer-page.html"))
+    ? devRoot
+    : localRoot;
+
+const BUNDLE_PATH = path.resolve(RENDERER_ROOT, "bundle/renderer.js");
+const HTML_PAGE = path.resolve(RENDERER_ROOT, "renderer-page.html");
 
 export async function initRenderer(pageCount = 1): Promise<{ browser: Browser; pages: Page[] }> {
   if (!fs.existsSync(BUNDLE_PATH)) {

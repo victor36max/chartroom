@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "chartroom": {
-      "command": "/Users/victor/Documents/chartroom/apps/plugin/start.sh",
-      "args": []
+      "command": "bun",
+      "args": ["packages/mcp/src/server.ts"]
     }
   }
 }

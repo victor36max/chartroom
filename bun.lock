@@ -30,17 +30,8 @@
     "apps/plugin": {
       "name": "@chartroom/plugin",
       "version": "0.1.0",
-      "bin": {
-        "chartroom": "dist/server.js",
-      },
       "dependencies": {
         "@chartroom/core": "workspace:*",
-        "@chartroom/renderer": "workspace:*",
-        "@modelcontextprotocol/sdk": "^1.12.1",
-        "zod": "^4.3.6",
-      },
-      "devDependencies": {
-        "typescript": "^5",
       },
     },
     "apps/web": {
@@ -117,6 +108,23 @@
       "optionalPeers": [
         "ai",
       ],
+    },
+    "packages/mcp": {
+      "name": "@chartroom/mcp",
+      "version": "0.1.0",
+      "bin": {
+        "chartroom": "dist/server.js",
+      },
+      "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.12.1",
+        "playwright": "^1.58.2",
+        "zod": "^4.3.6",
+      },
+      "devDependencies": {
+        "@chartroom/core": "workspace:*",
+        "@chartroom/renderer": "workspace:*",
+        "typescript": "^5",
+      },
     },
     "packages/renderer": {
       "name": "@chartroom/renderer",
@@ -221,6 +229,8 @@
     "@chartroom/core": ["@chartroom/core@workspace:packages/core"],
 
     "@chartroom/eval": ["@chartroom/eval@workspace:apps/eval"],
+
+    "@chartroom/mcp": ["@chartroom/mcp@workspace:packages/mcp"],
 
     "@chartroom/plugin": ["@chartroom/plugin@workspace:apps/plugin"],
 

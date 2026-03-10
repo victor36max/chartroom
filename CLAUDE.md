@@ -11,12 +11,12 @@ bun run lint           # Run ESLint across all packages
 bun run typecheck      # Run TypeScript type checking across all packages
 bun run test           # Run vitest across all packages (NOT `bun test`)
 bun run eval           # Run eval suite
-bun run build:packages # Build core, renderer, and plugin packages
+bun run build:mcp      # Build MCP server package
 
 # Per-package commands
 cd packages/core && bun run test              # Core package tests only
 cd apps/web && bun run build                  # Web app build only
-cd apps/plugin && bun start                   # Start MCP server
+cd packages/mcp && bun start                  # Start MCP server
 cd packages/renderer && bun run build:bundle  # Build Vega renderer bundle
 
 # Database (requires DATABASE_URL)
@@ -40,11 +40,12 @@ packages/
                                        data injection, themes, docs, system prompt, Zod schemas,
                                        AI tools
   renderer/     @chartroom/renderer — Playwright-based headless Vega-Lite → PNG rendering
+  mcp/          @chartroom/mcp      — MCP server: chart generation tools (publishable to npm)
 
 apps/
   web/          @chartroom/web      — Next.js 16 App Router web app
   eval/         @chartroom/eval     — Eval runner (cases, judge, reports)
-  plugin/       @chartroom/plugin   — Claude Code MCP server + /chart skill
+  plugin/       @chartroom/plugin   — Claude Code plugin: /chart skill + docs (not published)
 ```
 
 ### `@chartroom/core` (packages/core)
@@ -140,15 +141,21 @@ Accordion-based UI for editing Vega-Lite specs without writing JSON:
 
 Built with shadcn/ui (Radix primitives), Tailwind CSS v4, DM Sans font, dark mode via next-themes. Toast notifications via sonner. JSON editor via CodeMirror.
 
-### `@chartroom/plugin` (apps/plugin)
+### `@chartroom/mcp` (packages/mcp)
 
-Claude Code MCP server providing chart generation tools:
+MCP server providing chart generation tools (publishable to npm as `@chartroom/mcp`):
 - **`load_csv`** (`src/tools/load-csv.ts`) — parse CSV file, return column metadata
 - **`validate_chart`** (`src/tools/validate-chart.ts`) — validate Vega-Lite spec via compiler
 - **`render_chart`** (`src/tools/render-chart.ts`) — render spec to PNG via `@chartroom/renderer`
 - **`open_interactive`** (`src/tools/open-interactive.ts`) — open chart in browser with tooltips
 
-Skill: `/chart` — guided workflow for chart generation from CSV data. Vega-Lite reference docs in `skills/chart/docs/` (28 topics).
+### `@chartroom/plugin` (apps/plugin)
+
+Claude Code plugin assets (not published to npm, consumed locally by Claude Code):
+- Skill: `/chart` — guided workflow for chart generation from CSV data
+- Vega-Lite reference docs in `skills/chart/docs/` (28 topics)
+- `.mcp.json` — configures Claude Code to use `npx @chartroom/mcp`
+- `scripts/generate-skill.ts` — generates SKILL.md and docs from `@chartroom/core`
 
 ### `@chartroom/eval` (apps/eval)
 
@@ -195,8 +202,8 @@ Eval runner for automated chart quality assessment:
 | `apps/web/src/components/chart/layer-editor-card.tsx` | Layer composition editor |
 | `apps/web/src/components/auth/auth-provider.tsx` | Auth context + useAuth hook |
 | `apps/web/src/components/data/data-table.tsx` | Read-only data preview |
-| `apps/plugin/src/server.ts` | MCP server entry point |
-| `apps/plugin/src/tools/` | MCP tool implementations (4 files) |
+| `packages/mcp/src/server.ts` | MCP server entry point |
+| `packages/mcp/src/tools/` | MCP tool implementations (4 files) |
 | `apps/plugin/skills/chart/SKILL.md` | /chart skill definition |
 | `apps/plugin/skills/chart/docs/` | Vega-Lite reference docs (28 markdown files) |
 | `apps/eval/src/index.ts` | Eval runner entry point |

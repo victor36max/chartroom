@@ -2,7 +2,7 @@
   "mcpServers": {
     "chartroom": {
       "command": "npx",
-      "args": ["@chartroom/plugin"]
+      "args": ["@chartroom/mcp"]
     }
   }
 }

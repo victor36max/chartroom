@@ -29,11 +29,12 @@ packages/
   core/         @chartroom/core     — Shared logic (types, CSV parsing, validation,
                                        themes, docs, AI tools, system prompt)
   renderer/     @chartroom/renderer — Headless Vega-Lite → PNG rendering (Playwright)
+  mcp/          @chartroom/mcp      — MCP server: chart generation tools (publishable to npm)
 
 apps/
   web/          @chartroom/web      — Next.js 16 web app
   eval/         @chartroom/eval     — Automated eval runner with vision-model judging
-  plugin/       @chartroom/plugin   — Claude Code MCP server + /chart skill
+  plugin/       @chartroom/plugin   — Claude Code plugin: /chart skill + docs (not published)
 ```
 
 ## Getting started
@@ -80,14 +81,14 @@ Open [http://localhost:3000](http://localhost:3000). Upload a CSV and start chat
 | `bun run typecheck` | TypeScript type checking across all packages |
 | `bun run test` | Vitest across all packages |
 | `bun run eval` | Run eval suite |
-| `bun run build:packages` | Build core, renderer, and plugin |
+| `bun run build:mcp` | Build MCP server package |
 
 ### Per-package
 
 ```bash
 cd packages/core && bun run test              # Core tests
 cd apps/web && bun run build                  # Web app build
-cd apps/plugin && bun start                   # Start MCP server
+cd packages/mcp && bun start                  # Start MCP server
 cd packages/renderer && bun run build:bundle  # Build Vega renderer bundle
 ```
 
@@ -145,9 +146,9 @@ When enabled:
 - **Usage tracking** — Per-token cost deduction with configurable markup multiplier
 - **Free credits** — Configurable amount granted on first sign-up (default: $1.00)
 
-### @chartroom/plugin
+### @chartroom/mcp
 
-Claude Code MCP server with 4 tools:
+MCP server providing chart generation tools (publishable to npm as `@chartroom/mcp`):
 
 | Tool | Description |
 |------|-------------|
@@ -156,7 +157,12 @@ Claude Code MCP server with 4 tools:
 | `render_chart` | Render a spec to PNG via headless Playwright |
 | `open_interactive` | Open chart in browser with tooltips |
 
-Includes the `/chart` skill — a guided workflow for chart generation from CSV data.
+### @chartroom/plugin
+
+Claude Code plugin assets (not published to npm):
+- `/chart` skill — guided workflow for chart generation from CSV data
+- 28 Vega-Lite reference docs
+- `.mcp.json` — configures Claude Code to use `npx @chartroom/mcp`
 
 ### @chartroom/eval
 
@@ -217,13 +223,31 @@ cd apps/web && bun run test         # Web only
 - **Core** — Vitest, Node environment. Covers CSV parsing, spec validation, data injection, themes, schemas, system prompt.
 - **Web** — Vitest, jsdom environment. Covers chart utilities, CSV parsing, components.
 
-## MCP plugin setup
+## Claude Code plugin
 
-The plugin registers as an MCP server for Claude Code. To use it:
+Chartroom includes a Claude Code plugin that adds chart generation capabilities via MCP tools and the `/chart` skill. The plugin installs both the MCP server (providing `load_csv`, `validate_chart`, `render_chart`, `open_interactive` tools) and the `/chart` skill in one step.
 
-1. Build the packages: `bun run build:packages`
-2. The `.mcp.json` at the repo root configures the server to run via `apps/plugin/start.sh`
-3. Use the `/chart` skill in Claude Code for guided chart generation
+### Install
+
+```bash
+# Add the chartroom marketplace
+/plugin marketplace add victor36max/chartroom
+
+# Install the plugin
+/plugin install chartroom
+```
+
+This automatically sets up the MCP server (via `npx @chartroom/mcp`) and makes the `/chart` skill available.
+
+### Usage
+
+Once installed, use `/chart` in Claude Code for a guided chart generation workflow:
+
+1. `/chart` — starts the workflow
+2. Provide a CSV file path when prompted
+3. Describe the chart you want in natural language
+4. The plugin loads your data, generates a Vega-Lite spec, validates it, and renders a PNG
+5. Iterate on the chart through conversation
 
 ## Tech stack
 

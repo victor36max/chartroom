@@ -5,7 +5,7 @@ import os from "os";
 import path from "path";
 import { type DatasetMap } from "@chartroom/core";
 import { initRenderer, renderChart as rendererRenderChart } from "@chartroom/renderer";
-import type { Browser, Page } from "playwright";
+import type { Browser, Page } from "@chartroom/renderer";
 
 let browser: Browser | null = null;
 let page: Page | null = null;
