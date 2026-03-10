@@ -71,6 +71,35 @@ bun run dev
 
 Open [http://localhost:3000](http://localhost:3000). Upload a CSV and start chatting to generate charts.
 
+### Running the MCP server only
+
+The MCP server (`@chartroom/mcp`) can run standalone without the web app.
+
+**From the monorepo (development):**
+
+```bash
+cd packages/mcp && bun start
+```
+
+**Via npx (published package):**
+
+```bash
+npx @chartroom/mcp
+```
+
+**MCP client configuration (e.g. Claude Desktop):**
+
+```json
+{
+  "mcpServers": {
+    "chartroom": {
+      "command": "npx",
+      "args": ["@chartroom/mcp"]
+    }
+  }
+}
+```
+
 ## Commands
 
 | Command | Description |

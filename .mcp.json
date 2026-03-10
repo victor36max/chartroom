@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "chartroom": {
-      "command": "bun",
-      "args": ["packages/mcp/src/server.ts"]
-    }
-  }
-}
