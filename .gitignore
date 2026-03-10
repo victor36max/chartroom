@@ -42,9 +42,6 @@ next-env.d.ts
 
 .playwright-mcp
 
-# renderer bundle
-packages/renderer/src/bundle/
-
 # eval results
 apps/eval/results/
 

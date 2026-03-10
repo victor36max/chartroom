@@ -27,8 +27,8 @@ Bun workspace monorepo with shared packages and multiple apps:
 ```
 packages/
   core/         @chartroom/core     — Shared logic (types, CSV parsing, validation,
-                                       themes, docs, AI tools, system prompt)
-  renderer/     @chartroom/renderer — Headless Vega-Lite → PNG rendering (Playwright)
+                                       themes, docs, AI tools, system prompt,
+                                       headless PNG rendering via vega + resvg-js)
   mcp/          @chartroom/mcp      — MCP server: chart generation tools (publishable to npm)
 
 apps/
@@ -89,7 +89,6 @@ Open [http://localhost:3000](http://localhost:3000). Upload a CSV and start chat
 cd packages/core && bun run test              # Core tests
 cd apps/web && bun run build                  # Web app build
 cd packages/mcp && bun start                  # Start MCP server
-cd packages/renderer && bun run build:bundle  # Build Vega renderer bundle
 ```
 
 ## Packages
@@ -107,15 +106,7 @@ Shared, Node-compatible library with no framework dependencies (`ai` SDK is an o
 - **Docs** — 28 Vega-Lite reference topics (marks, encoding, transforms, layout, patterns)
 - **AI tools** — `render_chart` and `lookup_docs` tool definitions for Vercel AI SDK
 - **Context pruning** — Removes old tool results to manage conversation context size
-
-### @chartroom/renderer
-
-Headless chart rendering via Playwright + vega-embed:
-
-- Launches Chromium with a minimal HTML page containing a bundled vega-embed
-- Renders Vega-Lite specs to PNG with theme support
-- Dynamic viewport resizing to fit chart content (default 900x700)
-- Bundle built with esbuild from vega-embed + core utilities
+- **Renderer** — `renderChart(spec, datasets, themeId)` → headless Vega-Lite → PNG via vega + resvg-js (no browser needed, ~10MB vs ~250MB for Playwright)
 
 ### @chartroom/web
 
@@ -154,7 +145,7 @@ MCP server providing chart generation tools (publishable to npm as `@chartroom/m
 |------|-------------|
 | `load_csv` | Parse a CSV file, return column metadata |
 | `validate_chart` | Validate a Vega-Lite spec via the compiler |
-| `render_chart` | Render a spec to PNG via headless Playwright |
+| `render_chart` | Render a spec to PNG via vega + resvg-js |
 | `open_interactive` | Open chart in browser with tooltips |
 
 ### @chartroom/plugin
@@ -170,10 +161,10 @@ Automated chart quality evaluation:
 
 - Loads test cases (JSON) and CSV data
 - Runs agentic generation loop with `generateText` + tools from core
-- Renders via `@chartroom/renderer`, judges via vision model
+- Renders via `renderChart` from `@chartroom/core`, judges via vision model
 - Scores on 5 criteria (correctness, chart type, readability, aesthetics, completeness) — max 25
 - Generates HTML + JSON reports with embedded screenshots
-- CLI flags: `--tier`, `--tag`, `--case`, `--model`, `--concurrency`, `--no-judge`, `--rebuild-bundle`
+- CLI flags: `--tier`, `--tag`, `--case`, `--model`, `--concurrency`, `--no-judge`
 
 ```bash
 bun run eval                    # Run all cases
@@ -256,11 +247,11 @@ Once installed, use `/chart` in Claude Code for a guided chart generation workfl
 - **Web framework**: [Next.js](https://nextjs.org) 16 (App Router, React 19)
 - **AI**: [Vercel AI SDK](https://sdk.vercel.ai) + [OpenRouter](https://openrouter.ai)
 - **Charts**: [Vega-Lite](https://vega.github.io/vega-lite/) 6 + [vega-embed](https://github.com/vega/vega-embed)
-- **Rendering**: [Playwright](https://playwright.dev) (headless Chromium)
+- **Rendering**: [Vega](https://vega.github.io/vega/) (headless SVG) + [@resvg/resvg-js](https://github.com/nicolo-ribaudo/resvg-js) (SVG → PNG)
 - **UI**: [shadcn/ui](https://ui.shadcn.com) + [Tailwind CSS](https://tailwindcss.com) v4
 - **Auth**: [Supabase](https://supabase.com) (optional)
 - **Payments**: [Stripe](https://stripe.com) (optional)
 - **Database**: PostgreSQL + [Drizzle ORM](https://orm.drizzle.team) (optional)
 - **MCP**: [Model Context Protocol SDK](https://modelcontextprotocol.io)
 - **Testing**: [Vitest](https://vitest.dev)
-- **Build**: [tsup](https://tsup.egoist.dev), [esbuild](https://esbuild.github.io)
+- **Build**: [tsup](https://tsup.egoist.dev)

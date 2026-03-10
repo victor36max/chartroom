@@ -1,4 +1,3 @@
-import { initRenderer, buildBundle, closeRenderer } from "@chartroom/renderer";
 type ModelTier = "fast" | "mid" | "power";
 
 const MODEL_DEFAULTS: Record<ModelTier, { envKey: string; default: string }> = {
@@ -40,7 +39,6 @@ function parseArgs() {
     tags: getAll("--tag"),
     caseNames: getAll("--case"),
     skipJudge: args.includes("--no-judge"),
-    rebuildBundle: args.includes("--rebuild-bundle"),
     modelId: get("--model") ?? resolveModelId(tier),
     judgeModelId: resolveModelId("power"),
     concurrency: Number(get("--concurrency") ?? 5),
@@ -91,21 +89,14 @@ async function main() {
   const concurrency = Math.max(1, opts.concurrency);
   console.log(`Running ${cases.length} eval case(s) with model: ${opts.modelId} (concurrency: ${concurrency})\n`);
 
-  // Build bundle if needed
-  if (opts.rebuildBundle) await buildBundle();
-
   // Output directory
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
   const outputDir = path.resolve(__dirname, "../results", timestamp);
   fs.mkdirSync(outputDir, { recursive: true });
 
-  // Init Playwright with page pool
-  const { browser, pages } = await initRenderer(concurrency);
-
   // Run cases in parallel
-  const results = await pMap(cases, async (evalCase, workerIndex) => {
-    const page = pages[workerIndex];
-    const result = await runCase(evalCase, page, outputDir, opts.modelId);
+  const results = await pMap(cases, async (evalCase) => {
+    const result = await runCase(evalCase, outputDir, opts.modelId);
 
     if (!opts.skipJudge && result.screenshotBase64) {
       result.judgeScores = await judgeChart(
@@ -122,7 +113,6 @@ async function main() {
     return result;
   }, concurrency);
 
-  await closeRenderer(browser);
   writeReport(results, outputDir, opts.modelId);
 }
 

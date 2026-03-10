@@ -7,12 +7,11 @@ import {
   extractMetadata,
   datasetsToContext,
   validateSpec,
+  renderChart,
   type DatasetMap,
   type ChartSpec,
 } from "@chartroom/core";
-import { renderChart } from "@chartroom/renderer";
 import type { EvalCase, CaseResult } from "./types";
-import type { Page } from "playwright";
 import Papa from "papaparse";
 import fs from "fs";
 import path from "path";
@@ -36,7 +35,6 @@ function loadCSV(csvFilename: string): Record<string, unknown>[] {
 
 export async function runCase(
   evalCase: EvalCase,
-  page: Page,
   outputDir: string,
   modelId: string
 ): Promise<CaseResult> {
@@ -84,7 +82,7 @@ export async function runCase(
           return { success: false as const, error: `Vega-Lite compile error: ${validation.error}. Fix the spec and try again.` };
         }
 
-        const result = await renderChart(page, chartSpec as unknown as Record<string, unknown>, datasets);
+        const result = await renderChart(chartSpec as unknown as Record<string, unknown>, datasets);
         if ("error" in result && result.error) {
           return { success: false as const, error: result.error ?? "Render returned no image" };
         }

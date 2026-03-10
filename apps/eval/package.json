@@ -9,11 +9,9 @@
   },
   "dependencies": {
     "@chartroom/core": "workspace:*",
-    "@chartroom/renderer": "workspace:*",
     "@openrouter/ai-sdk-provider": "^2.2.3",
     "ai": "^6.0.108",
-    "papaparse": "^5.5.3",
-    "playwright": "^1.58.2"
+    "papaparse": "^5.5.3"
   },
   "devDependencies": {
     "@types/papaparse": "^5.5.2",

@@ -17,7 +17,6 @@ bun run build:mcp      # Build MCP server package
 cd packages/core && bun run test              # Core package tests only
 cd apps/web && bun run build                  # Web app build only
 cd packages/mcp && bun start                  # Start MCP server
-cd packages/renderer && bun run build:bundle  # Build Vega renderer bundle
 
 # Database (requires DATABASE_URL)
 cd apps/web && bun run db:generate  # Generate Drizzle migrations
@@ -38,8 +37,7 @@ Chartroom is a **Bun workspace monorepo** with shared packages and multiple apps
 packages/
   core/         @chartroom/core     — Shared logic: types, CSV parsing, spec validation,
                                        data injection, themes, docs, system prompt, Zod schemas,
-                                       AI tools
-  renderer/     @chartroom/renderer — Playwright-based headless Vega-Lite → PNG rendering
+                                       AI tools, headless PNG rendering (vega + resvg-js)
   mcp/          @chartroom/mcp      — MCP server: chart generation tools (publishable to npm)
 
 apps/
@@ -59,15 +57,7 @@ Node-compatible shared logic (`ai` SDK is an optional peer dependency):
 - **System prompt**: `buildSystemPrompt({ context: "web"|"plugin", dataContext? })`
 - **Docs**: `TOPIC_IDS`, `lookupDocs`, `DOC_CHUNKS` (28 Vega-Lite reference topics)
 - **AI tools**: `createTools` (render_chart + lookup_docs tool defs), `pruneOldToolResults`
-
-### `@chartroom/renderer` (packages/renderer)
-
-Headless chart rendering via Playwright + vega-embed:
-- `initRenderer(pageCount?)` → launches Chromium, loads HTML page with bundled vega-embed
-- `renderChart(page, spec, datasets, themeId)` → returns `{ png, warnings }` or `{ error }`
-- `closeRenderer(browser)` → cleanup
-- Bundle built with esbuild: `bun run build:bundle`
-- Default viewport: 900×700
+- **Renderer**: `renderChart(spec, datasets, themeId)` → headless Vega-Lite → PNG via vega + resvg-js (no browser needed)
 
 ### `@chartroom/web` (apps/web)
 
@@ -146,7 +136,7 @@ Built with shadcn/ui (Radix primitives), Tailwind CSS v4, DM Sans font, dark mod
 MCP server providing chart generation tools (publishable to npm as `@chartroom/mcp`):
 - **`load_csv`** (`src/tools/load-csv.ts`) — parse CSV file, return column metadata
 - **`validate_chart`** (`src/tools/validate-chart.ts`) — validate Vega-Lite spec via compiler
-- **`render_chart`** (`src/tools/render-chart.ts`) — render spec to PNG via `@chartroom/renderer`
+- **`render_chart`** (`src/tools/render-chart.ts`) — render spec to PNG via `@chartroom/core`
 - **`open_interactive`** (`src/tools/open-interactive.ts`) — open chart in browser with tooltips
 
 ### `@chartroom/plugin` (apps/plugin)
@@ -162,11 +152,11 @@ Claude Code plugin assets (not published to npm, consumed locally by Claude Code
 Eval runner for automated chart quality assessment:
 - Loads eval cases from `cases/` (JSON) and data from `data/` (CSV)
 - Runs agentic loop with `generateText` + `createTools` from core
-- Renders charts via `@chartroom/renderer`, judges via vision model
+- Renders charts via `renderChart` from `@chartroom/core`, judges via vision model
 - 5 scoring criteria (correctness, chartType, readability, aesthetics, completeness) × 5 points = max 25
 - Generates HTML + JSON reports in `results/{timestamp}/`
 - Parallel execution via worker pool (configurable concurrency)
-- CLI flags: `--tier`, `--tag`, `--case`, `--model`, `--concurrency`, `--no-judge`, `--rebuild-bundle`
+- CLI flags: `--tier`, `--tag`, `--case`, `--model`, `--concurrency`, `--no-judge`
 
 ### Key files
 
@@ -183,7 +173,7 @@ Eval runner for automated chart quality assessment:
 | `packages/core/src/docs.ts` | Vega-Lite reference docs (28 topics) |
 | `packages/core/src/tools.ts` | AI tool definitions (render_chart + lookup_docs) |
 | `packages/core/src/prune-context.ts` | Context pruning for multi-turn |
-| `packages/renderer/src/renderer.ts` | Playwright headless renderer |
+| `packages/core/src/renderer.ts` | Headless Vega-Lite → PNG renderer (vega + resvg-js) |
 | `apps/web/src/app/page.tsx` | Main page (two-panel layout) |
 | `apps/web/src/app/api/chat/route.ts` | Streaming API endpoint |
 | `apps/web/src/lib/agent/models.ts` | Model tier config + resolution |

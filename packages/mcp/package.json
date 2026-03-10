@@ -1,6 +1,6 @@
 {
   "name": "@chartroom/mcp",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "type": "module",
   "main": "dist/server.js",
   "bin": {
@@ -14,20 +14,21 @@
   },
   "files": ["dist"],
   "scripts": {
-    "build": "tsup && mkdir -p dist/renderer/bundle && cp ../renderer/src/renderer-page.html dist/renderer/ && cp ../renderer/src/bundle/renderer.js dist/renderer/bundle/",
+    "build": "tsup",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "start": "bun src/server.ts",
-    "build:bundle": "bun run --cwd ../../packages/renderer build:bundle"
+    "start": "bun src/server.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
-    "playwright": "^1.58.2",
+    "@resvg/resvg-js": "^2.6.2",
+    "vega": "^6.2.0",
+    "vega-lite": "^6.4.2",
+    "vega-themes": "^3.0.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@chartroom/core": "workspace:*",
-    "@chartroom/renderer": "workspace:*",
     "typescript": "^5"
   }
 }
