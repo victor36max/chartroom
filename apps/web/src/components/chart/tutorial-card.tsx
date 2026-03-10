@@ -1,41 +1,41 @@
 "use client";
 
-import { useState, type DragEvent, type ChangeEvent, useRef } from "react";
+import { useState, useEffect, useCallback, type DragEvent, type ChangeEvent, useRef } from "react";
 import { ChevronLeft, ChevronRight, Upload } from "lucide-react";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "chartroom-hide-tutorial";
 
 interface TutorialStep {
-  image: string;
+  media: string;
   title: string;
   description: string;
 }
 
 const STEPS: TutorialStep[] = [
   {
-    image: "/tutorial/step-1-upload.gif",
+    media: "/tutorial/step-1-upload.mp4",
     title: "Upload your data",
     description:
       'Drop a CSV file or click "Try with sample data" to get started instantly.',
   },
   {
-    image: "/tutorial/step-2-prompt.gif",
+    media: "/tutorial/step-2-prompt.mp4",
     title: "Describe your chart",
     description:
       "Tell the AI what you want in plain English — it generates a Vega-Lite chart for you.",
   },
   {
-    image: "/tutorial/step-3-chart.gif",
+    media: "/tutorial/step-3-chart.mp4",
     title: "Get a publication-ready chart",
     description:
       "Your chart appears instantly. Iterate with follow-up prompts to refine it.",
   },
   {
-    image: "/tutorial/step-4-edit.gif",
+    media: "/tutorial/step-4-edit.mp4",
     title: "Fine-tune and export",
     description:
       "Use the visual editor, switch themes, or export as PNG/SVG.",
@@ -84,16 +84,27 @@ function Dropzone({ onFilesSelected }: { onFilesSelected?: (files: File[]) => vo
   );
 }
 
-const TUTORIAL_ENABLED = process.env.NEXT_PUBLIC_TUTORIAL_ENABLED === "true";
-
 export function TutorialCard({ onFilesSelected }: TutorialCardProps) {
   const [hidden] = useState(() => {
-    if (!TUTORIAL_ENABLED) return true;
     if (typeof window === "undefined") return false;
     return localStorage.getItem(STORAGE_KEY) === "true";
   });
   const [step, setStep] = useState(0);
   const [dontShow, setDontShow] = useState(hidden);
+  const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
+
+  const setVideoRef = useCallback((index: number, el: HTMLVideoElement | null) => {
+    if (el) videoRefs.current.set(index, el);
+    else videoRefs.current.delete(index);
+  }, []);
+
+  useEffect(() => {
+    const video = videoRefs.current.get(step);
+    if (video) {
+      video.currentTime = 0;
+      video.play();
+    }
+  }, [step]);
 
   // If user checked "don't show again", show only the dropzone
   if (hidden) {
@@ -114,24 +125,27 @@ export function TutorialCard({ onFilesSelected }: TutorialCardProps) {
 
   return (
     <div className="flex flex-col items-center justify-center h-full w-full p-8">
-      <div className="max-w-md w-full space-y-4">
-        {isLastStep ? (
-          /* Dropzone as last step */
-          <div className="aspect-video w-full rounded-lg border-2 border-dashed border-muted-foreground/40 flex items-center justify-center">
+      <div className="max-w-xl w-full space-y-4">
+      {/* Dropzone as last step */}
+          <div className={cn("aspect-4/3 w-full rounded-lg border-2 border-dashed border-muted-foreground/40 flex items-center justify-center", !isLastStep && "hidden")}>
             <Dropzone onFilesSelected={onFilesSelected} />
           </div>
-        ) : (
-          /* Tutorial image step */
-          <div className="relative aspect-video w-full rounded-lg border bg-muted/30 overflow-hidden">
-            <Image
-              src={STEPS[step].image}
-              alt={STEPS[step].title}
-              fill
-              className="object-contain"
-              unoptimized
+          {/* Tutorial media step */}
+          <div className={cn("relative aspect-4/3 w-full rounded-lg border bg-muted/30 overflow-hidden", isLastStep && "hidden")}>
+            {STEPS.map((s, i) => (
+              <video
+              key={s.media}
+              ref={(el) => setVideoRef(i, el)}
+              src={s.media}
+              preload="auto"
+              autoPlay={i === step}
+              loop
+              muted
+              playsInline
+              className={cn("absolute inset-0 w-full h-full object-cover", i !== step && "hidden")}
             />
+            ))}
           </div>
-        )}
 
         {/* Text */}
         <div className="text-center space-y-1">
