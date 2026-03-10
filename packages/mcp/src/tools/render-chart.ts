@@ -4,7 +4,7 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { type DatasetMap } from "@chartroom/core";
-import { renderChart } from "@chartroom/core";
+import { renderChart } from "@chartroom/core/renderer";
 
 export function registerRenderChart(server: McpServer, datasets: DatasetMap) {
   server.tool(

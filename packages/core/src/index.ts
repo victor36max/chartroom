@@ -41,9 +41,6 @@ export { buildSystemPrompt, type SystemPromptOptions } from "./system-prompt";
 // Docs
 export { TOPIC_IDS, lookupDocs, DOC_CHUNKS, type TopicId } from "./docs";
 
-// Renderer
-export { renderChart } from "./renderer";
-
 // AI tools (requires `ai` peer dependency)
 export { createTools } from "./tools";
 export { pruneOldToolResults } from "./prune-context";

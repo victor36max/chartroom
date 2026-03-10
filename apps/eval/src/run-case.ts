@@ -7,10 +7,10 @@ import {
   extractMetadata,
   datasetsToContext,
   validateSpec,
-  renderChart,
   type DatasetMap,
   type ChartSpec,
 } from "@chartroom/core";
+import { renderChart } from "@chartroom/core/renderer";
 import type { EvalCase, CaseResult } from "./types";
 import Papa from "papaparse";
 import fs from "fs";

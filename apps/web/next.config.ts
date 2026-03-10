@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@chartroom/core"],
+  serverExternalPackages: ["@resvg/resvg-js"],
   experimental: {
     // Tree-shake ai SDK to prevent Zod v4 Set objects in unused schema exports from breaking RSC serialization
     optimizePackageImports: ["ai", "@ai-sdk/react"],
