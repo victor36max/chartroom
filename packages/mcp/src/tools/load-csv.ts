@@ -7,7 +7,7 @@ export function registerLoadCsv(server: McpServer, datasets: DatasetMap) {
   server.tool(
     "load_csv",
     "Load and parse a CSV file. Returns column metadata (names, types, sample values). Supports loading multiple CSVs.",
-    { path: z.string().describe("Path to the CSV file (absolute or relative)") },
+    { path: z.string().describe("Absolute path to the CSV file") },
     async ({ path: csvPath }) => {
       try {
         const text = fs.readFileSync(csvPath, "utf8");
