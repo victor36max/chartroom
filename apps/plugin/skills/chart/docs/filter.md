@@ -35,6 +35,18 @@ Removes rows from data before visualization.
 "transform": [{ "filter": { "field": "price", "range": [10, 100] } }]
 ```
 
+**Date range (temporal fields):**
+Use DateTime objects — NOT date strings — in range predicates:
+```json
+"transform": [{ "filter": { "field": "date", "range": [{"year": 2024, "month": 6, "date": 1}, {"year": 2024, "month": 7, "date": 1}] } }]
+```
+⚠️ String dates like `"2024-06-01"` do NOT work in field/range predicates. Always use DateTime objects with `{year, month, date}` properties. Month names like `"jan"` also work.
+
+**TimeUnit shorthand** — simpler when filtering by whole year or month:
+```json
+"transform": [{ "filter": {"timeUnit": "year", "field": "date", "range": [2006, 2008]} }]
+```
+
 **Top/bottom N (e.g. top 5 products by revenue) — complete spec:**
 ```json
 {

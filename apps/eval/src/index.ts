@@ -114,6 +114,7 @@ async function main() {
   }, concurrency);
 
   writeReport(results, outputDir, opts.modelId);
+  process.exit(0);
 }
 
 main().catch((err) => {

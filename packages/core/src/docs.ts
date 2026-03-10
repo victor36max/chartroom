@@ -576,6 +576,18 @@ This creates two new columns:
 "transform": [{ "filter": { "field": "price", "range": [10, 100] } }]
 \`\`\`
 
+**Date range (temporal fields):**
+Use DateTime objects — NOT date strings — in range predicates:
+\`\`\`json
+"transform": [{ "filter": { "field": "date", "range": [{"year": 2024, "month": 6, "date": 1}, {"year": 2024, "month": 7, "date": 1}] } }]
+\`\`\`
+⚠️ String dates like \`"2024-06-01"\` do NOT work in field/range predicates. Always use DateTime objects with \`{year, month, date}\` properties. Month names like \`"jan"\` also work.
+
+**TimeUnit shorthand** — simpler when filtering by whole year or month:
+\`\`\`json
+"transform": [{ "filter": {"timeUnit": "year", "field": "date", "range": [2006, 2008]} }]
+\`\`\`
+
 **Top/bottom N (e.g. top 5 products by revenue) — complete spec:**
 \`\`\`json
 {
@@ -1102,6 +1114,7 @@ Add a layer with \`{ "mark": { "type": "text", "dy": -8 }, "encoding": { "text":
 
 ### Correctness (SHOULD — verify before every render)
 1. **Type matching** — prefer matching encoding types to data: categories -> nominal/ordinal, numbers -> quantitative, dates -> temporal. Vega-Lite can coerce, but explicit types prevent surprises.
+   - **Date filtering** — when filtering temporal fields by range, use DateTime objects \`{"year": 2024, "month": 6, "date": 1}\`, NOT string dates. Or use \`timeUnit\` shorthand for whole-year/month filters. See \`filter\` docs.
 2. **Scatterplot aggregation** — for scatterplots with grouped data (e.g., many rows per stock symbol), use \`transform\` with explicit \`groupby\` — inline aggregate alone collapses everything to a single point.
    - **Large dataset scatter** — if dataset has >500 rows, a naive scatter will overplot. Either: aggregate by group first, use small opacity (0.2–0.3), bin into heatmap (\`rect\` mark), or explain the density issue to the user.
    - **High cardinality** — if a nominal axis will show >20 unique values, consider filtering to top/bottom N. Look up \`filter\` docs for the pattern. Mention any filtering in your response.

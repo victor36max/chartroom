@@ -100,7 +100,7 @@ When a request is vague (e.g., "compare these items", "break this down", "visual
 5. Mention in your response that other metrics are also available
 
 ## Multi-turn editing
-When modifying an existing chart, start from your PREVIOUS spec — do not rebuild from scratch. Look up \`editing-charts\` docs for patterns.`,
+When modifying an existing chart, start from your PREVIOUS spec — do not rebuild from scratch. Look up \`editing-charts\` docs for patterns. If adding or changing transforms (filter, aggregate, calculate, fold, etc.), you MUST look up the relevant transform docs first — do not guess at syntax.`,
 
     dataContext
       ? `\n## Dataset\n${dataContext}`

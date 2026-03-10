@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const AMOUNTS = [
   { cents: 500, label: "$5" },
@@ -23,6 +24,7 @@ interface TopupDialogProps {
 
 export function TopupDialog({ open, onOpenChange }: TopupDialogProps) {
   const [loading, setLoading] = useState<number | null>(null);
+  const [customAmount, setCustomAmount] = useState("");
 
   const handleTopup = async (cents: number) => {
     setLoading(cents);
@@ -45,24 +47,70 @@ export function TopupDialog({ open, onOpenChange }: TopupDialogProps) {
     }
   };
 
+  const handleCustomTopup = () => {
+    const dollars = parseInt(customAmount, 10);
+    if (isNaN(dollars) || dollars < 5) {
+      toast.error("Minimum amount is $5");
+      return;
+    }
+    if (dollars > 500) {
+      toast.error("Maximum amount is $500");
+      return;
+    }
+    handleTopup(dollars * 100);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[320px]">
+      <DialogContent className="sm:max-w-[380px]">
         <DialogHeader>
-          <DialogTitle>Add Credits</DialogTitle>
+          <DialogTitle className="text-lg">Add Credits</DialogTitle>
         </DialogHeader>
-        <div className="flex flex-col gap-2 pt-2">
+        <div className="flex gap-2 pt-2">
           {AMOUNTS.map(({ cents, label }) => (
             <Button
               key={cents}
               variant="outline"
-              className="w-full"
+              className="flex-1 text-base font-medium py-5"
               disabled={loading !== null}
               onClick={() => handleTopup(cents)}
             >
               {loading === cents ? "Redirecting..." : label}
             </Button>
           ))}
+        </div>
+        <div className="flex flex-col gap-2 pt-2 border-t">
+          <label className="text-sm text-muted-foreground pt-1">
+            Or enter a custom amount
+          </label>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-base">
+                $
+              </span>
+              <Input
+                type="number"
+                min={5}
+                max={500}
+                step={1}
+                placeholder="5"
+                value={customAmount}
+                onChange={(e) => setCustomAmount(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleCustomTopup()}
+                className="pl-7 text-base"
+                disabled={loading !== null}
+              />
+            </div>
+            <Button
+              onClick={handleCustomTopup}
+              disabled={loading !== null || !customAmount}
+              className="text-base"
+            >
+              {loading === parseInt(customAmount, 10) * 100
+                ? "Redirecting..."
+                : "Add"}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

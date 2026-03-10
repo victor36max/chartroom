@@ -40,20 +40,28 @@ export default function Home() {
   }, []);
 
   const handleFilesSelected = useCallback(async (files: File[]) => {
+    if (isAuthEnabled() && !user) {
+      openLogin();
+      return;
+    }
     for (const file of files) {
       const result = await parseCSV(file);
       if (result.errors.length > 0 && result.data.length === 0) continue;
       const name = file.name;
       handleCSVParsed(name, result);
     }
-  }, [handleCSVParsed]);
+  }, [handleCSVParsed, user, openLogin]);
 
   const handleLoadSampleData = useCallback(async () => {
+    if (isAuthEnabled() && !user) {
+      openLogin();
+      return;
+    }
     const response = await fetch("/test-data.csv");
     const blob = await response.blob();
     const file = new File([blob], "test-data.csv", { type: "text/csv" });
     await handleFilesSelected([file]);
-  }, [handleFilesSelected]);
+  }, [handleFilesSelected, user, openLogin]);
 
   const handleChartSpec = useCallback((spec: ChartSpec) => {
     setCurrentChart(spec);

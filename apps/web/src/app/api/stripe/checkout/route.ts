@@ -5,7 +5,8 @@ function getStripe() {
   return new Stripe(process.env.STRIPE_SECRET_KEY!);
 }
 
-const ALLOWED_AMOUNTS = [500, 1000, 2500]; // cents
+const MIN_AMOUNT = 500; // cents ($5)
+const MAX_AMOUNT = 50000; // cents ($500)
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
 
   const amount = typeof body.amount === "number" ? body.amount : NaN;
 
-  if (!ALLOWED_AMOUNTS.includes(amount)) {
+  if (!Number.isInteger(amount) || amount < MIN_AMOUNT || amount > MAX_AMOUNT) {
     return Response.json({ error: "Invalid amount" }, { status: 400 });
   }
 

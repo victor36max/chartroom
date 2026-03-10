@@ -1,18 +1,19 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, type DragEvent, type ChangeEvent } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartRenderer } from "@/components/chart/chart-renderer";
 import { DataTable } from "@/components/data/data-table";
 import { exportChartAsPng, exportChartAsSvg } from "@/lib/chart/export-chart";
 import { validateSpec } from "@/lib/chart/validate-spec";
-import { Download, Check, Code, X, SlidersHorizontal, Palette, Loader2, Upload } from "lucide-react";
+import { Download, Check, Code, X, SlidersHorizontal, Palette, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select as ShadSelect, SelectContent as ShadSelectContent, SelectItem as ShadSelectItem, SelectTrigger as ShadSelectTrigger, SelectValue as ShadSelectValue } from "@/components/ui/select";
 import CodeMirror from "@uiw/react-codemirror";
 import { json } from "@codemirror/lang-json";
 import { VisualSpecEditor } from "./visual-spec-editor";
+import { TutorialCard } from "./tutorial-card";
 import type { DatasetMap, ChartSpec, ThemeId } from "@/types";
 
 interface ChartPanelProps {
@@ -48,7 +49,6 @@ export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSele
   const datasetsRows = Object.fromEntries(datasetEntries.map(([name, d]) => [name, d.data]));
   const hasChart = chartSpec && hasData;
 
-  const dropzoneInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState("chart");
   const [activeDataset, setActiveDataset] = useState("");
   const [jsonPanelOpen, setJsonPanelOpen] = useState(false);
@@ -287,37 +287,7 @@ export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSele
                 <p className="text-sm">Ask the AI to create a chart from your data</p>
               </div>
             ) : (
-              <button
-                type="button"
-                className="flex flex-col items-center justify-center h-full w-full gap-2 cursor-pointer"
-                onClick={() => dropzoneInputRef.current?.click()}
-                onDrop={(e: DragEvent<HTMLButtonElement>) => {
-                  e.preventDefault();
-                  const csvFiles = Array.from(e.dataTransfer.files).filter((f) => f.name.endsWith(".csv"));
-                  if (csvFiles.length > 0) onFilesSelected?.(csvFiles);
-                }}
-                onDragOver={(e: DragEvent<HTMLButtonElement>) => e.preventDefault()}
-              >
-                <Upload className="h-8 w-8 text-muted-foreground/50" />
-                <div className="text-center">
-                  <p className="text-sm font-medium text-muted-foreground">Drop CSV files here or click to upload</p>
-                  <p className="text-xs text-muted-foreground/60 mt-1">Your data stays in your browser</p>
-                </div>
-                <input
-                  ref={dropzoneInputRef}
-                  type="file"
-                  accept=".csv"
-                  multiple
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                    const files = e.target.files;
-                    if (files && files.length > 0) {
-                      onFilesSelected?.(Array.from(files));
-                      e.target.value = "";
-                    }
-                  }}
-                  className="hidden"
-                />
-              </button>
+              <TutorialCard onFilesSelected={onFilesSelected} />
             )}
           </TabsContent>
           <TabsContent value="data" className="flex-1 m-0 overflow-hidden flex flex-col">

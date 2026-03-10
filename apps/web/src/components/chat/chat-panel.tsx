@@ -173,22 +173,20 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
     (e: FormEvent) => {
       e.preventDefault();
       if (!input.trim()) return;
-      if (isAuthEnabled()) {
-        if (!user) {
-          openLogin();
-          return;
-        }
-        if (balance !== null && balance <= 0) return;
-      }
+      if (isAuthEnabled() && balance !== null && balance <= 0) return;
       autoSendCountRef.current = 0;
       sendMessage({ text: input });
       setInput("");
     },
-    [input, sendMessage, user, balance, openLogin]
+    [input, sendMessage, balance]
   );
 
   const handleFilesSelected = useCallback(
     async (files: File[]) => {
+      if (isAuthEnabled() && !user) {
+        openLogin();
+        return;
+      }
       setCsvError(null);
       for (const file of files) {
         const result = await parseCSV(file);
@@ -200,7 +198,7 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
         onCSVParsed(name, result);
       }
     },
-    [onCSVParsed]
+    [onCSVParsed, user, openLogin]
   );
 
   const totalRows = Object.values(datasets).reduce((sum, d) => sum + d.metadata.rowCount, 0);
@@ -293,10 +291,9 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
           </div>
         ) : (
           <Button
-            variant="ghost"
             size="sm"
             onClick={() => headerFileInputRef.current?.click()}
-            className="text-xs text-muted-foreground hover:text-foreground"
+            className="text-xs"
           >
             <Plus className="h-3.5 w-3.5" />
             Add CSV
@@ -319,13 +316,7 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
         onStop={handleStop}
         onClear={handleClear}
         onSuggestionClick={(text) => {
-          if (isAuthEnabled()) {
-            if (!user) {
-              openLogin();
-              return;
-            }
-            if (balance !== null && balance <= 0) return;
-          }
+          if (isAuthEnabled() && balance !== null && balance <= 0) return;
           autoSendCountRef.current = 0;
           sendMessage({ text });
         }}

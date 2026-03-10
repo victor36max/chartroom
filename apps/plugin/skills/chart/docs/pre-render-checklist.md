@@ -5,6 +5,7 @@ Verify these items BEFORE every `render_chart` call.
 
 ### Correctness (SHOULD — verify before every render)
 1. **Type matching** — prefer matching encoding types to data: categories -> nominal/ordinal, numbers -> quantitative, dates -> temporal. Vega-Lite can coerce, but explicit types prevent surprises.
+   - **Date filtering** — when filtering temporal fields by range, use DateTime objects `{"year": 2024, "month": 6, "date": 1}`, NOT string dates. Or use `timeUnit` shorthand for whole-year/month filters. See `filter` docs.
 2. **Scatterplot aggregation** — for scatterplots with grouped data (e.g., many rows per stock symbol), use `transform` with explicit `groupby` — inline aggregate alone collapses everything to a single point.
    - **Large dataset scatter** — if dataset has >500 rows, a naive scatter will overplot. Either: aggregate by group first, use small opacity (0.2–0.3), bin into heatmap (`rect` mark), or explain the density issue to the user.
    - **High cardinality** — if a nominal axis will show >20 unique values, consider filtering to top/bottom N. Look up `filter` docs for the pattern. Mention any filtering in your response.
