@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -67,14 +68,13 @@ function CheckboxGrid({ columns, selected, onChange }: {
         const checked = selected.includes(c.name);
         return (
           <Label key={c.name} className="flex items-center gap-0.5 text-[10px]">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={checked}
-              onChange={() => {
+              onCheckedChange={() => {
                 if (checked) onChange(selected.filter((s) => s !== c.name));
                 else onChange([...selected, c.name]);
               }}
-              className="rounded border-input h-3 w-3"
+              className="h-3 w-3"
             />
             {c.name}
           </Label>

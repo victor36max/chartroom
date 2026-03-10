@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -168,7 +169,9 @@ export function EncodingEditor({ spec, markType, columns, computedFields = [], o
         <div className="flex items-center justify-between">
           <Label className="text-xs font-medium">{channel}</Label>
           {channelSpec && (
-            <button
+            <Button
+              variant="ghost"
+              size="xs"
               onClick={() =>
                 onUpdate((s) => {
                   const enc = (s.encoding ?? {}) as SpecObj;
@@ -176,10 +179,10 @@ export function EncodingEditor({ spec, markType, columns, computedFields = [], o
                   s.encoding = enc;
                 })
               }
-              className="text-[10px] text-muted-foreground hover:text-destructive"
+              className="text-[10px] h-auto p-0 text-muted-foreground hover:text-destructive hover:bg-transparent"
             >
               remove
-            </button>
+            </Button>
           )}
         </div>
         <div className="grid grid-cols-3 gap-1.5">

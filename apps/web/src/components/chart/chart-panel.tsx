@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartRenderer } from "@/components/chart/chart-renderer";
 import { DataTable } from "@/components/data/data-table";
@@ -8,7 +8,9 @@ import { exportChartAsPng, exportChartAsSvg } from "@/lib/chart/export-chart";
 import { validateSpec } from "@/lib/chart/validate-spec";
 import { Download, Check, Code, X, SlidersHorizontal, Palette, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Select as ShadSelect, SelectContent as ShadSelectContent, SelectItem as ShadSelectItem, SelectTrigger as ShadSelectTrigger, SelectValue as ShadSelectValue } from "@/components/ui/select";
 import CodeMirror from "@uiw/react-codemirror";
 import { json } from "@codemirror/lang-json";
@@ -130,26 +132,6 @@ export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSele
   const [exportFormat, setExportFormat] = useState<"png" | "svg">("png");
   const [exportScale, setExportScale] = useState(2);
   const [exportTransparent, setExportTransparent] = useState(false);
-  const exportRef = useRef<HTMLDivElement>(null);
-
-  // Close popover on outside click or Escape
-  useEffect(() => {
-    if (!exportOpen) return;
-    const handleClick = (e: MouseEvent) => {
-      if (exportRef.current && !exportRef.current.contains(e.target as Node)) {
-        setExportOpen(false);
-      }
-    };
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setExportOpen(false);
-    };
-    document.addEventListener("mousedown", handleClick);
-    document.addEventListener("keydown", handleKey);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-      document.removeEventListener("keydown", handleKey);
-    };
-  }, [exportOpen]);
 
   const displaySpec = jsonPanelOpen && previewSpec ? previewSpec : chartSpec;
 
@@ -192,79 +174,81 @@ export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSele
             </Button>
           )}
           {hasChart && (
-            <div className="relative" ref={exportRef}>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => setExportOpen(!exportOpen)}
-                className={exportOpen ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}
-                aria-label="Export chart"
-              >
-                <Download className="h-4 w-4" />
-              </Button>
-              {exportOpen && (
-                <div className="absolute right-0 top-full mt-1 z-50 w-48 rounded-md border bg-popover p-3 shadow-md space-y-3">
-                  <div className="flex gap-0 rounded-md bg-muted p-0.5">
-                    {(["png", "svg"] as const).map((fmt) => (
-                      <button
-                        key={fmt}
-                        onClick={() => setExportFormat(fmt)}
-                        className={`flex-1 h-7 rounded text-xs font-medium transition-colors ${
-                          exportFormat === fmt
-                            ? "bg-background text-foreground shadow-sm"
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        {fmt.toUpperCase()}
-                      </button>
-                    ))}
-                  </div>
-                  {exportFormat === "png" && (
-                    <div className="space-y-1">
-                      <Label className="text-xs font-medium">Scale</Label>
-                      <div className="flex gap-1">
-                        {[1, 2].map((s) => (
-                          <button
-                            key={s}
-                            onClick={() => setExportScale(s)}
-                            className={`flex-1 h-7 rounded text-xs font-medium transition-colors ${
-                              exportScale === s
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-muted text-muted-foreground hover:text-foreground"
-                            }`}
-                          >
-                            {s}x
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <Label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={exportTransparent}
-                      onChange={(e) => setExportTransparent(e.target.checked)}
-                      className="h-3.5 w-3.5 rounded border-muted-foreground accent-primary"
-                    />
-                    <span className="text-xs">Transparent background</span>
-                  </Label>
-                  <Button
-                    size="sm"
-                    className="w-full"
-                    onClick={() => {
-                      if (exportFormat === "png") {
-                        exportChartAsPng({ pixelRatio: exportScale, transparent: exportTransparent });
-                      } else {
-                        exportChartAsSvg({ transparent: exportTransparent });
-                      }
-                      setExportOpen(false);
-                    }}
-                  >
-                    Export {exportFormat.toUpperCase()}
-                  </Button>
+            <Popover open={exportOpen} onOpenChange={setExportOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className={exportOpen ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}
+                  aria-label="Export chart"
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-48 p-3 space-y-3">
+                <div className="flex gap-0 rounded-md bg-muted p-0.5">
+                  {(["png", "svg"] as const).map((fmt) => (
+                    <Button
+                      key={fmt}
+                      variant="ghost"
+                      size="xs"
+                      onClick={() => setExportFormat(fmt)}
+                      className={`flex-1 h-7 ${
+                        exportFormat === fmt
+                          ? "bg-background text-foreground shadow-sm hover:bg-background"
+                          : "text-muted-foreground hover:text-foreground hover:bg-transparent"
+                      }`}
+                    >
+                      {fmt.toUpperCase()}
+                    </Button>
+                  ))}
                 </div>
-              )}
-            </div>
+                {exportFormat === "png" && (
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium">Scale</Label>
+                    <div className="flex gap-1">
+                      {[1, 2].map((s) => (
+                        <Button
+                          key={s}
+                          variant="ghost"
+                          size="xs"
+                          onClick={() => setExportScale(s)}
+                          className={`flex-1 h-7 ${
+                            exportScale === s
+                              ? "bg-primary text-primary-foreground hover:bg-primary"
+                              : "bg-muted text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {s}x
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <Label className="flex items-center gap-2">
+                  <Checkbox
+                    checked={exportTransparent}
+                    onCheckedChange={(checked) => setExportTransparent(checked === true)}
+                    className="h-3.5 w-3.5"
+                  />
+                  <span className="text-xs">Transparent background</span>
+                </Label>
+                <Button
+                  size="sm"
+                  className="w-full"
+                  onClick={() => {
+                    if (exportFormat === "png") {
+                      exportChartAsPng({ pixelRatio: exportScale, transparent: exportTransparent });
+                    } else {
+                      exportChartAsSvg({ transparent: exportTransparent });
+                    }
+                    setExportOpen(false);
+                  }}
+                >
+                  Export {exportFormat.toUpperCase()}
+                </Button>
+              </PopoverContent>
+            </Popover>
           )}
         </div>
       </div>
@@ -294,17 +278,19 @@ export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSele
             {datasetEntries.length > 1 && (
               <div className="border-b px-3 py-1.5 flex gap-1 shrink-0 overflow-x-auto">
                 {datasetEntries.map(([name]) => (
-                  <button
+                  <Button
                     key={name}
+                    variant="ghost"
+                    size="xs"
                     onClick={() => setActiveDataset(name)}
-                    className={`px-2 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+                    className={`whitespace-nowrap ${
                       activeDataset === name
                         ? "bg-muted text-foreground"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     {name}
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
@@ -315,28 +301,32 @@ export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSele
           <div className="w-1/2 border-l flex flex-col overflow-hidden">
             <div className="border-b px-3 py-1.5 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-0.5">
-                <button
+                <Button
+                  variant="ghost"
+                  size="xs"
                   onClick={() => setEditorTab("visual")}
-                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-colors ${
+                  className={
                     editorTab === "visual"
                       ? "bg-muted text-foreground"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                  }`}
+                  }
                 >
                   <SlidersHorizontal className="h-3 w-3" />
                   Visual
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="xs"
                   onClick={() => setEditorTab("json")}
-                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-colors ${
+                  className={
                     editorTab === "json"
                       ? "bg-muted text-foreground"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                  }`}
+                  }
                 >
                   <Code className="h-3 w-3" />
                   JSON
-                </button>
+                </Button>
               </div>
               <div className="flex items-center gap-1">
                 <Button

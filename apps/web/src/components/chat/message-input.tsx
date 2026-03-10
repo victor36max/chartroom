@@ -51,14 +51,16 @@ export function MessageInput({
       {showSuggestions && (
         <div className="mb-2 flex flex-wrap gap-2 animate-in fade-in duration-300">
           {SUGGESTIONS.map((text) => (
-            <button
+            <Button
               key={text}
               type="button"
+              variant="outline"
+              size="xs"
               onClick={() => onSuggestionClick(text)}
-              className="rounded-full border px-3 py-1 text-xs text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+              className="rounded-full text-muted-foreground hover:text-foreground hover:border-foreground/30"
             >
               {text}
-            </button>
+            </Button>
           ))}
         </div>
       )}
@@ -99,13 +101,15 @@ export function MessageInput({
       </form>
       {hasCSV && hasMessages && !isBusy && (
         <div className="mt-1 flex justify-start">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="xs"
             onClick={onClear}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="text-muted-foreground hover:text-foreground"
           >
             Clear chat
-          </button>
+          </Button>
         </div>
       )}
     </div>

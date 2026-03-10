@@ -1,6 +1,7 @@
 "use client";
 
 import { type UIMessage } from "ai";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
@@ -111,17 +112,19 @@ function SampleDataButton({ onClick }: { onClick: () => void }) {
   const [loading, setLoading] = useState(false);
 
   return (
-    <button
+    <Button
       type="button"
+      variant="outline"
+      size="sm"
       onClick={() => {
         setLoading(true);
         onClick();
       }}
       disabled={loading}
-      className="rounded-full border px-4 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors disabled:opacity-50"
+      className="rounded-full text-muted-foreground hover:text-foreground hover:border-foreground/30"
     >
       {loading ? "Loading..." : "Try with sample data"}
-    </button>
+    </Button>
   );
 }
 

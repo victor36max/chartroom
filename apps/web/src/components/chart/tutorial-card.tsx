@@ -3,6 +3,9 @@
 import { useState, type DragEvent, type ChangeEvent, useRef } from "react";
 import { ChevronLeft, ChevronRight, Upload } from "lucide-react";
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 const STORAGE_KEY = "chartroom-hide-tutorial";
 
@@ -144,15 +147,17 @@ export function TutorialCard({ onFilesSelected }: TutorialCardProps) {
 
         {/* Navigation */}
         <div className="flex items-center justify-center gap-3">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon-xs"
             onClick={() => setStep((s) => Math.max(0, s - 1))}
             disabled={step === 0}
-            className="p-1 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-default transition-colors"
+            className="text-muted-foreground hover:text-foreground disabled:opacity-30"
             aria-label="Previous step"
           >
             <ChevronLeft className="h-4 w-4" />
-          </button>
+          </Button>
           <div className="flex gap-1.5">
             {Array.from({ length: totalSteps }).map((_, i) => (
               <button
@@ -168,28 +173,29 @@ export function TutorialCard({ onFilesSelected }: TutorialCardProps) {
               />
             ))}
           </div>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon-xs"
             onClick={() => setStep((s) => Math.min(totalSteps - 1, s + 1))}
             disabled={isLastStep}
-            className="p-1 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-default transition-colors"
+            className="text-muted-foreground hover:text-foreground disabled:opacity-30"
             aria-label="Next step"
           >
             <ChevronRight className="h-4 w-4" />
-          </button>
+          </Button>
         </div>
 
         {/* Don't show again */}
         <div className="flex items-center justify-center">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
+          <Label className="flex items-center gap-2 cursor-pointer">
+            <Checkbox
               checked={dontShow}
-              onChange={(e) => handleDontShowChange(e.target.checked)}
-              className="h-3.5 w-3.5 rounded border-muted-foreground accent-primary"
+              onCheckedChange={(checked) => handleDontShowChange(checked === true)}
+              className="h-3.5 w-3.5"
             />
             <span className="text-xs text-muted-foreground">Don&apos;t show this again</span>
-          </label>
+          </Label>
         </div>
       </div>
     </div>

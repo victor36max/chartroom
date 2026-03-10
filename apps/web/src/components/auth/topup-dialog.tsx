@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const AMOUNTS = [
   { cents: 500, label: "$5" },
@@ -80,9 +81,9 @@ export function TopupDialog({ open, onOpenChange }: TopupDialogProps) {
           ))}
         </div>
         <div className="flex flex-col gap-2 pt-2 border-t">
-          <label className="text-sm text-muted-foreground pt-1">
+          <Label className="text-sm text-muted-foreground pt-1">
             Or enter a custom amount
-          </label>
+          </Label>
           <div className="flex gap-2">
             <div className="relative flex-1">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-base">

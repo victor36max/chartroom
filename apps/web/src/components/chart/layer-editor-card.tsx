@@ -6,6 +6,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { MarkEditor } from "./mark-editor";
 import { EncodingEditor } from "./encoding-editor";
@@ -35,13 +36,15 @@ export function LayerEditorCard({ layer, index, columns, computedFields = [], on
         <span className="text-xs font-medium text-muted-foreground">
           Layer {index + 1}
         </span>
-        <button
+        <Button
+          variant="ghost"
+          size="icon-xs"
           onClick={onRemove}
-          className="p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+          className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
           title="Remove layer"
         >
           <Trash2 className="h-3 w-3" />
-        </button>
+        </Button>
       </div>
 
       <Accordion

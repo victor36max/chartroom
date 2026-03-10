@@ -1,5 +1,6 @@
 "use client";
 
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -57,20 +58,19 @@ export function MarkEditor({ spec, onUpdate }: MarkEditorProps) {
         </Select>
       </div>
       <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
+        <Checkbox
           id={`mark-tooltip-${markType}`}
           checked={
             typeof spec.mark === "object" && spec.mark !== null
               ? !!(spec.mark as SpecObj).tooltip
               : false
           }
-          onChange={(e) =>
+          onCheckedChange={(checked) =>
             onUpdate((s) => {
               if (typeof s.mark !== "object" || s.mark === null) {
                 s.mark = { type: s.mark as string };
               }
-              if (e.target.checked) {
+              if (checked === true) {
                 (s.mark as SpecObj).tooltip = true;
               } else {
                 delete (s.mark as SpecObj).tooltip;
@@ -81,7 +81,6 @@ export function MarkEditor({ spec, onUpdate }: MarkEditorProps) {
               }
             })
           }
-          className="rounded border-input"
         />
         <Label htmlFor={`mark-tooltip-${markType}`} className="text-xs">
           Enable tooltips

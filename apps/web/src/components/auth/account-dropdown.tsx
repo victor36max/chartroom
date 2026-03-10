@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAuth } from "./auth-provider";
 import { TopupDialog } from "./topup-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,7 +36,7 @@ export function AccountDropdown() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button type="button" aria-label="Account menu" className="rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+          <Button variant="ghost" size="icon-sm" aria-label="Account menu" className="rounded-full p-0">
             <Avatar className="h-7 w-7">
               <AvatarImage
                 src={user.user_metadata.avatar_url}
@@ -43,7 +44,7 @@ export function AccountDropdown() {
               />
               <AvatarFallback className="text-xs">{initials}</AvatarFallback>
             </Avatar>
-          </button>
+          </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <div className="px-2 py-1.5">

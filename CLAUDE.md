@@ -27,6 +27,10 @@ cd apps/web && bun run db:studio    # Open Drizzle Studio
 
 Always run `bun run lint`, `bun run build`, and `bun run test` to verify changes.
 
+## UI Components
+
+Always use shadcn/ui components instead of raw HTML elements. Never use raw `<button>`, `<input>`, `<label>`, `<select>`, `<textarea>`, or `<dialog>` when a shadcn equivalent exists. Available components are in `apps/web/src/components/ui/`. Only use raw HTML elements when no shadcn component supports the required pattern (e.g., drag-and-drop dropzones, hidden file inputs, sub-pixel animated indicators, or highly custom layouts that fight component constraints).
+
 ## Architecture
 
 Chartroom is a **Bun workspace monorepo** with shared packages and multiple apps. It lets users upload CSVs and generate [Vega-Lite](https://vega.github.io/vega-lite/) charts via AI.
