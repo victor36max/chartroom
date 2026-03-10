@@ -55,5 +55,6 @@ apps/eval/data/*
 /tmp/chartroom/
 
 docs/plans/
+docs/superpowers/
 
 .claude/
