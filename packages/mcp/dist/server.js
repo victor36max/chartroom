@@ -1,16 +1,16 @@
 #!/usr/bin/env node
-import path2 from 'path';
+import path3 from 'path';
 import 'url';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import fs2 from 'fs';
+import fs2 from 'fs/promises';
 import * as vl from 'vega-lite';
 import * as themes from 'vega-themes';
+import os from 'os';
 import * as vega from 'vega';
 import { Resvg } from '@resvg/resvg-js';
-import os from 'os';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 
 var __create = Object.create;
 var __defProp = Object.defineProperty;
@@ -2063,6 +2063,73 @@ init_esm_shims();
 // ../core/src/docs.ts
 init_esm_shims();
 
+// ../core/src/tools.ts
+init_esm_shims();
+
+// ../core/src/prune-context.ts
+init_esm_shims();
+
+// src/tools/load-csv.ts
+function registerLoadCsv(server2, datasets2) {
+  server2.tool(
+    "load_csv",
+    "Load and parse a CSV file. Returns column metadata (names, types, sample values). Supports loading multiple CSVs.",
+    { path: z.string().describe("Absolute path to the CSV file") },
+    async ({ path: csvPath }) => {
+      try {
+        const ext = path3.extname(csvPath).toLowerCase();
+        if (ext !== ".csv" && ext !== ".tsv") {
+          return {
+            content: [{ type: "text", text: `Error: Expected a .csv or .tsv file, got "${ext || "no extension"}"` }],
+            isError: true
+          };
+        }
+        const text = await fs2.readFile(csvPath, "utf8");
+        const parsed = parseCSVString(text);
+        const name = csvPath.split("/").pop() ?? csvPath;
+        datasets2[name] = parsed;
+        const context = Object.keys(datasets2).length > 1 ? datasetsToContext(datasets2) : `Dataset "${name}" (reference with \`{ "url": "${name}" }\`):
+${metadataToContext(parsed.metadata)}`;
+        return { content: [{ type: "text", text: context }] };
+      } catch (err) {
+        return {
+          content: [{ type: "text", text: `Error loading CSV: ${err instanceof Error ? err.message : String(err)}` }],
+          isError: true
+        };
+      }
+    }
+  );
+}
+
+// src/tools/validate-chart.ts
+init_esm_shims();
+function registerValidateChart(server2, datasets2) {
+  server2.tool(
+    "validate_chart",
+    "Validate a Vega-Lite spec against the compiler. Returns errors or warnings.",
+    { spec: z.record(z.string(), z.unknown()).describe("Vega-Lite chart specification as JSON") },
+    async ({ spec }) => {
+      const dataRows = {};
+      for (const [name, parsed] of Object.entries(datasets2)) {
+        dataRows[name] = parsed.data;
+      }
+      const result = validateSpec(spec, dataRows);
+      if (result.valid) {
+        const msg = result.warnings.length > 0 ? `Spec is valid with warnings:
+${result.warnings.map((w) => `- ${w}`).join("\n")}` : "Spec is valid.";
+        return { content: [{ type: "text", text: msg }] };
+      }
+      return {
+        content: [{ type: "text", text: `Spec is invalid: ${result.error}` }],
+        isError: true
+      };
+    }
+  );
+}
+
+// src/tools/render-chart.ts
+init_esm_shims();
+
 // ../core/src/renderer.ts
 init_esm_shims();
 function createWarningLogger2(warnings) {
@@ -2116,65 +2183,7 @@ async function renderChart(spec, datasets2, themeId = "default") {
   }
 }
 
-// ../core/src/tools.ts
-init_esm_shims();
-
-// ../core/src/prune-context.ts
-init_esm_shims();
-
-// src/tools/load-csv.ts
-function registerLoadCsv(server2, datasets2) {
-  server2.tool(
-    "load_csv",
-    "Load and parse a CSV file. Returns column metadata (names, types, sample values). Supports loading multiple CSVs.",
-    { path: z.string().describe("Path to the CSV file (absolute or relative)") },
-    async ({ path: csvPath }) => {
-      try {
-        const text = fs2.readFileSync(csvPath, "utf8");
-        const parsed = parseCSVString(text);
-        const name = csvPath.split("/").pop() ?? csvPath;
-        datasets2[name] = parsed;
-        const context = Object.keys(datasets2).length > 1 ? datasetsToContext(datasets2) : `Dataset "${name}" (reference with \`{ "url": "${name}" }\`):
-${metadataToContext(parsed.metadata)}`;
-        return { content: [{ type: "text", text: context }] };
-      } catch (err) {
-        return {
-          content: [{ type: "text", text: `Error loading CSV: ${err instanceof Error ? err.message : String(err)}` }],
-          isError: true
-        };
-      }
-    }
-  );
-}
-
-// src/tools/validate-chart.ts
-init_esm_shims();
-function registerValidateChart(server2, datasets2) {
-  server2.tool(
-    "validate_chart",
-    "Validate a Vega-Lite spec against the compiler. Returns errors or warnings.",
-    { spec: z.record(z.string(), z.unknown()).describe("Vega-Lite chart specification as JSON") },
-    async ({ spec }) => {
-      const dataRows = {};
-      for (const [name, parsed] of Object.entries(datasets2)) {
-        dataRows[name] = parsed.data;
-      }
-      const result = validateSpec(spec, dataRows);
-      if (result.valid) {
-        const msg = result.warnings.length > 0 ? `Spec is valid with warnings:
-${result.warnings.map((w) => `- ${w}`).join("\n")}` : "Spec is valid.";
-        return { content: [{ type: "text", text: msg }] };
-      }
-      return {
-        content: [{ type: "text", text: `Spec is invalid: ${result.error}` }],
-        isError: true
-      };
-    }
-  );
-}
-
 // src/tools/render-chart.ts
-init_esm_shims();
 function registerRenderChart(server2, datasets2) {
   server2.tool(
     "render_chart",
@@ -2193,17 +2202,18 @@ After rendering, you MUST use the Read tool to view the PNG and evaluate its qua
           dataRows[name] = parsed.data;
         }
         const result = await renderChart(spec, dataRows, theme ?? "default");
-        if ("error" in result && result.error) {
+        if (result.error) {
           return {
             content: [{ type: "text", text: `Render error: ${result.error}` }],
             isError: true
           };
         }
-        const { png, warnings } = result;
-        const tmpDir = path2.join(os.tmpdir(), "chartroom");
-        fs2.mkdirSync(tmpDir, { recursive: true });
-        const filePath = outputPath ?? path2.join(tmpDir, `chart-${Date.now()}.png`);
-        fs2.writeFileSync(filePath, png);
+        const png = result.png;
+        const warnings = result.warnings;
+        const tmpDir = path3.join(os.tmpdir(), "chartroom");
+        await fs2.mkdir(tmpDir, { recursive: true });
+        const filePath = outputPath ?? path3.join(tmpDir, `chart-${Date.now()}.png`);
+        await fs2.writeFile(filePath, png);
         const warningText = warnings.length > 0 ? `
 Warnings:
 ${warnings.map((w) => `- ${w}`).join("\n")}` : "";
@@ -2226,7 +2236,7 @@ Use the Read tool to view the PNG and evaluate it. If the chart looks good, call
 init_esm_shims();
 function openInBrowser(filePath) {
   const cmd = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
-  exec(`${cmd} "${filePath}"`);
+  execFile(cmd, [filePath]);
 }
 function registerOpenInteractive(server2, datasets2) {
   server2.tool(
@@ -2234,7 +2244,7 @@ function registerOpenInteractive(server2, datasets2) {
     "Open the chart interactively in the user's default browser with hover tooltips and panning.",
     {
       spec: z.record(z.string(), z.unknown()).describe("Vega-Lite chart specification"),
-      theme: z.string().optional().describe("Theme ID")
+      theme: z.string().optional().describe("Theme ID (default, dark, excel, fivethirtyeight, ggplot2, googlecharts, latimes, powerbi, quartz, urbaninstitute, vox)")
     },
     async ({ spec, theme }) => {
       try {
@@ -2251,8 +2261,8 @@ function registerOpenInteractive(server2, datasets2) {
 <head>
   <meta charset="utf-8">
   <title>Chartroom \u2014 Interactive View</title>
-  <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
-  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega@6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-lite@6"></script>
   <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
   <style>
     body { margin: 0; display: flex; justify-content: center; padding: 32px; background: #fafafa; font-family: system-ui; }
@@ -2270,9 +2280,9 @@ function registerOpenInteractive(server2, datasets2) {
 </body>
 </html>`;
         const tmpDir = "/tmp/chartroom";
-        fs2.mkdirSync(tmpDir, { recursive: true });
-        const filePath = path2.join(tmpDir, `interactive-${Date.now()}.html`);
-        fs2.writeFileSync(filePath, html);
+        await fs2.mkdir(tmpDir, { recursive: true });
+        const filePath = path3.join(tmpDir, `interactive-${Date.now()}.html`);
+        await fs2.writeFile(filePath, html);
         openInBrowser(filePath);
         return {
           content: [{ type: "text", text: `Interactive chart opened in browser: ${filePath}` }]
@@ -2287,11 +2297,15 @@ function registerOpenInteractive(server2, datasets2) {
   );
 }
 
+// package.json
+var package_default = {
+  version: "0.1.3"};
+
 // src/server.ts
 var datasets = {};
 var server = new McpServer({
   name: "chartroom",
-  version: "0.1.0"
+  version: package_default.version
 });
 registerLoadCsv(server, datasets);
 registerValidateChart(server, datasets);

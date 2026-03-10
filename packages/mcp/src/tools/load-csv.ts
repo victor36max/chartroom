@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import fs from "fs";
+import fs from "fs/promises";
+import path from "path";
 import { parseCSVString, metadataToContext, datasetsToContext, type DatasetMap } from "@chartroom/core";
 
 export function registerLoadCsv(server: McpServer, datasets: DatasetMap) {
@@ -10,7 +11,15 @@ export function registerLoadCsv(server: McpServer, datasets: DatasetMap) {
     { path: z.string().describe("Absolute path to the CSV file") },
     async ({ path: csvPath }) => {
       try {
-        const text = fs.readFileSync(csvPath, "utf8");
+        const ext = path.extname(csvPath).toLowerCase();
+        if (ext !== ".csv" && ext !== ".tsv") {
+          return {
+            content: [{ type: "text" as const, text: `Error: Expected a .csv or .tsv file, got "${ext || "no extension"}"` }],
+            isError: true,
+          };
+        }
+
+        const text = await fs.readFile(csvPath, "utf8");
         const parsed = parseCSVString(text);
         const name = csvPath.split("/").pop() ?? csvPath;
         datasets[name] = parsed;

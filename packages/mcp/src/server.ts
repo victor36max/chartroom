@@ -6,13 +6,14 @@ import { registerLoadCsv } from "./tools/load-csv";
 import { registerValidateChart } from "./tools/validate-chart";
 import { registerRenderChart } from "./tools/render-chart";
 import { registerOpenInteractive } from "./tools/open-interactive";
+import pkg from "../package.json";
 
 // In-memory state
 const datasets: DatasetMap = {};
 
 const server = new McpServer({
   name: "chartroom",
-  version: "0.1.0",
+  version: pkg.version,
 });
 
 registerLoadCsv(server, datasets);

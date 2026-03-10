@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import fs from "fs";
+import fs from "fs/promises";
 import os from "os";
 import path from "path";
 import { type DatasetMap } from "@chartroom/core";
@@ -26,20 +26,22 @@ After rendering, you MUST use the Read tool to view the PNG and evaluate its qua
 
         const result = await renderChart(spec, dataRows, theme ?? "default");
 
-        if ("error" in result && result.error) {
+        if (result.error) {
           return {
             content: [{ type: "text" as const, text: `Render error: ${result.error}` }],
             isError: true,
           };
         }
 
-        const { png, warnings } = result as { png: Buffer; warnings: string[] };
+        // Safe: error case handled above, so png and warnings are defined
+        const png = result.png!;
+        const warnings = result.warnings!;
 
         // Save PNG
         const tmpDir = path.join(os.tmpdir(), "chartroom");
-        fs.mkdirSync(tmpDir, { recursive: true });
+        await fs.mkdir(tmpDir, { recursive: true });
         const filePath = outputPath ?? path.join(tmpDir, `chart-${Date.now()}.png`);
-        fs.writeFileSync(filePath, png);
+        await fs.writeFile(filePath, png);
 
         const warningText = warnings.length > 0
           ? `\nWarnings:\n${warnings.map(w => `- ${w}`).join("\n")}`

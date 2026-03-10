@@ -1,15 +1,15 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import fs from "fs";
+import fs from "fs/promises";
 import path from "path";
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import { injectData, getThemeConfig, type DatasetMap, type ThemeId } from "@chartroom/core";
 
 function openInBrowser(filePath: string) {
   const cmd = process.platform === "darwin" ? "open"
     : process.platform === "win32" ? "start"
     : "xdg-open";
-  exec(`${cmd} "${filePath}"`);
+  execFile(cmd, [filePath]);
 }
 
 export function registerOpenInteractive(server: McpServer, datasets: DatasetMap) {
@@ -18,7 +18,7 @@ export function registerOpenInteractive(server: McpServer, datasets: DatasetMap)
     "Open the chart interactively in the user's default browser with hover tooltips and panning.",
     {
       spec: z.record(z.string(), z.unknown()).describe("Vega-Lite chart specification"),
-      theme: z.string().optional().describe("Theme ID"),
+      theme: z.string().optional().describe("Theme ID (default, dark, excel, fivethirtyeight, ggplot2, googlecharts, latimes, powerbi, quartz, urbaninstitute, vox)"),
     },
     async ({ spec, theme }) => {
       try {
@@ -38,8 +38,8 @@ export function registerOpenInteractive(server: McpServer, datasets: DatasetMap)
 <head>
   <meta charset="utf-8">
   <title>Chartroom — Interactive View</title>
-  <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
-  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega@6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-lite@6"></script>
   <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
   <style>
     body { margin: 0; display: flex; justify-content: center; padding: 32px; background: #fafafa; font-family: system-ui; }
@@ -58,9 +58,9 @@ export function registerOpenInteractive(server: McpServer, datasets: DatasetMap)
 </html>`;
 
         const tmpDir = "/tmp/chartroom";
-        fs.mkdirSync(tmpDir, { recursive: true });
+        await fs.mkdir(tmpDir, { recursive: true });
         const filePath = path.join(tmpDir, `interactive-${Date.now()}.html`);
-        fs.writeFileSync(filePath, html);
+        await fs.writeFile(filePath, html);
         openInBrowser(filePath);
 
         return {
