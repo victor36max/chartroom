@@ -35,10 +35,11 @@ interface ChatPanelProps {
   tier: ModelTier;
   onTierChange: (tier: ModelTier) => void;
   onStatusChange?: (status: string) => void;
+  onLoadSampleData?: () => void;
 }
 
 export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function ChatPanel(
-  { datasets, onCSVParsed, onDatasetRemoved, onChartSpec, tier, onTierChange, onStatusChange },
+  { datasets, onCSVParsed, onDatasetRemoved, onChartSpec, tier, onTierChange, onStatusChange, onLoadSampleData },
   ref
 ) {
   const { user, balance, openLogin, refreshBalance } = useAuth();
@@ -302,7 +303,7 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
           </Button>
         )}
       </div>
-      <MessageList messages={messages} status={status} />
+      <MessageList messages={messages} status={status} onLoadSampleData={!hasCSV ? onLoadSampleData : undefined} />
       {csvError && (
         <p className="px-3 py-1 text-xs text-destructive border-t">{csvError}</p>
       )}

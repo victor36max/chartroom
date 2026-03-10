@@ -2,12 +2,13 @@
 
 import { type UIMessage } from "ai";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 
 interface MessageListProps {
   messages: UIMessage[];
   status: "submitted" | "streaming" | "ready" | "error";
+  onLoadSampleData?: () => void;
 }
 
 const toolThinkingLabels: Record<string, string> = {
@@ -38,7 +39,7 @@ function getStreamingToolLabel(messages: UIMessage[], fallback: string): string 
 }
 
 
-export function MessageList({ messages, status }: MessageListProps) {
+export function MessageList({ messages, status, onLoadSampleData }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -78,6 +79,7 @@ export function MessageList({ messages, status }: MessageListProps) {
               </div>
             </div>
           </div>
+          {onLoadSampleData && <SampleDataButton onClick={onLoadSampleData} />}
         </div>
       </div>
     );
@@ -102,6 +104,24 @@ export function MessageList({ messages, status }: MessageListProps) {
         <div ref={bottomRef} />
       </div>
     </ScrollArea>
+  );
+}
+
+function SampleDataButton({ onClick }: { onClick: () => void }) {
+  const [loading, setLoading] = useState(false);
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        setLoading(true);
+        onClick();
+      }}
+      disabled={loading}
+      className="rounded-full border px-4 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors disabled:opacity-50"
+    >
+      {loading ? "Loading..." : "Try with sample data"}
+    </button>
   );
 }
 

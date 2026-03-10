@@ -48,6 +48,13 @@ export default function Home() {
     }
   }, [handleCSVParsed]);
 
+  const handleLoadSampleData = useCallback(async () => {
+    const response = await fetch("/test-data.csv");
+    const blob = await response.blob();
+    const file = new File([blob], "test-data.csv", { type: "text/csv" });
+    await handleFilesSelected([file]);
+  }, [handleFilesSelected]);
+
   const handleChartSpec = useCallback((spec: ChartSpec) => {
     setCurrentChart(spec);
     setMobileTab("chart");
@@ -97,6 +104,7 @@ export default function Home() {
             tier={tier}
             onTierChange={setTier}
             onStatusChange={handleStatusChange}
+            onLoadSampleData={handleLoadSampleData}
           />
         </div>
         <div className={`${mobileTab === "chart" ? "flex" : "hidden"} md:flex flex-1 flex-col overflow-hidden`}>
