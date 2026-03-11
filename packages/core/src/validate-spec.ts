@@ -51,6 +51,119 @@ function collectEncodingFields(spec: Record<string, unknown>): string[] {
   return fields;
 }
 
+/** Extract datum.fieldName references from a filter expression string */
+function extractDatumRefs(expr: string): string[] {
+  const refs: string[] = [];
+  // Match datum.fieldName or datum['field name'] or datum["field name"]
+  const dotPattern = /datum\.([a-zA-Z_$][\w$]*)/g;
+  const bracketPattern = /datum\[['"](.+?)['"]\]/g;
+  let m;
+  while ((m = dotPattern.exec(expr)) !== null) refs.push(m[1]);
+  while ((m = bracketPattern.exec(expr)) !== null) refs.push(m[1]);
+  return refs;
+}
+
+/** Lint for transforms referencing fields that haven't been created yet (wrong ordering) */
+function lintTransformOrder(
+  spec: Record<string, unknown>,
+  datasets: Record<string, Record<string, unknown>[]>
+): string[] {
+  const warnings: string[] = [];
+  const transforms = spec.transform as Array<Record<string, unknown>> | undefined;
+  if (!Array.isArray(transforms)) return warnings;
+
+  const primaryKey = getPrimaryDatasetKey(spec, datasets);
+  const baseColumns = primaryKey ? getColumns(datasets, primaryKey) : new Set<string>();
+  const available = new Set(baseColumns);
+
+  for (const t of transforms) {
+    // Check filter references BEFORE this transform adds fields
+    if (typeof t.filter === "string") {
+      for (const ref of extractDatumRefs(t.filter)) {
+        if (!available.has(ref)) {
+          warnings.push(
+            `Filter references "datum.${ref}" but "${ref}" is not available at this point in the transform pipeline. ` +
+            `Move the transform that creates "${ref}" before this filter.`
+          );
+        }
+      }
+    }
+
+    // Check window sort references BEFORE this transform adds fields
+    if (Array.isArray(t.window) && Array.isArray(t.sort)) {
+      for (const s of t.sort as Array<Record<string, unknown>>) {
+        if (typeof s.field === "string" && !available.has(s.field)) {
+          warnings.push(
+            `Window sort references "${s.field}" but it is not available at this point in the transform pipeline. ` +
+            `Move the transform that creates "${s.field}" before this window.`
+          );
+        }
+      }
+    }
+
+    // Now update available fields (mirrors buildAvailableFields logic)
+    if (Array.isArray(t.aggregate)) {
+      const groupby = (t.groupby as string[]) ?? [];
+      const survivors = new Set(groupby);
+      for (const agg of t.aggregate as Array<Record<string, unknown>>) {
+        if (typeof agg.as === "string") survivors.add(agg.as);
+      }
+      available.clear();
+      for (const f of survivors) available.add(f);
+    }
+    if (t.lookup && t.from && typeof t.from === "object") {
+      const from = t.from as Record<string, unknown>;
+      const fields = from.fields as string[] | undefined;
+      const topFields = t.fields as string[] | undefined;
+      for (const f of fields ?? topFields ?? []) available.add(f);
+    }
+    if (typeof t.calculate === "string" && typeof t.as === "string") {
+      available.add(t.as);
+    }
+    if (Array.isArray(t.fold)) {
+      const foldAs = (t.as as string[]) ?? ["key", "value"];
+      for (const f of foldAs) available.add(f);
+    }
+    if (Array.isArray(t.flatten)) {
+      const flatAs = t.as as string[] | undefined;
+      for (let i = 0; i < (t.flatten as string[]).length; i++) {
+        available.add(flatAs?.[i] ?? (t.flatten as string[])[i]);
+      }
+    }
+    if (Array.isArray(t.joinaggregate)) {
+      for (const agg of t.joinaggregate as Array<Record<string, unknown>>) {
+        if (typeof agg.as === "string") available.add(agg.as);
+      }
+    }
+    if (Array.isArray(t.window)) {
+      for (const w of t.window as Array<Record<string, unknown>>) {
+        if (typeof w.as === "string") available.add(w.as);
+      }
+    }
+    if (t.bin !== undefined && typeof t.field === "string") {
+      if (typeof t.as === "string") {
+        available.add(t.as);
+      } else if (Array.isArray(t.as)) {
+        for (const a of t.as as string[]) available.add(a);
+      }
+    }
+    if (typeof t.timeUnit === "string" && typeof t.field === "string") {
+      if (typeof t.as === "string") {
+        available.add(t.as);
+      } else {
+        available.add(`${t.timeUnit}_${t.field}`);
+      }
+    }
+  }
+
+  // Recurse into sub-specs
+  for (const sub of getSubSpecs(spec)) {
+    warnings.push(...lintTransformOrder(sub, datasets));
+  }
+
+  return warnings;
+}
+
 /** Check for aggregate transforms missing "as" or encoding referencing original field instead of alias */
 function lintTransforms(spec: Record<string, unknown>): string[] {
   const warnings: string[] = [];
@@ -540,6 +653,7 @@ export function validateSpec(
     const warnings: string[] = [];
     // Lint for common transform issues before compiling
     warnings.push(...lintTransforms(spec));
+    warnings.push(...lintTransformOrder(spec, datasets));
     warnings.push(...lintFieldReferences(spec, datasets));
     warnings.push(...lintTemporalNumeric(spec, datasets));
     warnings.push(...lintSpecPatterns(spec, datasets));

@@ -89,4 +89,6 @@ Use `joinaggregate` instead of `aggregate` to keep all original rows:
 - WRONG: `aggregate "as": "total"` then window sort `"field": "revenue"` ← broken
 - RIGHT: `aggregate "as": "total"` then window sort `"field": "total"` AND encoding `"field": "total"`
 
+**CRITICAL — transform ordering:** Transforms execute top-to-bottom. A filter or window sort can only reference fields that exist BEFORE it in the array. Common mistake: filtering on `datum.rank <= 10` before the window that creates `rank`, or sorting a window by `max_pop` before the joinaggregate that creates it. Always order: create field first → use it later.
+
 **Expression syntax:** Use `datum.fieldName` to reference fields. Standard JS operators: ==, !=, >, <, >=, <=, &&, ||
