@@ -217,6 +217,83 @@ function getChannelInfo(enc: Record<string, unknown>, channel: string): Record<s
   return null;
 }
 
+/** Collect encoding channels with their full info from a spec (including nested compositions) */
+function collectTemporalChannels(spec: Record<string, unknown>): Array<{ field: string; hasTimeUnit: boolean }> {
+  const results: Array<{ field: string; hasTimeUnit: boolean }> = [];
+  const enc = spec.encoding as Record<string, Record<string, unknown>> | undefined;
+  if (enc) {
+    for (const ch of Object.values(enc)) {
+      if (ch && typeof ch === "object" && ch.type === "temporal" && typeof ch.field === "string") {
+        results.push({ field: ch.field, hasTimeUnit: typeof ch.timeUnit === "string" });
+      }
+    }
+  }
+  for (const sub of getSubSpecs(spec)) {
+    results.push(...collectTemporalChannels(sub));
+  }
+  return results;
+}
+
+/** Check if a value looks like a plain number (not a date string) */
+function isPlainNumber(value: unknown): boolean {
+  if (typeof value === "number") return true;
+  if (typeof value === "string" && /^\d{1,4}$/.test(value.trim())) return true;
+  return false;
+}
+
+/** Lint for numeric fields encoded as temporal (produces millisecond-epoch garbage) */
+function lintTemporalNumeric(
+  spec: Record<string, unknown>,
+  datasets: Record<string, Record<string, unknown>[]>
+): string[] {
+  const warnings: string[] = [];
+  const temporalChannels = collectTemporalChannels(spec);
+  if (temporalChannels.length === 0) return warnings;
+
+  // Collect fields created by calculate transforms (likely datetime() conversions)
+  const calculateFields = new Set<string>();
+  const transforms = spec.transform as Array<Record<string, unknown>> | undefined;
+  if (Array.isArray(transforms)) {
+    for (const t of transforms) {
+      if (typeof t.calculate === "string" && typeof t.as === "string") {
+        calculateFields.add(t.as);
+      }
+    }
+  }
+
+  const primaryKey = getPrimaryDatasetKey(spec, datasets);
+  const rows = primaryKey ? datasets[primaryKey] : undefined;
+  if (!rows || rows.length === 0) return warnings;
+
+  for (const { field, hasTimeUnit } of temporalChannels) {
+    // Skip if timeUnit is set (user is handling the conversion)
+    if (hasTimeUnit) continue;
+    // Skip if field was created by a calculate transform
+    if (calculateFields.has(field)) continue;
+
+    // Sample up to 10 non-null values
+    const samples: unknown[] = [];
+    for (const row of rows) {
+      const v = row[field];
+      if (v != null && v !== "") {
+        samples.push(v);
+        if (samples.length >= 10) break;
+      }
+    }
+
+    if (samples.length > 0 && samples.every(isPlainNumber)) {
+      warnings.push(
+        `Field "${field}" is encoded as temporal but contains plain numbers (e.g. ${samples[0]}). ` +
+        `Vega-Lite interprets numbers as milliseconds since epoch, producing wrong axis labels. ` +
+        `Use "type": "ordinal" for labels, or add a calculate transform: ` +
+        `{"calculate": "datetime(datum.${field}, 0, 1)", "as": "${field}_date"}`
+      );
+    }
+  }
+
+  return warnings;
+}
+
 /** Lint for common spec patterns that produce silently wrong output */
 function lintSpecPatterns(
   spec: Record<string, unknown>,
@@ -420,6 +497,7 @@ export function validateSpec(
     // Lint for common transform issues before compiling
     warnings.push(...lintTransforms(spec));
     warnings.push(...lintFieldReferences(spec, datasets));
+    warnings.push(...lintTemporalNumeric(spec, datasets));
     warnings.push(...lintSpecPatterns(spec, datasets));
     vl.compile(fullSpec as unknown as vl.TopLevelSpec, {
       logger: createWarningLogger(warnings),

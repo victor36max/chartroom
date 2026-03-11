@@ -527,6 +527,100 @@ describe("validateSpec", () => {
     });
   });
 
+  describe("temporal numeric linting", () => {
+    const YEAR_ROWS = [
+      { Year: 1990, value: 100 },
+      { Year: 2000, value: 200 },
+      { Year: 2010, value: 300 },
+    ];
+
+    it("warns when numeric field is encoded as temporal", () => {
+      const spec = {
+        mark: "line",
+        encoding: {
+          x: { field: "Year", type: "temporal" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: YEAR_ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Year") && w.includes("temporal") && w.includes("plain numbers"))).toBe(true);
+      }
+    });
+
+    it("no warning when temporal field has timeUnit", () => {
+      const spec = {
+        mark: "line",
+        encoding: {
+          x: { field: "Year", type: "temporal", timeUnit: "year" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: YEAR_ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("plain numbers"))).toBe(false);
+      }
+    });
+
+    it("no warning when temporal field is created by calculate transform", () => {
+      const spec = {
+        mark: "line",
+        transform: [
+          { calculate: "datetime(datum.Year, 0, 1)", as: "YearDate" },
+        ],
+        encoding: {
+          x: { field: "YearDate", type: "temporal" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: YEAR_ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("plain numbers"))).toBe(false);
+      }
+    });
+
+    it("no warning when temporal field contains date strings", () => {
+      const DATE_ROWS = [
+        { date: "2024-01-01", value: 100 },
+        { date: "2024-02-01", value: 200 },
+      ];
+      const spec = {
+        mark: "line",
+        encoding: {
+          x: { field: "date", type: "temporal" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: DATE_ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("plain numbers"))).toBe(false);
+      }
+    });
+
+    it("warns for string year values like '2010'", () => {
+      const STRING_YEAR_ROWS = [
+        { Year: "1990", value: 100 },
+        { Year: "2000", value: 200 },
+      ];
+      const spec = {
+        mark: "line",
+        encoding: {
+          x: { field: "Year", type: "temporal" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: STRING_YEAR_ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Year") && w.includes("plain numbers"))).toBe(true);
+      }
+    });
+  });
+
   it("warns when encoding references original field instead of alias", () => {
     const spec = {
       mark: "bar",
