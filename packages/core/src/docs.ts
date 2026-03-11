@@ -420,6 +420,7 @@ Or shorthand: \`"mark": { "type": "bar", "tooltip": true }\`
 - \`"-y"\` = descending by y value
 - \`"y"\` = ascending by y value
 - Array of values for custom order: \`"sort": ["Mon", "Tue", "Wed"]\`
+- Sort by field value (controls legend order for color/shape/size): \`"sort": { "op": "max", "field": "value", "order": "descending" }\`
 
 **Title:** Override axis/legend title:
 \`\`\`json
@@ -1002,7 +1003,13 @@ or constant: \`"opacity": { "value": 0.7 }\` or in mark: \`{ "type": "bar", "opa
 \`\`\`json
 "color": { "field": "cat", "type": "nominal", "legend": { "orient": "bottom", "direction": "horizontal" } }
 \`\`\`
-Hide legend: \`"legend": null\``,
+Hide legend: \`"legend": null\`
+
+**Legend sort order:** \`sort\` goes on the ENCODING channel, NOT inside \`legend\`. The \`legend\` property only controls appearance (orient, direction, title).
+\`\`\`json
+"color": { "field": "cat", "type": "nominal", "sort": { "op": "max", "field": "value", "order": "descending" }, "legend": { "title": "Category" } }
+\`\`\`
+WRONG: \`"legend": { "sort": { ... } }\` — this does NOT control entry order.`,
   },
 
   "layout-patterns": {
@@ -1169,20 +1176,21 @@ Add a layer with \`{ "mark": { "type": "text", "dy": -8 }, "encoding": { "text":
    When ambiguous, prefer \`"sum"\` for revenue/sales/counts, \`"mean"\` for scores/ratings/measurements.
 5. **Title** — always include a descriptive \`title\`.
 6. **Multi-series** — use \`color\` encoding for multi-series (not separate marks). Fold wide data first if needed.
-7. **Ordinal months/weekdays** — add explicit \`sort\` array for chronological order (e.g. \`["Jan","Feb",...,"Dec"]\`).
-8. **Sort bars by value** — put \`sort\` on the CATEGORICAL channel referencing the OTHER axis (e.g. \`"x": { ..., "sort": "-y" }\`). See \`editing-charts\` docs for details.
-9. **Layer composition** — put each layer's encoding inside the layer, not shared at top level, to avoid rule marks inheriting categorical axes. Use \`rule\` mark for reference lines (\`datum\` for constant, \`aggregate\` for computed). See \`layer\` docs.
-10. **Text labels** — use \`layer\` with a \`text\` mark. For scatter labels, use \`dx\`/\`dy\` offsets to avoid overlapping points.
-11. **Transform field names** — in \`window\`, \`regression\`, \`joinaggregate\`, and \`calculate\` transforms, always use actual column names from the dataset (not abstract names like "x" or "y").
-12. **Legend for layered lines** — when overlaying lines with different meanings (e.g., raw + smoothed), use \`fold\` to reshape both fields into one column, then encode \`color\` by the fold key for an automatic legend. See \`composite-patterns\` docs.
-13. **Top/bottom N filtering** — use aggregate → window (dense_rank) → filter transforms. Always use \`dense_rank\` not \`rank\` (rank skips numbers on ties). For detail-row charts (line/area over time), use \`joinaggregate\` instead of \`aggregate\`. See \`filter\` docs.
+7. **Legend sort** — to sort legend entries by a computed field, put \`sort\` on the encoding channel (e.g., \`"color": { ..., "sort": { "op": "max", "field": "value", "order": "descending" } }\`). NEVER nest sort inside \`legend\` — \`legend\` only controls appearance.
+8. **Ordinal months/weekdays** — add explicit \`sort\` array for chronological order (e.g. \`["Jan","Feb",...,"Dec"]\`).
+9. **Sort bars by value** — put \`sort\` on the CATEGORICAL channel referencing the OTHER axis (e.g. \`"x": { ..., "sort": "-y" }\`). See \`editing-charts\` docs for details.
+10. **Layer composition** — put each layer's encoding inside the layer, not shared at top level, to avoid rule marks inheriting categorical axes. Use \`rule\` mark for reference lines (\`datum\` for constant, \`aggregate\` for computed). See \`layer\` docs.
+11. **Text labels** — use \`layer\` with a \`text\` mark. For scatter labels, use \`dx\`/\`dy\` offsets to avoid overlapping points.
+12. **Transform field names** — in \`window\`, \`regression\`, \`joinaggregate\`, and \`calculate\` transforms, always use actual column names from the dataset (not abstract names like "x" or "y").
+13. **Legend for layered lines** — when overlaying lines with different meanings (e.g., raw + smoothed), use \`fold\` to reshape both fields into one column, then encode \`color\` by the fold key for an automatic legend. See \`composite-patterns\` docs.
+14. **Top/bottom N filtering** — use aggregate → window (dense_rank) → filter transforms. Always use \`dense_rank\` not \`rank\` (rank skips numbers on ties). For detail-row charts (line/area over time), use \`joinaggregate\` instead of \`aggregate\`. See \`filter\` docs.
 
 ### Style (PREFER — unless user asks otherwise)
-14. **Stacked vs grouped** — stacking is default when color is added to bars/areas. Only use \`xOffset\` for explicitly grouped/side-by-side requests.
-15. **Strip plots** — prefer \`tick\` mark for strip/rug plots. Ticks show distribution density better than points.
-16. **Dense line charts** — consider \`interpolate: "monotone"\` for smoother rendering with many data points.
-17. **Part-of-whole** — prefer arc/pie chart for "percentage of total" or "share" requests.
-18. **Tooltip** — \`tooltip: true\` in mark properties for interactivity, or explicit tooltip encoding for custom tooltips.`,
+15. **Stacked vs grouped** — stacking is default when color is added to bars/areas. Only use \`xOffset\` for explicitly grouped/side-by-side requests.
+16. **Strip plots** — prefer \`tick\` mark for strip/rug plots. Ticks show distribution density better than points.
+17. **Dense line charts** — consider \`interpolate: "monotone"\` for smoother rendering with many data points.
+18. **Part-of-whole** — prefer arc/pie chart for "percentage of total" or "share" requests.
+19. **Tooltip** — \`tooltip: true\` in mark properties for interactivity, or explicit tooltip encoding for custom tooltips.`,
   },
 };
 

@@ -40,3 +40,9 @@ or constant: `"opacity": { "value": 0.7 }` or in mark: `{ "type": "bar", "opacit
 "color": { "field": "cat", "type": "nominal", "legend": { "orient": "bottom", "direction": "horizontal" } }
 ```
 Hide legend: `"legend": null`
+
+**Legend sort order:** `sort` goes on the ENCODING channel, NOT inside `legend`. The `legend` property only controls appearance (orient, direction, title).
+```json
+"color": { "field": "cat", "type": "nominal", "sort": { "op": "max", "field": "value", "order": "descending" }, "legend": { "title": "Category" } }
+```
+WRONG: `"legend": { "sort": { ... } }` — this does NOT control entry order.

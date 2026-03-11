@@ -1,6 +1,6 @@
 {
   "name": "chartroom",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "AI-powered chart generation from CSV and Excel data using Vega-Lite",
   "author": {
     "name": "Victor Chan"

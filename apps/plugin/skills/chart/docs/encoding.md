@@ -33,6 +33,7 @@ Or shorthand: `"mark": { "type": "bar", "tooltip": true }`
 - `"-y"` = descending by y value
 - `"y"` = ascending by y value
 - Array of values for custom order: `"sort": ["Mon", "Tue", "Wed"]`
+- Sort by field value (controls legend order for color/shape/size): `"sort": { "op": "max", "field": "value", "order": "descending" }`
 
 **Title:** Override axis/legend title:
 ```json
