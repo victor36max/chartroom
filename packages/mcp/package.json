@@ -1,6 +1,6 @@
 {
   "name": "@chartroom/mcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "MCP server for AI-powered chart generation from CSV and Excel data using Vega-Lite",
   "type": "module",
   "main": "dist/server.js",

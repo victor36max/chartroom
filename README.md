@@ -173,8 +173,7 @@ MCP server providing chart generation tools (publishable to npm as `@chartroom/m
 | Tool | Description |
 |------|-------------|
 | `load_csv` | Parse a CSV or Excel file, return column metadata |
-| `validate_chart` | Validate a Vega-Lite spec via the compiler |
-| `render_chart` | Render a spec to PNG via vega + resvg-js |
+| `render_chart` | Validate and render a spec to PNG via vega + resvg-js |
 | `open_interactive` | Open chart in browser with tooltips |
 
 ### @chartroom/plugin
@@ -245,7 +244,7 @@ cd apps/web && bun run test         # Web only
 
 ## Claude Code plugin
 
-Chartroom includes a Claude Code plugin that adds chart generation capabilities via MCP tools and the `/chart` skill. The plugin installs both the MCP server (providing `load_csv`, `validate_chart`, `render_chart`, `open_interactive` tools) and the `/chart` skill in one step.
+Chartroom includes a Claude Code plugin that adds chart generation capabilities via MCP tools and the `/chart` skill. The plugin installs both the MCP server (providing `load_csv`, `render_chart`, `open_interactive` tools) and the `/chart` skill in one step.
 
 ### Install
 

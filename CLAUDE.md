@@ -142,8 +142,7 @@ Built with shadcn/ui (Radix primitives), Tailwind CSS v4, DM Sans font, dark mod
 
 MCP server providing chart generation tools (publishable to npm as `@chartroom/mcp`):
 - **`load_csv`** (`src/tools/load-csv.ts`) — parse CSV or Excel file, return column metadata
-- **`validate_chart`** (`src/tools/validate-chart.ts`) — validate Vega-Lite spec via compiler
-- **`render_chart`** (`src/tools/render-chart.ts`) — render spec to PNG via `@chartroom/core`
+- **`render_chart`** (`src/tools/render-chart.ts`) — validate and render spec to PNG via `@chartroom/core`
 - **`open_interactive`** (`src/tools/open-interactive.ts`) — open chart in browser with tooltips
 
 ### `@chartroom/plugin` (apps/plugin)

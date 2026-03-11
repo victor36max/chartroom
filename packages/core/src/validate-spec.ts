@@ -107,6 +107,19 @@ function lintTransformOrder(
       }
     }
 
+    // Check fold references columns that exist
+    if (Array.isArray(t.fold)) {
+      for (const col of t.fold as string[]) {
+        if (typeof col === "string" && !available.has(col)) {
+          const sample = [...available].slice(0, 5).join(", ");
+          warnings.push(
+            `Fold references column "${col}" but it doesn't exist at this point in the transform pipeline. ` +
+            `Available columns include: ${sample}.`
+          );
+        }
+      }
+    }
+
     // Update available fields after this transform
     applyTransformFields(available, t);
   }
@@ -156,6 +169,42 @@ function lintTransforms(spec: Record<string, unknown>): string[] {
               `so "rank" skips numbers (e.g. 1, 1, 1, ..., 51) and top-N filters keep only 1 group. ` +
               `Use "dense_rank" instead — it assigns consecutive ranks (1, 2, 3) without gaps.`
             );
+          }
+        }
+      }
+    }
+
+    // Check for redundant double-aggregate (transform output + inline encoding aggregate)
+    const aggregatedOutputFields = new Set<string>();
+    for (const t of transforms) {
+      if (Array.isArray(t.aggregate)) {
+        for (const agg of t.aggregate as Array<Record<string, unknown>>) {
+          if (typeof agg.as === "string") aggregatedOutputFields.add(agg.as);
+        }
+      }
+      if (Array.isArray(t.joinaggregate)) {
+        for (const agg of t.joinaggregate as Array<Record<string, unknown>>) {
+          if (typeof agg.as === "string") aggregatedOutputFields.add(agg.as);
+        }
+      }
+      if (Array.isArray(t.window)) {
+        for (const w of t.window as Array<Record<string, unknown>>) {
+          if (typeof w.as === "string") aggregatedOutputFields.add(w.as);
+        }
+      }
+    }
+    if (aggregatedOutputFields.size > 0) {
+      const encSpec = spec.encoding as Record<string, Record<string, unknown>> | undefined;
+      if (encSpec) {
+        for (const [channel, chSpec] of Object.entries(encSpec)) {
+          if (chSpec && typeof chSpec === "object" && typeof chSpec.aggregate === "string" && typeof chSpec.field === "string") {
+            if (aggregatedOutputFields.has(chSpec.field)) {
+              warnings.push(
+                `Field "${chSpec.field}" is already aggregated by a transform. ` +
+                `Inline aggregate "${chSpec.aggregate}" on the ${channel} encoding will double-aggregate it. ` +
+                `Remove the inline aggregate.`
+              );
+            }
           }
         }
       }
@@ -336,7 +385,6 @@ function lintTemporalNumeric(
 ): string[] {
   const warnings: string[] = [];
   const temporalChannels = collectTemporalChannels(spec);
-  if (temporalChannels.length === 0) return warnings;
 
   // Collect fields created by calculate transforms (likely datetime() conversions)
   const calculateFields = new Set<string>();
@@ -352,6 +400,47 @@ function lintTemporalNumeric(
   const primaryKey = getPrimaryDatasetKey(spec, datasets);
   const rows = primaryKey ? datasets[primaryKey] : undefined;
   if (!rows || rows.length === 0) return warnings;
+
+  // Check for timeUnit on non-temporal data (any encoding channel except temporal type)
+  const allEnc = spec.encoding as Record<string, Record<string, unknown>> | undefined;
+  if (allEnc) {
+    for (const [, chSpec] of Object.entries(allEnc)) {
+      if (!chSpec || typeof chSpec !== "object") continue;
+      if (typeof chSpec.timeUnit !== "string" || typeof chSpec.field !== "string") continue;
+      // Skip temporal-typed channels (handled by the temporal-numeric check below)
+      if (chSpec.type === "temporal") continue;
+      // Skip fields created by calculate transforms
+      if (calculateFields.has(chSpec.field)) continue;
+
+      // Sample data values
+      const tuSamples: unknown[] = [];
+      for (const row of rows) {
+        const v = row[chSpec.field];
+        if (v != null && v !== "") {
+          tuSamples.push(v);
+          if (tuSamples.length >= 10) break;
+        }
+      }
+      if (tuSamples.length === 0) continue;
+
+      // Check if values are all plain numbers (not date-like)
+      const allPlainNumbers = tuSamples.every(isPlainNumber);
+      // Check if string values are non-date-parseable
+      const allNonDateStrings = tuSamples.every((v) => {
+        if (typeof v === "number") return true;
+        if (typeof v === "string") return isNaN(Date.parse(v));
+        return true;
+      });
+
+      if (allPlainNumbers || allNonDateStrings) {
+        warnings.push(
+          `Encoding uses timeUnit "${chSpec.timeUnit}" on field "${chSpec.field}" ` +
+          `but data values are plain numbers/strings (e.g. ${tuSamples[0]}), not dates. ` +
+          `Remove timeUnit or convert data to date format.`
+        );
+      }
+    }
+  }
 
   for (const { field, hasTimeUnit } of temporalChannels) {
     // Skip if timeUnit is set (user is handling the conversion)
@@ -377,6 +466,152 @@ function lintTemporalNumeric(
         `or "type": "ordinal" for evenly-spaced labels.`
       );
     }
+  }
+
+  return warnings;
+}
+
+/** Non-summable field name patterns — stacking these values produces misleading totals */
+const NON_SUMMABLE_PATTERN = /temperature|temp|rate|percent|pct|average|avg|mean|median|price|index|ratio|score/i;
+
+/** Check if stacking is enabled (not explicitly disabled) on a mark+channel */
+function isStackEnabled(mark: unknown, yChannel: Record<string, unknown> | null): boolean {
+  if (yChannel?.stack === false || yChannel?.stack === null) return false;
+  if (mark && typeof mark === "object") {
+    const m = mark as Record<string, unknown>;
+    if (m.stack === false || m.stack === null) return false;
+  }
+  return true;
+}
+
+/** Lint for stacking non-summable values (temperatures, rates, prices, etc.) */
+function lintStackingNonSummable(
+  spec: Record<string, unknown>,
+  datasets: Record<string, Record<string, unknown>[]>
+): string[] {
+  const warnings: string[] = [];
+
+  // Check a single unit spec for stacking issues
+  function checkUnit(
+    mark: unknown,
+    enc: Record<string, Record<string, unknown>> | undefined,
+  ): void {
+    if (!enc) return;
+    const markType = getMarkType(mark);
+    if (markType !== "bar" && markType !== "area") return;
+
+    const yInfo = getChannelInfo(enc as Record<string, unknown>, "y");
+    const colorInfo = getChannelInfo(enc as Record<string, unknown>, "color");
+    if (!yInfo || !colorInfo) return; // no stacking without color
+    if (yInfo.type !== "quantitative") return;
+    if (!isStackEnabled(mark, yInfo)) return;
+
+    const field = yInfo.field;
+    if (typeof field === "string" && NON_SUMMABLE_PATTERN.test(field)) {
+      warnings.push(
+        `Field "${field}" on a stacked ${markType} looks non-summable ` +
+        `(temperatures, rates, prices should not be added together). ` +
+        `Use "stack": false on the y encoding, or switch to a line/point mark.`
+      );
+    }
+  }
+
+  // Check top-level unit spec
+  checkUnit(spec.mark, spec.encoding as Record<string, Record<string, unknown>> | undefined);
+
+  // Check layers with encoding inheritance
+  const layers = spec.layer as Array<Record<string, unknown>> | undefined;
+  const topEnc = spec.encoding as Record<string, Record<string, unknown>> | undefined;
+  if (Array.isArray(layers)) {
+    for (const layer of layers) {
+      const merged = topEnc
+        ? { ...topEnc, ...(layer.encoding as Record<string, Record<string, unknown>> | undefined) }
+        : (layer.encoding as Record<string, Record<string, unknown>> | undefined);
+      checkUnit(layer.mark, merged);
+    }
+  }
+
+  // Recurse into sub-specs
+  for (const sub of getSubSpecs(spec)) {
+    warnings.push(...lintStackingNonSummable(sub, datasets));
+  }
+
+  return warnings;
+}
+
+/** Lint for log scale on fields containing zero or negative values */
+function lintScaleIssues(
+  spec: Record<string, unknown>,
+  datasets: Record<string, Record<string, unknown>[]>
+): string[] {
+  const warnings: string[] = [];
+  const enc = spec.encoding as Record<string, Record<string, unknown>> | undefined;
+
+  if (enc) {
+    // Collect fields created by transforms (can't sample computed values)
+    const computedFields = new Set<string>();
+    const transforms = spec.transform as Array<Record<string, unknown>> | undefined;
+    if (Array.isArray(transforms)) {
+      for (const t of transforms) {
+        if (typeof t.as === "string") computedFields.add(t.as);
+        if (Array.isArray(t.as)) for (const a of t.as as string[]) computedFields.add(a);
+        if (Array.isArray(t.aggregate)) {
+          for (const agg of t.aggregate as Array<Record<string, unknown>>) {
+            if (typeof agg.as === "string") computedFields.add(agg.as);
+          }
+        }
+        if (Array.isArray(t.joinaggregate)) {
+          for (const agg of t.joinaggregate as Array<Record<string, unknown>>) {
+            if (typeof agg.as === "string") computedFields.add(agg.as);
+          }
+        }
+        if (Array.isArray(t.window)) {
+          for (const w of t.window as Array<Record<string, unknown>>) {
+            if (typeof w.as === "string") computedFields.add(w.as);
+          }
+        }
+      }
+    }
+
+    const primaryKey = getPrimaryDatasetKey(spec, datasets);
+    const rows = primaryKey ? datasets[primaryKey] : undefined;
+
+    for (const [channel, chSpec] of Object.entries(enc)) {
+      if (!chSpec || typeof chSpec !== "object") continue;
+      const scale = chSpec.scale as Record<string, unknown> | undefined;
+      if (!scale || typeof scale !== "object") continue;
+      if (scale.type !== "log") continue;
+
+      const field = chSpec.field;
+
+      // Check explicit domain includes zero
+      if (Array.isArray(scale.domain) && scale.domain.some((v: unknown) => v === 0)) {
+        warnings.push(
+          `Log scale on "${channel}" has domain including zero. ` +
+          `Log(0) is undefined — use a linear scale or set domain minimum > 0.`
+        );
+        continue;
+      }
+
+      // Check data for zero/negative values (skip computed fields)
+      if (typeof field === "string" && !computedFields.has(field) && rows && rows.length > 0) {
+        const hasNonPositive = rows.some((r) => {
+          const v = r[field];
+          return typeof v === "number" && v <= 0;
+        });
+        if (hasNonPositive) {
+          warnings.push(
+            `Log scale on "${channel}" but field "${field}" contains zero or negative values. ` +
+            `Log(0) is undefined. Filter out non-positive values or use a symlog/linear scale.`
+          );
+        }
+      }
+    }
+  }
+
+  // Recurse into sub-specs
+  for (const sub of getSubSpecs(spec)) {
+    warnings.push(...lintScaleIssues(sub, datasets));
   }
 
   return warnings;
@@ -437,9 +672,35 @@ function lintSpecPatterns(
     }
   }
 
-  // --- High cardinality checks (axis, shape, color) ---
+  // --- Arc/pie without theta encoding ---
+  const markType = getMarkType(spec.mark);
+  if (markType === "arc") {
+    const arcEnc = spec.encoding as Record<string, unknown> | undefined;
+    if (!arcEnc || !arcEnc.theta) {
+      warnings.push(
+        `Arc/pie mark requires a "theta" encoding channel for angular extent. ` +
+        `Without it the chart renders as a full circle.`
+      );
+    }
+  }
+
+  // --- High cardinality checks (axis, shape, color) + same field x/y + nominal on numeric ---
   const enc = spec.encoding as Record<string, Record<string, unknown>> | undefined;
   if (enc) {
+    // --- Same field on both x and y ---
+    const xInfo = enc.x as Record<string, unknown> | undefined;
+    const yInfo = enc.y as Record<string, unknown> | undefined;
+    if (xInfo && yInfo && typeof xInfo.field === "string" && xInfo.field === yInfo.field) {
+      const xAgg = xInfo.aggregate;
+      const yAgg = yInfo.aggregate;
+      if (xAgg === yAgg) {
+        warnings.push(
+          `Same field "${xInfo.field}" on both x and y axes. ` +
+          `This plots values against themselves. Use different fields for each axis.`
+        );
+      }
+    }
+
     const primaryKey = getPrimaryDatasetKey(spec, datasets);
     const rows = primaryKey ? datasets[primaryKey] : undefined;
 
@@ -488,6 +749,21 @@ function lintSpecPatterns(
           `Values beyond 6 will reuse shapes, making them indistinguishable. ` +
           `Consider using color instead, or filter to ≤6 categories.`
         );
+      }
+
+      // Nominal/ordinal on continuous numeric field (>20 unique numeric values)
+      if ((chType === "nominal" || chType === "ordinal") && uniqueCount !== null && uniqueCount > 20 && rows) {
+        const numericCount = rows.filter((r) => {
+          const v = r[chField];
+          return typeof v === "number" || (typeof v === "string" && v !== "" && !isNaN(Number(v)));
+        }).length;
+        if (numericCount / rows.length > 0.9) {
+          warnings.push(
+            `Field "${chField}" is encoded as ${chType} but contains ${uniqueCount} unique numeric values. ` +
+            `This creates ${uniqueCount} discrete categories instead of a continuous axis. ` +
+            `Use "quantitative" type, or bin the values.`
+          );
+        }
       }
 
       // Color channel with nominal type: warn if too many categories for legend
@@ -661,6 +937,8 @@ export function validateSpec(
     warnings.push(...lintFieldReferences(spec, datasets));
     warnings.push(...lintTemporalNumeric(spec, datasets));
     warnings.push(...lintSpecPatterns(spec, datasets));
+    warnings.push(...lintStackingNonSummable(spec, datasets));
+    warnings.push(...lintScaleIssues(spec, datasets));
     vl.compile(fullSpec as unknown as vl.TopLevelSpec, {
       logger: createWarningLogger(warnings),
     });

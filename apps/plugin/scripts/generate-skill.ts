@@ -10,10 +10,8 @@ import {
 const TOOL_DESCRIPTIONS = {
   load_csv:
     "Load and parse a CSV or Excel file. Returns column metadata (names, types, sample values). Supports .csv, .tsv, .xls, .xlsx.",
-  validate_chart:
-    "Validate a Vega-Lite spec against the compiler. Returns errors or warnings.",
   render_chart:
-    "Render a Vega-Lite spec to a PNG image. Returns the file path of the saved image.",
+    "Validate and render a Vega-Lite spec to a PNG image. Returns the file path of the saved image, or validation errors if the spec is invalid.",
   open_interactive:
     "Open the chart interactively in the user's default browser with hover tooltips and panning.",
 } as const;

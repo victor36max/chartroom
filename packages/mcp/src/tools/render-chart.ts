@@ -3,7 +3,7 @@ import { z } from "zod";
 import fs from "fs/promises";
 import os from "os";
 import path from "path";
-import { type DatasetMap } from "@chartroom/core";
+import { type DatasetMap, validateSpec } from "@chartroom/core";
 import { renderChart } from "@chartroom/core/renderer";
 
 export function registerRenderChart(server: McpServer, datasets: DatasetMap) {
@@ -24,6 +24,16 @@ After rendering, you MUST use the Read tool to view the PNG and evaluate its qua
           dataRows[name] = parsed.data;
         }
 
+        // Validate and lint the spec before rendering
+        const validation = validateSpec(spec, dataRows);
+        if (!validation.valid) {
+          return {
+            content: [{ type: "text" as const, text: `Spec is invalid: ${validation.error}` }],
+            isError: true,
+          };
+        }
+        const lintWarnings = validation.warnings;
+
         const result = await renderChart(spec, dataRows, theme ?? "default");
 
         if (result.error) {
@@ -43,8 +53,9 @@ After rendering, you MUST use the Read tool to view the PNG and evaluate its qua
         const filePath = outputPath ?? path.join(tmpDir, `chart-${Date.now()}.png`);
         await fs.writeFile(filePath, png);
 
-        const warningText = warnings.length > 0
-          ? `\nWarnings:\n${warnings.map(w => `- ${w}`).join("\n")}`
+        const allWarnings = [...lintWarnings, ...warnings];
+        const warningText = allWarnings.length > 0
+          ? `\nWarnings:\n${allWarnings.map(w => `- ${w}`).join("\n")}`
           : "";
 
         return {

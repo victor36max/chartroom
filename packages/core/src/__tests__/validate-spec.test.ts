@@ -741,6 +741,487 @@ describe("validateSpec", () => {
     });
   });
 
+  describe("stacking non-summable values", () => {
+    it("warns when stacked area uses non-summable field", () => {
+      const TEMP_ROWS = [
+        { city: "NYC", temperature: 33 },
+        { city: "LA", temperature: 58 },
+        { city: "CHI", temperature: 26 },
+      ];
+      const spec = {
+        mark: "area",
+        encoding: {
+          x: { field: "city", type: "nominal" },
+          y: { field: "temperature", type: "quantitative" },
+          color: { field: "city", type: "nominal" },
+        },
+      };
+      const result = validateSpec(spec, { csv: TEMP_ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("temperature") && w.includes("non-summable"))).toBe(true);
+      }
+    });
+
+    it("warns when stacked bar uses non-summable field (avg_price)", () => {
+      const PRICE_ROWS = [
+        { category: "A", avg_price: 10 },
+        { category: "B", avg_price: 20 },
+      ];
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "avg_price", type: "quantitative" },
+          color: { field: "category", type: "nominal" },
+        },
+      };
+      const result = validateSpec(spec, { csv: PRICE_ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("avg_price") && w.includes("non-summable"))).toBe(true);
+      }
+    });
+
+    it("no warning when stack is explicitly false", () => {
+      const TEMP_ROWS = [
+        { city: "NYC", temperature: 33 },
+        { city: "LA", temperature: 58 },
+      ];
+      const spec = {
+        mark: "area",
+        encoding: {
+          x: { field: "city", type: "nominal" },
+          y: { field: "temperature", type: "quantitative", stack: false },
+          color: { field: "city", type: "nominal" },
+        },
+      };
+      const result = validateSpec(spec, { csv: TEMP_ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("non-summable"))).toBe(false);
+      }
+    });
+
+    it("no warning for summable field (revenue)", () => {
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+          color: { field: "category", type: "nominal" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("non-summable"))).toBe(false);
+      }
+    });
+
+    it("no warning without color encoding (no stacking)", () => {
+      const TEMP_ROWS = [
+        { city: "NYC", temperature: 33 },
+        { city: "LA", temperature: 58 },
+      ];
+      const spec = {
+        mark: "area",
+        encoding: {
+          x: { field: "city", type: "nominal" },
+          y: { field: "temperature", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: TEMP_ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("non-summable"))).toBe(false);
+      }
+    });
+
+    it("no warning for line mark even with non-summable field", () => {
+      const TEMP_ROWS = [
+        { city: "NYC", temperature: 33 },
+        { city: "LA", temperature: 58 },
+      ];
+      const spec = {
+        mark: "line",
+        encoding: {
+          x: { field: "city", type: "nominal" },
+          y: { field: "temperature", type: "quantitative" },
+          color: { field: "city", type: "nominal" },
+        },
+      };
+      const result = validateSpec(spec, { csv: TEMP_ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("non-summable"))).toBe(false);
+      }
+    });
+  });
+
+  describe("arc without theta", () => {
+    it("warns when arc mark has no theta encoding", () => {
+      const spec = {
+        mark: { type: "arc" },
+        encoding: {
+          color: { field: "category", type: "nominal" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Arc/pie") && w.includes("theta"))).toBe(true);
+      }
+    });
+
+    it("no warning when arc mark has theta encoding", () => {
+      const spec = {
+        mark: { type: "arc" },
+        encoding: {
+          theta: { field: "value", type: "quantitative" },
+          color: { field: "category", type: "nominal" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Arc/pie"))).toBe(false);
+      }
+    });
+  });
+
+  describe("same field on x and y", () => {
+    it("warns when same field is on both x and y", () => {
+      const spec = {
+        mark: "point",
+        encoding: {
+          x: { field: "value", type: "quantitative" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Same field") && w.includes("value"))).toBe(true);
+      }
+    });
+
+    it("no warning when different fields on x and y", () => {
+      const spec = {
+        mark: "point",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Same field"))).toBe(false);
+      }
+    });
+
+    it("no warning when same field has different aggregates (min/max range)", () => {
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "value", type: "quantitative", aggregate: "min" },
+          y: { field: "value", type: "quantitative", aggregate: "max" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Same field"))).toBe(false);
+      }
+    });
+  });
+
+  describe("fold referencing non-existent columns", () => {
+    it("warns when fold references column not in dataset", () => {
+      const spec = {
+        mark: "bar",
+        transform: [
+          { fold: ["value", "nonexistent"] },
+        ],
+        encoding: {
+          x: { field: "key", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Fold") && w.includes("nonexistent"))).toBe(true);
+      }
+    });
+
+    it("no warning when fold references existing columns", () => {
+      const WIDE_ROWS = [
+        { name: "A", metric1: 10, metric2: 20 },
+        { name: "B", metric1: 30, metric2: 40 },
+      ];
+      const spec = {
+        mark: "bar",
+        transform: [
+          { fold: ["metric1", "metric2"] },
+        ],
+        encoding: {
+          x: { field: "key", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+          color: { field: "name", type: "nominal" },
+        },
+      };
+      const result = validateSpec(spec, { csv: WIDE_ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Fold"))).toBe(false);
+      }
+    });
+
+    it("no warning when fold references field created by prior calculate", () => {
+      const spec = {
+        mark: "bar",
+        transform: [
+          { calculate: "datum.value * 2", as: "doubled" },
+          { fold: ["value", "doubled"] },
+        ],
+        encoding: {
+          x: { field: "key", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Fold") && w.includes("doubled"))).toBe(false);
+      }
+    });
+  });
+
+  describe("redundant double-aggregate", () => {
+    it("warns when encoding has inline aggregate on already-aggregated field", () => {
+      const spec = {
+        mark: "bar",
+        transform: [
+          { aggregate: [{ op: "sum", field: "value", as: "total" }], groupby: ["category"] },
+        ],
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "total", type: "quantitative", aggregate: "mean" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("total") && w.includes("double-aggregate"))).toBe(true);
+      }
+    });
+
+    it("no warning when encoding has no inline aggregate on aggregated field", () => {
+      const spec = {
+        mark: "bar",
+        transform: [
+          { aggregate: [{ op: "sum", field: "value", as: "total" }], groupby: ["category"] },
+        ],
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "total", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("double-aggregate"))).toBe(false);
+      }
+    });
+
+    it("no warning when inline aggregate is on a non-aggregated field", () => {
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative", aggregate: "mean" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("double-aggregate"))).toBe(false);
+      }
+    });
+  });
+
+  describe("nominal on continuous numeric", () => {
+    it("warns when nominal encoding has many unique numeric values", () => {
+      const numericRows = Array.from({ length: 50 }, (_, i) => ({
+        id: i,
+        value: i * 10,
+      }));
+      const spec = {
+        mark: "point",
+        encoding: {
+          x: { field: "id", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: numericRows });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("id") && w.includes("nominal") && w.includes("numeric values"))).toBe(true);
+      }
+    });
+
+    it("no warning for low cardinality nominal numeric field", () => {
+      const fewRows = [
+        { rating: 1, count: 10 },
+        { rating: 2, count: 20 },
+        { rating: 3, count: 30 },
+      ];
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "rating", type: "ordinal" },
+          y: { field: "count", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: fewRows });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("numeric values"))).toBe(false);
+      }
+    });
+
+    it("no warning when nominal field has string values", () => {
+      const stringRows = Array.from({ length: 25 }, (_, i) => ({
+        name: `item_${i}`,
+        value: i * 10,
+      }));
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "name", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: stringRows });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("name") && w.includes("numeric values"))).toBe(false);
+      }
+    });
+  });
+
+  describe("timeUnit on non-temporal field", () => {
+    it("warns when timeUnit is used on plain string field", () => {
+      const STRING_ROWS = [
+        { category: "apple", value: 10 },
+        { category: "banana", value: 20 },
+      ];
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "category", type: "nominal", timeUnit: "month" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: STRING_ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("timeUnit") && w.includes("category"))).toBe(true);
+      }
+    });
+
+    it("no warning when timeUnit is used on date field", () => {
+      const DATE_ROWS = [
+        { date: "2024-01-01", value: 10 },
+        { date: "2024-02-01", value: 20 },
+      ];
+      const spec = {
+        mark: "line",
+        encoding: {
+          x: { field: "date", type: "temporal", timeUnit: "month" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: DATE_ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("timeUnit") && w.includes("not dates"))).toBe(false);
+      }
+    });
+  });
+
+  describe("log scale issues", () => {
+    it("warns when log scale domain includes zero", () => {
+      const spec = {
+        mark: "point",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative", scale: { type: "log", domain: [0, 100] } },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Log scale") && w.includes("zero"))).toBe(true);
+      }
+    });
+
+    it("warns when log scale field contains zero values", () => {
+      const ZERO_ROWS = [
+        { category: "A", value: 0 },
+        { category: "B", value: 20 },
+      ];
+      const spec = {
+        mark: "point",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative", scale: { type: "log" } },
+        },
+      };
+      const result = validateSpec(spec, { csv: ZERO_ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Log scale") && w.includes("zero or negative"))).toBe(true);
+      }
+    });
+
+    it("no warning for log scale with all positive values", () => {
+      const spec = {
+        mark: "point",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative", scale: { type: "log" } },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Log scale"))).toBe(false);
+      }
+    });
+
+    it("no warning for symlog scale with zero values", () => {
+      const ZERO_ROWS = [
+        { category: "A", value: 0 },
+        { category: "B", value: 20 },
+      ];
+      const spec = {
+        mark: "point",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative", scale: { type: "symlog" } },
+        },
+      };
+      const result = validateSpec(spec, { csv: ZERO_ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Log scale"))).toBe(false);
+      }
+    });
+  });
+
   it("warns when encoding references original field instead of alias", () => {
     const spec = {
       mark: "bar",

@@ -28,8 +28,7 @@ Chartroom adds a `/chart` skill and MCP tools that let Claude Code create, valid
 | Tool | Description |
 |------|-------------|
 | `load_csv` | Parse a CSV or Excel file and return column metadata (names, types, sample values) |
-| `validate_chart` | Validate a Vega-Lite spec against the compiler |
-| `render_chart` | Render a Vega-Lite spec to PNG |
+| `render_chart` | Validate and render a Vega-Lite spec to PNG |
 | `open_interactive` | Open the chart in your browser with tooltips and panning |
 
 ## Supported chart types
