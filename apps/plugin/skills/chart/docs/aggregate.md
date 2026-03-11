@@ -40,3 +40,4 @@ Combos: yearmonth, yearmonthdate, monthdate, hoursminutes
 - `count` aggregate doesn't need a `field`
 - bin creates a range — the y axis should use `aggregate: "count"`
 - timeUnit groups dates — use with temporal type
+- **Aggregate + lookup ordering:** If you need metadata from another dataset, aggregate first, then `lookup` — don't lookup first and use `"op": "first"` on string fields (can produce blank charts). See lookup docs.

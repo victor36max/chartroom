@@ -43,3 +43,13 @@ Joins fields from a secondary dataset into the primary dataset. This is a left j
   { "lookup": "region_id", "from": { "data": { "url": "regions.csv" }, "key": "id", "fields": ["region_name"] } }
 ]
 ```
+
+**Gotchas:**
+- `fields` MUST be inside `from`, not at the top level
+- **Lookup + aggregate ordering:** When you need to both aggregate and lookup, aggregate your primary data FIRST, then lookup to enrich. Doing the lookup before aggregation forces you to carry string fields through the aggregate with `"op": "first"`, which can silently produce blank charts. Pattern:
+```json
+"transform": [
+  { "aggregate": [{ "op": "mean", "field": "close", "as": "avg_close" }], "groupby": ["symbol"] },
+  { "lookup": "symbol", "from": { "data": { "url": "companies.csv" }, "key": "symbol", "fields": ["company", "sector"] } }
+]
+```
