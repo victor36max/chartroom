@@ -57,14 +57,20 @@ Stacking ADDS values together — stacking temperatures produces nonsense like 3
 Only stack values that represent parts of a meaningful total (revenue, counts, quantities, populations).
 Implicit stacking: Area marks with color encoding implicitly stack. For non-summable data, use `line` mark with `color`, or set `stack: false` on the y encoding.
 
-## MANDATORY — fix all warnings before responding
+## MANDATORY — fix all warnings AND broken charts before responding
 When `render_chart` returns warnings, you MUST:
 1. Read each warning — they indicate real problems (missing fields, wrong transform order, broken references)
-2. Look up the relevant docs to understand the fix
+2. Look up the relevant docs to understand the correct syntax
 3. Call `render_chart` again with a corrected spec
 4. Repeat until no warnings remain
+Do NOT dismiss warnings as false positives. If you think a warning is wrong, fix the underlying issue anyway.
 
-You CANNOT claim a chart is working, correct, or complete if there are unresolved warnings. An empty or broken chart with warnings is a failed chart — not a successful render. Never present a warning-laden result to the user as finished work.
+When the chart screenshot shows an empty, blank, or clearly broken chart (missing bars, no data points, axes with no marks):
+1. This means your spec has a serious error — do NOT present it to the user
+2. Re-read the relevant docs for the mark type and transforms you used
+3. Rebuild the spec and call `render_chart` again
+
+You CANNOT claim a chart is working, correct, or complete if there are unresolved warnings or the chart is visually broken. Never present a broken result to the user as finished work — always fix it first.
 
 ## Documentation lookup
 Read the relevant reference docs before creating any chart. Look up:
