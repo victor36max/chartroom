@@ -285,8 +285,8 @@ function lintTemporalNumeric(
       warnings.push(
         `Field "${field}" is encoded as temporal but contains plain numbers (e.g. ${samples[0]}). ` +
         `Vega-Lite interprets numbers as milliseconds since epoch, producing wrong axis labels. ` +
-        `Use "type": "ordinal" for labels, or add a calculate transform: ` +
-        `{"calculate": "datetime(datum.${field}, 0, 1)", "as": "${field}_date"}`
+        `Use "type": "quantitative" with "axis": {"format": "d"} to display as integers, ` +
+        `or "type": "ordinal" for evenly-spaced labels.`
       );
     }
   }
