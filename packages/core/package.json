@@ -20,13 +20,16 @@
     "vega": "^6.2.0",
     "vega-lite": "^6.4.2",
     "vega-themes": "^3.0.0",
+    "xlsx": "^0.18.5",
     "zod": "^4.3.6"
   },
   "peerDependencies": {
     "ai": "^6.0.0"
   },
   "peerDependenciesMeta": {
-    "ai": { "optional": true }
+    "ai": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/papaparse": "^5.5.2",

@@ -294,7 +294,7 @@ export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSele
                 ))}
               </div>
             )}
-            {datasets[activeDataset] && <DataTable csvData={datasets[activeDataset]} />}
+            {datasets[activeDataset] && <DataTable csvData={datasets[activeDataset]} datasetName={activeDataset} />}
           </TabsContent>
         </div>
         {jsonPanelOpen && hasChart && (

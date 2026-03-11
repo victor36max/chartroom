@@ -9,7 +9,7 @@ import {
 // Plugin-specific tool descriptions (these are MCP tools, not shared with web)
 const TOOL_DESCRIPTIONS = {
   load_csv:
-    "Load and parse a CSV file. Returns column metadata (names, types, sample values). Supports loading multiple CSVs.",
+    "Load and parse a CSV or Excel file. Returns column metadata (names, types, sample values). Supports .csv, .tsv, .xls, .xlsx.",
   validate_chart:
     "Validate a Vega-Lite spec against the compiler. Returns errors or warnings.",
   render_chart:
@@ -49,14 +49,14 @@ const docsSection = Object.entries(TOPIC_GROUPS)
 const skillMd = `${GENERATED_COMMENT}
 ---
 name: chart
-description: Generate charts from CSV data using Vega-Lite. Use when the user wants to create, modify, or explore data visualizations from CSV files.
+description: Generate charts from CSV/Excel data using Vega-Lite. Use when the user wants to create, modify, or explore data visualizations from CSV or Excel files.
 user-invocable: true
 allowed-tools: Read, Bash(open *)
 ---
 
 # Chart Generation Workflow
 
-You have access to Chartroom MCP tools for creating Vega-Lite charts from CSV data.
+You have access to Chartroom MCP tools for creating Vega-Lite charts from CSV or Excel data.
 
 ## Available MCP Tools
 

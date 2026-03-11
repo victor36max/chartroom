@@ -1,10 +1,10 @@
 # Chartroom
 
-AI-powered chart generation from CSV data using Vega-Lite — right inside Claude Code.
+AI-powered chart generation from CSV and Excel data using Vega-Lite — right inside Claude Code.
 
 ## What it does
 
-Chartroom adds a `/chart` skill and MCP tools that let Claude Code create, validate, and render data visualizations from your CSV files. Upload a CSV, describe the chart you want, and get a polished Vega-Lite chart rendered as PNG or opened interactively in your browser.
+Chartroom adds a `/chart` skill and MCP tools that let Claude Code create, validate, and render data visualizations from your CSV or Excel files. Upload a CSV, describe the chart you want, and get a polished Vega-Lite chart rendered as PNG or opened interactively in your browser.
 
 ## Installation
 
@@ -27,7 +27,7 @@ Chartroom adds a `/chart` skill and MCP tools that let Claude Code create, valid
 
 | Tool | Description |
 |------|-------------|
-| `load_csv` | Parse a CSV file and return column metadata (names, types, sample values) |
+| `load_csv` | Parse a CSV or Excel file and return column metadata (names, types, sample values) |
 | `validate_chart` | Validate a Vega-Lite spec against the compiler |
 | `render_chart` | Render a Vega-Lite spec to PNG |
 | `open_interactive` | Open the chart in your browser with tooltips and panning |

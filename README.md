@@ -1,21 +1,21 @@
 # Chartroom
 
-AI-powered chart generation from CSV data using [Vega-Lite](https://vega.github.io/vega-lite/). Upload a CSV, describe the chart you want, and get a publication-ready visualization.
+AI-powered chart generation from CSV and Excel data using [Vega-Lite](https://vega.github.io/vega-lite/). Upload a CSV or Excel file, describe the chart you want, and get a publication-ready visualization.
 
 ## What it does
 
-Chartroom takes CSV data and natural language prompts to generate Vega-Lite chart specifications via AI. It validates specs, renders charts, and supports iterative editing through conversation. Available as a web app and as a Claude Code MCP plugin.
+Chartroom takes CSV or Excel data and natural language prompts to generate Vega-Lite chart specifications via AI. It validates specs, renders charts, and supports iterative editing through conversation. Available as a web app and as a Claude Code MCP plugin.
 
 ## Features
 
 - **AI chart generation** — Describe charts in natural language, get Vega-Lite specs
-- **CSV upload** — Drag-and-drop with automatic column type detection (up to 5,000 rows)
+- **Data upload** — Drag-and-drop CSV and Excel files (.xls, .xlsx) with automatic column type detection (up to 5,000 rows)
 - **Visual spec editor** — Edit marks, encodings, transforms, and layers without writing JSON
 - **JSON editor** — Direct spec editing with CodeMirror for full control
 - **11 themes** — Default, Dark, Excel, FiveThirtyEight, ggplot2, Google Charts, LA Times, PowerBI, Quartz, Urban Institute, Vox
 - **Chart export** — PNG (configurable resolution) and SVG with optional transparency
 - **Multi-layer charts** — Compose layered visualizations with per-layer editing
-- **Multiple datasets** — Load and reference multiple CSV files in a single session
+- **Multiple datasets** — Load and reference multiple data files in a single session
 - **Model tiers** — Choose between Fast, Standard, and Power AI models
 - **Data table** — Preview uploaded data (first 100 rows) with column metadata
 - **Optional auth & billing** — Supabase OAuth + Stripe payments (can run fully open without auth)
@@ -26,7 +26,7 @@ Bun workspace monorepo with shared packages and multiple apps:
 
 ```
 packages/
-  core/         @chartroom/core     — Shared logic (types, CSV parsing, validation,
+  core/         @chartroom/core     — Shared logic (types, CSV/Excel parsing, validation,
                                        themes, docs, AI tools, system prompt,
                                        headless PNG rendering via vega + resvg-js)
   mcp/          @chartroom/mcp      — MCP server: chart generation tools (publishable to npm)
@@ -69,7 +69,7 @@ OPENROUTER_API_KEY=your-key-here
 bun run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Upload a CSV and start chatting to generate charts.
+Open [http://localhost:3000](http://localhost:3000). Upload a CSV or Excel file and start chatting to generate charts.
 
 ### Running the MCP server only
 
@@ -126,7 +126,7 @@ cd packages/mcp && bun start                  # Start MCP server
 
 Shared, Node-compatible library with no framework dependencies (`ai` SDK is an optional peer dep):
 
-- **CSV parsing** — `parseCSV` (browser), `parseCSVString` (Node), metadata extraction with type inference (number, string, date, boolean), wide-format detection, join key detection
+- **CSV/Excel parsing** — `parseCSV` (browser), `parseCSVString` (Node), Excel via SheetJS (`getSheetNames`, `parseExcelSheet`), metadata extraction with type inference (number, string, date, boolean), wide-format detection, join key detection
 - **Spec validation** — Vega-Lite compiler validation + transform linting (aggregate aliases, field references, lookup transforms)
 - **Data injection** — Replaces URL sentinels in specs with actual data objects, handles nested layers/facets/concats
 - **Themes** — 11 built-in themes via vega-themes
@@ -141,7 +141,7 @@ Shared, Node-compatible library with no framework dependencies (`ai` SDK is an o
 
 Next.js 16 App Router web app with a two-panel layout:
 
-- **Left panel** — Chat interface with CSV upload, model tier selector (fast/standard/power), multi-turn conversation with auto-send after tool calls
+- **Left panel** — Chat interface with CSV/Excel upload, model tier selector (fast/standard/power), multi-turn conversation with auto-send after tool calls
 - **Right panel** — Chart preview, data table, spec editor (visual + JSON via CodeMirror), theme selector, PNG/SVG export
 
 AI layer uses Vercel AI SDK (`streamText`, `useChat`) with OpenRouter. The `render_chart` tool runs client-side; `lookup_docs` runs server-side.
@@ -172,7 +172,7 @@ MCP server providing chart generation tools (publishable to npm as `@chartroom/m
 
 | Tool | Description |
 |------|-------------|
-| `load_csv` | Parse a CSV file, return column metadata |
+| `load_csv` | Parse a CSV or Excel file, return column metadata |
 | `validate_chart` | Validate a Vega-Lite spec via the compiler |
 | `render_chart` | Render a spec to PNG via vega + resvg-js |
 | `open_interactive` | Open chart in browser with tooltips |
@@ -180,7 +180,7 @@ MCP server providing chart generation tools (publishable to npm as `@chartroom/m
 ### @chartroom/plugin
 
 Claude Code plugin assets (not published to npm):
-- `/chart` skill — guided workflow for chart generation from CSV data
+- `/chart` skill — guided workflow for chart generation from CSV/Excel data
 - 28 Vega-Lite reference docs
 - `.mcp.json` — configures Claude Code to use `npx @chartroom/mcp`
 
@@ -188,7 +188,7 @@ Claude Code plugin assets (not published to npm):
 
 Automated chart quality evaluation:
 
-- Loads test cases (JSON) and CSV data
+- Loads test cases (JSON) and data files (CSV)
 - Runs agentic generation loop with `generateText` + tools from core
 - Renders via `renderChart` from `@chartroom/core`, judges via vision model
 - Scores on 5 criteria (correctness, chart type, readability, aesthetics, completeness) — max 25
@@ -240,7 +240,7 @@ cd packages/core && bun run test    # Core only
 cd apps/web && bun run test         # Web only
 ```
 
-- **Core** — Vitest, Node environment. Covers CSV parsing, spec validation, data injection, themes, schemas, system prompt.
+- **Core** — Vitest, Node environment. Covers CSV/Excel parsing, spec validation, data injection, themes, schemas, system prompt.
 - **Web** — Vitest, jsdom environment. Covers chart utilities, CSV parsing, components.
 
 ## Claude Code plugin
@@ -264,7 +264,7 @@ This automatically sets up the MCP server (via `npx @chartroom/mcp`) and makes t
 Once installed, use `/chart` in Claude Code for a guided chart generation workflow:
 
 1. `/chart` — starts the workflow
-2. Provide a CSV file path when prompted
+2. Provide a CSV or Excel file path when prompted
 3. Describe the chart you want in natural language
 4. The plugin loads your data, generates a Vega-Lite spec, validates it, and renders a PNG
 5. Iterate on the chart through conversation

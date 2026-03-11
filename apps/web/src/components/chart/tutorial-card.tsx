@@ -27,7 +27,7 @@ const STEPS: TutorialStep[] = [
     media: "/tutorial/step-1-upload.mp4",
     title: "Upload your data",
     description:
-      'Drop a CSV file or click "Try with sample data" to get started instantly.',
+      'Drop a CSV or Excel file, or click "Try with sample data" to get started instantly.',
   },
   {
     media: "/tutorial/step-2-prompt.mp4",
@@ -63,20 +63,20 @@ function Dropzone({ onFilesSelected }: { onFilesSelected?: (files: File[]) => vo
       onClick={() => inputRef.current?.click()}
       onDrop={(e: DragEvent<HTMLButtonElement>) => {
         e.preventDefault();
-        const csvFiles = Array.from(e.dataTransfer.files).filter((f) => f.name.endsWith(".csv"));
-        if (csvFiles.length > 0) onFilesSelected?.(csvFiles);
+        const dataFiles = Array.from(e.dataTransfer.files).filter((f) => /\.(csv|tsv|xlsx?)$/i.test(f.name));
+        if (dataFiles.length > 0) onFilesSelected?.(dataFiles);
       }}
       onDragOver={(e: DragEvent<HTMLButtonElement>) => e.preventDefault()}
     >
       <Upload className="h-8 w-8 text-muted-foreground/50" />
       <div className="text-center">
-        <p className="text-sm font-medium text-muted-foreground">Drop CSV files here or click to upload</p>
+        <p className="text-sm font-medium text-muted-foreground">Drop CSV or Excel files here or click to upload</p>
         <p className="text-xs text-muted-foreground/60 mt-1">Your data stays in your browser</p>
       </div>
       <input
         ref={inputRef}
         type="file"
-        accept=".csv"
+        accept=".csv,.tsv,.xls,.xlsx"
         multiple
         onChange={(e: ChangeEvent<HTMLInputElement>) => {
           const files = e.target.files;
@@ -185,7 +185,7 @@ export function TutorialCard({ onFilesSelected }: TutorialCardProps) {
           </p>
           <p className="text-xs text-muted-foreground">
             {isLastSlide
-              ? "Drop a CSV file here or use the chat panel to upload."
+              ? "Drop a data file here or use the chat panel to upload."
               : STEPS[current].description}
           </p>
         </div>

@@ -24,7 +24,7 @@ export function buildSystemPrompt(options: SystemPromptOptions): string {
 5. If the chart looks good, describe what you created to the user`
     : `## Your workflow
 0. **Check the decline list below** — before calling any tools, check if the user's request matches the unsupported chart types list. For unsupported chart types, explain the limitation and render the suggested alternative. For unsupported capabilities, decline in text only.
-1. **Load data** — call \`load_csv\` to load the CSV file(s). Read the metadata to understand columns and types.
+1. **Load data** — call \`load_csv\` to load the data file(s). Read the metadata to understand columns and types.
 2. **Read docs** — read the relevant Vega-Lite reference docs for the mark type(s) and any transforms/scales you plan to use.
 3. Read the pre-render checklist, then use \`render_chart\` to create the chart
 4. After rendering, read the PNG file to evaluate the chart for correctness and aesthetics
@@ -104,7 +104,7 @@ When modifying an existing chart, start from your PREVIOUS spec — do not rebui
 
     dataContext
       ? `\n## Dataset\n${dataContext}`
-      : "\n## No dataset loaded\nThe user hasn't uploaded data yet. Ask them to upload a CSV file.",
+      : "\n## No dataset loaded\nThe user hasn't uploaded data yet. Ask them to upload a CSV or Excel file.",
   ];
 
   return parts.join("\n");

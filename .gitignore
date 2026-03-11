@@ -58,3 +58,5 @@ docs/plans/
 docs/superpowers/
 
 .claude/
+
+dist/

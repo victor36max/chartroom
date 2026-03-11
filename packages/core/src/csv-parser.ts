@@ -222,6 +222,18 @@ export function datasetsToContext(datasets: DatasetMap): string {
   return `${header}${keyHint}\n\n${sections.join("\n\n")}`;
 }
 
+const EXCEL_EXTENSIONS = new Set([".xls", ".xlsx", ".xlsm", ".xlsb"]);
+
+export function isExcelFile(filename: string): boolean {
+  const ext = filename.toLowerCase().match(/\.[^.]+$/)?.[0] ?? "";
+  return EXCEL_EXTENSIONS.has(ext);
+}
+
+export function excelToCSVName(filename: string, sheetName?: string): string {
+  const base = filename.replace(/\.[^.]+$/, "");
+  return sheetName ? `${base} - ${sheetName}.csv` : `${base}.csv`;
+}
+
 export function metadataToContext(metadata: DataMetadata): string {
   const lines = [
     `Dataset: ${metadata.rowCount} rows, ${metadata.columns.length} columns`,

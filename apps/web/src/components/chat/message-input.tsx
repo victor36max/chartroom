@@ -72,7 +72,7 @@ export function MessageInput({
           placeholder={
             hasCSV
               ? "Describe the chart you want..."
-              : "Upload a CSV to get started"
+              : "Upload a CSV or Excel file to get started"
           }
           disabled={!hasCSV || isBusy}
           className="min-h-[36px] max-h-[120px] resize-none"

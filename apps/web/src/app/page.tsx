@@ -10,7 +10,14 @@ import { LoginModal } from "@/components/auth/login-modal";
 import { AccountDropdown } from "@/components/auth/account-dropdown";
 import { Button } from "@/components/ui/button";
 import { DEFAULT_TIER, type ModelTier } from "@/lib/agent/models";
-import { parseCSV } from "@/lib/csv/parser";
+import {
+  parseCSV,
+  isExcelFile,
+  excelToCSVName,
+  getSheetNames,
+  parseExcelSheet,
+} from "@/lib/csv/parser";
+import { SheetPickerDialog } from "@/components/data/sheet-picker-dialog";
 import type { ParsedCSV, DatasetMap, ChartSpec, ThemeId } from "@/types";
 
 export default function Home() {
@@ -21,6 +28,9 @@ export default function Home() {
   const [themeId, setThemeId] = useState<ThemeId>("default");
   const [isAIBusy, setIsAIBusy] = useState(false);
   const [mobileTab, setMobileTab] = useState<"chat" | "chart">("chat");
+  const [pendingExcelFile, setPendingExcelFile] = useState<File | null>(null);
+  const [pendingSheetNames, setPendingSheetNames] = useState<string[]>([]);
+  const [sheetPickerOpen, setSheetPickerOpen] = useState(false);
   const chatRef = useRef<ChatPanelHandle>(null);
 
   const handleStatusChange = useCallback((status: string) => {
@@ -45,12 +55,39 @@ export default function Home() {
       return;
     }
     for (const file of files) {
-      const result = await parseCSV(file);
-      if (result.errors.length > 0 && result.data.length === 0) continue;
-      const name = file.name;
-      handleCSVParsed(name, result);
+      if (isExcelFile(file.name)) {
+        const sheets = await getSheetNames(file);
+        if (sheets.length === 0) continue;
+        if (sheets.length === 1) {
+          const result = await parseExcelSheet(file, sheets[0]);
+          if (result.errors.length > 0 && result.data.length === 0) continue;
+          handleCSVParsed(excelToCSVName(file.name), result);
+        } else {
+          setPendingExcelFile(file);
+          setPendingSheetNames(sheets);
+          setSheetPickerOpen(true);
+        }
+      } else {
+        const result = await parseCSV(file);
+        if (result.errors.length > 0 && result.data.length === 0) continue;
+        handleCSVParsed(file.name, result);
+      }
     }
   }, [handleCSVParsed, user, openLogin]);
+
+  const handleSheetsSelected = useCallback(async (sheets: string[]) => {
+    if (!pendingExcelFile) return;
+    for (const sheet of sheets) {
+      const result = await parseExcelSheet(pendingExcelFile, sheet);
+      if (result.errors.length > 0 && result.data.length === 0) continue;
+      const name = sheets.length === 1
+        ? excelToCSVName(pendingExcelFile.name)
+        : excelToCSVName(pendingExcelFile.name, sheet);
+      handleCSVParsed(name, result);
+    }
+    setPendingExcelFile(null);
+    setPendingSheetNames([]);
+  }, [pendingExcelFile, handleCSVParsed]);
 
   const handleLoadSampleData = useCallback(async () => {
     if (isAuthEnabled() && !user) {
@@ -106,8 +143,8 @@ export default function Home() {
           <ChatPanel
             ref={chatRef}
             datasets={datasets}
-            onCSVParsed={handleCSVParsed}
             onDatasetRemoved={handleDatasetRemoved}
+            onFilesSelected={handleFilesSelected}
             onChartSpec={handleChartSpec}
             tier={tier}
             onTierChange={setTier}
@@ -120,6 +157,12 @@ export default function Home() {
         </div>
       </div>
       <BottomTabBar activeTab={mobileTab} onTabChange={setMobileTab} />
+      <SheetPickerDialog
+        open={sheetPickerOpen}
+        onOpenChange={setSheetPickerOpen}
+        sheetNames={pendingSheetNames}
+        onSheetsSelected={handleSheetsSelected}
+      />
     </div>
   );
 }

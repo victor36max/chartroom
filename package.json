@@ -9,7 +9,8 @@
     "typecheck": "bun run --filter '*' typecheck",
     "test": "bun run --filter '*' test",
     "eval": "bun run --filter @chartroom/eval eval",
-    "build:mcp": "bun run --filter @chartroom/mcp build"
+    "build:mcp": "bun run --filter @chartroom/mcp build",
+    "publish:mcp": "bun run --filter @chartroom/mcp publish"
   },
   "devDependencies": {
     "eslint": "^10.0.3",

@@ -54,7 +54,7 @@ export function MessageList({ messages, status, onLoadSampleData }: MessageListP
           <div>
             <p className="text-lg font-medium">Welcome to Chartroom</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Upload one or more CSVs and describe the chart you want.
+              Upload a CSV or Excel file and describe the chart you want.
             </p>
           </div>
           <div className="space-y-3 text-sm text-left">
@@ -69,7 +69,7 @@ export function MessageList({ messages, status, onLoadSampleData }: MessageListP
               <span className="text-base leading-5">🔒</span>
               <div>
                 <p className="font-medium">Your data stays in your browser</p>
-                <p className="text-muted-foreground text-xs">CSV data never leaves your machine. Only column metadata is sent to the AI.</p>
+                <p className="text-muted-foreground text-xs">Your data never leaves your machine. Only column metadata is sent to the AI.</p>
               </div>
             </div>
             <div className="flex gap-3 items-start">

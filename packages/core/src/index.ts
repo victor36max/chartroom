@@ -17,7 +17,17 @@ export {
   extractMetadata,
   metadataToContext,
   datasetsToContext,
+  isExcelFile,
+  excelToCSVName,
 } from "./csv-parser";
+
+// Excel parsing
+export {
+  getSheetNames,
+  parseExcelSheet,
+  getSheetNamesFromBuffer,
+  parseExcelBufferSheet,
+} from "./excel-parser";
 
 // Spec utilities
 export { injectData } from "./inject-data";

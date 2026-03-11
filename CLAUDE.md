@@ -33,13 +33,13 @@ Always use shadcn/ui components instead of raw HTML elements. Never use raw `<bu
 
 ## Architecture
 
-Chartroom is a **Bun workspace monorepo** with shared packages and multiple apps. It lets users upload CSVs and generate [Vega-Lite](https://vega.github.io/vega-lite/) charts via AI.
+Chartroom is a **Bun workspace monorepo** with shared packages and multiple apps. It lets users upload CSVs or Excel files and generate [Vega-Lite](https://vega.github.io/vega-lite/) charts via AI.
 
 ### Monorepo structure
 
 ```
 packages/
-  core/         @chartroom/core     — Shared logic: types, CSV parsing, spec validation,
+  core/         @chartroom/core     — Shared logic: types, CSV/Excel parsing, spec validation,
                                        data injection, themes, docs, system prompt, Zod schemas,
                                        AI tools, headless PNG rendering (vega + resvg-js)
   mcp/          @chartroom/mcp      — MCP server: chart generation tools (publishable to npm)
@@ -54,7 +54,7 @@ apps/
 
 Node-compatible shared logic (`ai` SDK is an optional peer dependency):
 - **Types**: `ChartSpec`, `ThemeId`, `ColumnMeta`, `DataMetadata`, `ParsedCSV`, `DatasetMap`
-- **CSV**: `parseCSV` (browser File), `parseCSVString` (Node string), `extractMetadata`, `metadataToContext`, `datasetsToContext`, `fileNameToDatasetName`
+- **CSV/Excel**: `parseCSV` (browser File), `parseCSVString` (Node string), `extractMetadata`, `metadataToContext`, `datasetsToContext`, `fileNameToDatasetName`, plus Excel: `getSheetNames`, `parseExcelSheet`, `parseExcelBufferSheet`, `getSheetNamesFromBuffer`, `isExcelFile`, `excelToCSVName`
 - **Spec utils**: `injectData`, `validateSpec`
 - **Themes**: `DEFAULT_CONFIG`, `getThemeConfig` (11 built-in via vega-themes: default, dark, excel, fivethirtyeight, ggplot2, googlecharts, latimes, powerbi, quartz, urbaninstitute, vox)
 - **Schemas**: `vlSpecSchema`, `vlUnitSchema`, `vlMarkSchema`, `encodingChannelSchema`, `createVlSpecSchema` (Zod)
@@ -66,7 +66,7 @@ Node-compatible shared logic (`ai` SDK is an optional peer dependency):
 ### `@chartroom/web` (apps/web)
 
 Next.js 16 App Router web app. Two-panel layout:
-- **Left**: ChatPanel (420px, collapsible) — chat UI, CSV upload, model tier switcher
+- **Left**: ChatPanel (420px, collapsible) — chat UI, CSV/Excel upload, model tier switcher
 - **Right**: ChartPanel — chart preview + spec editor (visual/JSON) + themes + export
 
 #### AI layer
@@ -116,7 +116,7 @@ Accordion-based UI for editing Vega-Lite specs without writing JSON:
 
 #### Data handling
 
-- CSV upload with metadata extraction (column types, samples, unique values, min/max)
+- CSV and Excel upload with metadata extraction (column types, samples, unique values, min/max)
 - Multiple dataset support with named datasets
 - 5,000-row in-memory limit
 - Data table preview (first 100 rows)
@@ -138,7 +138,7 @@ Built with shadcn/ui (Radix primitives), Tailwind CSS v4, DM Sans font, dark mod
 ### `@chartroom/mcp` (packages/mcp)
 
 MCP server providing chart generation tools (publishable to npm as `@chartroom/mcp`):
-- **`load_csv`** (`src/tools/load-csv.ts`) — parse CSV file, return column metadata
+- **`load_csv`** (`src/tools/load-csv.ts`) — parse CSV or Excel file, return column metadata
 - **`validate_chart`** (`src/tools/validate-chart.ts`) — validate Vega-Lite spec via compiler
 - **`render_chart`** (`src/tools/render-chart.ts`) — render spec to PNG via `@chartroom/core`
 - **`open_interactive`** (`src/tools/open-interactive.ts`) — open chart in browser with tooltips
@@ -146,7 +146,7 @@ MCP server providing chart generation tools (publishable to npm as `@chartroom/m
 ### `@chartroom/plugin` (apps/plugin)
 
 Claude Code plugin assets (not published to npm, consumed locally by Claude Code):
-- Skill: `/chart` — guided workflow for chart generation from CSV data
+- Skill: `/chart` — guided workflow for chart generation from CSV/Excel data
 - Vega-Lite reference docs in `skills/chart/docs/` (28 topics)
 - `.mcp.json` — configures Claude Code to use `npx @chartroom/mcp`
 - `scripts/generate-skill.ts` — generates SKILL.md and docs from `@chartroom/core`
@@ -168,7 +168,7 @@ Eval runner for automated chart quality assessment:
 |------|---------|
 | `packages/core/src/index.ts` | Core barrel exports |
 | `packages/core/src/types.ts` | Shared TypeScript types |
-| `packages/core/src/csv-parser.ts` | CSV parsing + metadata extraction |
+| `packages/core/src/csv-parser.ts` | CSV/Excel parsing + metadata extraction |
 | `packages/core/src/validate-spec.ts` | Vega-Lite spec validation + transform linting |
 | `packages/core/src/inject-data.ts` | Data injection (replaces URL sentinels) |
 | `packages/core/src/themes.ts` | Theme config (11 themes via vega-themes) |

@@ -9,10 +9,10 @@ import {
 import { MessageList } from "./message-list";
 import { MessageInput } from "./message-input";
 import { toast } from "sonner";
-import { parseCSV, datasetsToContext } from "@/lib/csv/parser";
+import { datasetsToContext } from "@/lib/csv/parser";
 import { captureChart } from "@/components/chart/chart-capture";
 import { validateSpec } from "@/lib/chart/validate-spec";
-import type { ParsedCSV, DatasetMap, ChartSpec } from "@/types";
+import type { DatasetMap, ChartSpec } from "@/types";
 import { getModelTierLabels, type ModelTier } from "@/lib/agent/models";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -29,8 +29,8 @@ export interface ChatPanelHandle {
 
 interface ChatPanelProps {
   datasets: DatasetMap;
-  onCSVParsed: (name: string, data: ParsedCSV) => void;
   onDatasetRemoved: (name: string) => void;
+  onFilesSelected: (files: File[]) => void;
   onChartSpec: (spec: ChartSpec) => void;
   tier: ModelTier;
   onTierChange: (tier: ModelTier) => void;
@@ -39,10 +39,10 @@ interface ChatPanelProps {
 }
 
 export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function ChatPanel(
-  { datasets, onCSVParsed, onDatasetRemoved, onChartSpec, tier, onTierChange, onStatusChange, onLoadSampleData },
+  { datasets, onDatasetRemoved, onFilesSelected, onChartSpec, tier, onTierChange, onStatusChange, onLoadSampleData },
   ref
 ) {
-  const { user, balance, openLogin, refreshBalance } = useAuth();
+  const { user, balance, refreshBalance } = useAuth();
   const [input, setInput] = useState("");
   const [csvError, setCsvError] = useState<string | null>(null);
   const datasetsRef = useRef(datasets);
@@ -182,23 +182,11 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
   );
 
   const handleFilesSelected = useCallback(
-    async (files: File[]) => {
-      if (isAuthEnabled() && !user) {
-        openLogin();
-        return;
-      }
+    (files: File[]) => {
       setCsvError(null);
-      for (const file of files) {
-        const result = await parseCSV(file);
-        if (result.errors.length > 0 && result.data.length === 0) {
-          setCsvError("Failed to parse CSV: " + result.errors[0]);
-          continue;
-        }
-        const name = file.name;
-        onCSVParsed(name, result);
-      }
+      onFilesSelected(files);
     },
-    [onCSVParsed, user, openLogin]
+    [onFilesSelected]
   );
 
   const totalRows = Object.values(datasets).reduce((sum, d) => sum + d.metadata.rowCount, 0);
@@ -223,7 +211,7 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
         <input
           ref={headerFileInputRef}
           type="file"
-          accept=".csv"
+          accept=".csv,.tsv,.xls,.xlsx"
           multiple
           onChange={handleHeaderFileChange}
           className="hidden"
@@ -280,7 +268,7 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
                     className="w-full justify-start text-muted-foreground hover:text-foreground"
                   >
                     <Plus className="h-3.5 w-3.5" />
-                    Add CSV
+                    Add data
                   </Button>
                 </div>
               </PopoverContent>
@@ -296,7 +284,7 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
             className="text-xs"
           >
             <Plus className="h-3.5 w-3.5" />
-            Add CSV
+            Add data
           </Button>
         )}
       </div>
