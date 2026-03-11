@@ -34,8 +34,8 @@ function getSubSpecs(spec: Record<string, unknown>): Array<Record<string, unknow
   return subs;
 }
 
-/** Collect all field references from encoding channels (including nested compositions) */
-function collectEncodingFields(spec: Record<string, unknown>): string[] {
+/** Collect field references from this spec's own encoding channels only (no recursion) */
+function getOwnEncodingFields(spec: Record<string, unknown>): string[] {
   const fields: string[] = [];
   const enc = spec.encoding as Record<string, Record<string, unknown>> | undefined;
   if (enc) {
@@ -45,6 +45,12 @@ function collectEncodingFields(spec: Record<string, unknown>): string[] {
       }
     }
   }
+  return fields;
+}
+
+/** Collect all field references from encoding channels (including nested compositions) */
+function collectEncodingFields(spec: Record<string, unknown>): string[] {
+  const fields = getOwnEncodingFields(spec);
   for (const sub of getSubSpecs(spec)) {
     fields.push(...collectEncodingFields(sub));
   }
@@ -101,59 +107,8 @@ function lintTransformOrder(
       }
     }
 
-    // Now update available fields (mirrors buildAvailableFields logic)
-    if (Array.isArray(t.aggregate)) {
-      const groupby = (t.groupby as string[]) ?? [];
-      const survivors = new Set(groupby);
-      for (const agg of t.aggregate as Array<Record<string, unknown>>) {
-        if (typeof agg.as === "string") survivors.add(agg.as);
-      }
-      available.clear();
-      for (const f of survivors) available.add(f);
-    }
-    if (t.lookup && t.from && typeof t.from === "object") {
-      const from = t.from as Record<string, unknown>;
-      const fields = from.fields as string[] | undefined;
-      const topFields = t.fields as string[] | undefined;
-      for (const f of fields ?? topFields ?? []) available.add(f);
-    }
-    if (typeof t.calculate === "string" && typeof t.as === "string") {
-      available.add(t.as);
-    }
-    if (Array.isArray(t.fold)) {
-      const foldAs = (t.as as string[]) ?? ["key", "value"];
-      for (const f of foldAs) available.add(f);
-    }
-    if (Array.isArray(t.flatten)) {
-      const flatAs = t.as as string[] | undefined;
-      for (let i = 0; i < (t.flatten as string[]).length; i++) {
-        available.add(flatAs?.[i] ?? (t.flatten as string[])[i]);
-      }
-    }
-    if (Array.isArray(t.joinaggregate)) {
-      for (const agg of t.joinaggregate as Array<Record<string, unknown>>) {
-        if (typeof agg.as === "string") available.add(agg.as);
-      }
-    }
-    if (Array.isArray(t.window)) {
-      for (const w of t.window as Array<Record<string, unknown>>) {
-        if (typeof w.as === "string") available.add(w.as);
-      }
-    }
-    if (t.bin !== undefined && typeof t.field === "string") {
-      if (typeof t.as === "string") {
-        available.add(t.as);
-      } else if (Array.isArray(t.as)) {
-        for (const a of t.as as string[]) available.add(a);
-      }
-    }
-    if (typeof t.timeUnit === "string" && typeof t.field === "string") {
-      if (typeof t.as === "string") {
-        available.add(t.as);
-      } else {
-        available.add(`${t.timeUnit}_${t.field}`);
-      }
-    }
+    // Update available fields after this transform
+    applyTransformFields(available, t);
   }
 
   // Recurse into sub-specs
@@ -251,6 +206,75 @@ function getColumns(datasets: Record<string, Record<string, unknown>[]>, key: st
   return new Set(Object.keys(rows[0]));
 }
 
+/** Apply a single transform's field effects to the available set (mutates in place) */
+function applyTransformFields(available: Set<string>, t: Record<string, unknown>): void {
+  // Aggregate: destructive — only groupby fields and as aliases survive
+  if (Array.isArray(t.aggregate)) {
+    const groupby = (t.groupby as string[]) ?? [];
+    const survivors = new Set(groupby);
+    for (const agg of t.aggregate as Array<Record<string, unknown>>) {
+      if (typeof agg.as === "string") survivors.add(agg.as);
+    }
+    available.clear();
+    for (const f of survivors) available.add(f);
+  }
+  // Lookup: adds from.fields
+  if (t.lookup && t.from && typeof t.from === "object") {
+    const from = t.from as Record<string, unknown>;
+    const fields = from.fields as string[] | undefined;
+    const topFields = t.fields as string[] | undefined;
+    for (const f of fields ?? topFields ?? []) available.add(f);
+  }
+  // Calculate: adds as
+  if (typeof t.calculate === "string" && typeof t.as === "string") {
+    available.add(t.as);
+  }
+  // Fold: adds as values (defaults to ["key", "value"])
+  if (Array.isArray(t.fold)) {
+    const foldAs = (t.as as string[]) ?? ["key", "value"];
+    for (const f of foldAs) available.add(f);
+  }
+  // Flatten: adds as values or the flattened field names
+  if (Array.isArray(t.flatten)) {
+    const flatAs = t.as as string[] | undefined;
+    for (let i = 0; i < (t.flatten as string[]).length; i++) {
+      available.add(flatAs?.[i] ?? (t.flatten as string[])[i]);
+    }
+  }
+  // JoinAggregate: non-destructive — adds as aliases while keeping all fields
+  if (Array.isArray(t.joinaggregate)) {
+    for (const agg of t.joinaggregate as Array<Record<string, unknown>>) {
+      if (typeof agg.as === "string") available.add(agg.as);
+    }
+  }
+  // Window: adds as aliases
+  if (Array.isArray(t.window)) {
+    for (const w of t.window as Array<Record<string, unknown>>) {
+      if (typeof w.as === "string") available.add(w.as);
+    }
+  }
+  // Regression/Loess: adds as values
+  if ((typeof t.regression === "string" || typeof t.loess === "string") && Array.isArray(t.as)) {
+    for (const a of t.as as string[]) available.add(a);
+  }
+  // Bin: adds as or bin_<field> variants
+  if (t.bin !== undefined && typeof t.field === "string") {
+    if (typeof t.as === "string") {
+      available.add(t.as);
+    } else if (Array.isArray(t.as)) {
+      for (const a of t.as as string[]) available.add(a);
+    }
+  }
+  // TimeUnit: adds as or <timeUnit>_<field>
+  if (typeof t.timeUnit === "string" && typeof t.field === "string") {
+    if (typeof t.as === "string") {
+      available.add(t.as);
+    } else {
+      available.add(`${t.timeUnit}_${t.field}`);
+    }
+  }
+}
+
 /**
  * Build the set of fields available after walking transforms sequentially.
  * Aggregate is destructive — it replaces available fields with groupby + as aliases.
@@ -261,80 +285,7 @@ function buildAvailableFields(
 ): Set<string> {
   const available = new Set(baseColumns);
   if (!Array.isArray(transforms)) return available;
-
-  for (const t of transforms) {
-    // Aggregate: destructive — only groupby fields and as aliases survive
-    if (Array.isArray(t.aggregate)) {
-      const groupby = (t.groupby as string[]) ?? [];
-      const survivors = new Set(groupby);
-      for (const agg of t.aggregate as Array<Record<string, unknown>>) {
-        if (typeof agg.as === "string") survivors.add(agg.as);
-      }
-      available.clear();
-      for (const f of survivors) available.add(f);
-    }
-
-    // Lookup: adds from.fields
-    if (t.lookup && t.from && typeof t.from === "object") {
-      const from = t.from as Record<string, unknown>;
-      const fields = from.fields as string[] | undefined;
-      // Also check top-level fields (common mistake that injectData fixes)
-      const topFields = t.fields as string[] | undefined;
-      for (const f of fields ?? topFields ?? []) available.add(f);
-    }
-
-    // Calculate: adds as
-    if (typeof t.calculate === "string" && typeof t.as === "string") {
-      available.add(t.as);
-    }
-
-    // Fold: adds as values (defaults to ["key", "value"])
-    if (Array.isArray(t.fold)) {
-      const foldAs = (t.as as string[]) ?? ["key", "value"];
-      for (const f of foldAs) available.add(f);
-    }
-
-    // Flatten: adds as values or the flattened field names
-    if (Array.isArray(t.flatten)) {
-      const flatAs = t.as as string[] | undefined;
-      for (let i = 0; i < (t.flatten as string[]).length; i++) {
-        available.add(flatAs?.[i] ?? (t.flatten as string[])[i]);
-      }
-    }
-
-    // JoinAggregate: non-destructive — adds as aliases while keeping all fields
-    if (Array.isArray(t.joinaggregate)) {
-      for (const agg of t.joinaggregate as Array<Record<string, unknown>>) {
-        if (typeof agg.as === "string") available.add(agg.as);
-      }
-    }
-
-    // Window: adds as aliases
-    if (Array.isArray(t.window)) {
-      for (const w of t.window as Array<Record<string, unknown>>) {
-        if (typeof w.as === "string") available.add(w.as);
-      }
-    }
-
-    // Bin: adds as or bin_<field> variants
-    if (t.bin !== undefined && typeof t.field === "string") {
-      if (typeof t.as === "string") {
-        available.add(t.as);
-      } else if (Array.isArray(t.as)) {
-        for (const a of t.as as string[]) available.add(a);
-      }
-    }
-
-    // TimeUnit: adds as or <timeUnit>_<field>
-    if (typeof t.timeUnit === "string" && typeof t.field === "string") {
-      if (typeof t.as === "string") {
-        available.add(t.as);
-      } else {
-        available.add(`${t.timeUnit}_${t.field}`);
-      }
-    }
-  }
-
+  for (const t of transforms) applyTransformFields(available, t);
   return available;
 }
 
@@ -492,11 +443,28 @@ function lintSpecPatterns(
     const primaryKey = getPrimaryDatasetKey(spec, datasets);
     const rows = primaryKey ? datasets[primaryKey] : undefined;
 
+    // Collect fields referenced by filter transforms (already handled by user)
+    const filteredFields = new Set<string>();
+    const transforms = spec.transform as Array<Record<string, unknown>> | undefined;
+    if (Array.isArray(transforms)) {
+      for (const t of transforms) {
+        if (typeof t.filter === "string") {
+          for (const ref of extractDatumRefs(t.filter)) filteredFields.add(ref);
+        } else if (t.filter && typeof t.filter === "object") {
+          const pred = t.filter as Record<string, unknown>;
+          if (typeof pred.field === "string") filteredFields.add(pred.field);
+        }
+      }
+    }
+
     for (const [channel, chSpec] of Object.entries(enc)) {
       if (!chSpec || typeof chSpec !== "object") continue;
       const chType = (chSpec as Record<string, unknown>).type;
       const chField = (chSpec as Record<string, unknown>).field;
       if (typeof chField !== "string") continue;
+
+      // Skip cardinality check if the field is already being filtered
+      if (filteredFields.has(chField)) continue;
 
       // Count unique values for this field in the dataset
       let uniqueCount: number | null = null;
@@ -563,41 +531,68 @@ function hasWindowAfterAggregate(transforms: Array<Record<string, unknown>> | un
   return false;
 }
 
-/** Check that every encoding field is available in the primary dataset or created by transforms */
+/** Check that every encoding field is available in the primary dataset or created by transforms.
+ *  Recurses into sub-specs (layers, concat panels) so each level is checked against its own available fields. */
 function lintFieldReferences(
   spec: Record<string, unknown>,
-  datasets: Record<string, Record<string, unknown>[]>
+  datasets: Record<string, Record<string, unknown>[]>,
+  inherited?: { available: Set<string>; primaryKey: string; primaryColumns: Set<string> }
 ): string[] {
   const warnings: string[] = [];
 
-  const primaryKey = getPrimaryDatasetKey(spec, datasets);
-  if (!primaryKey) return warnings;
+  let primaryKey: string;
+  let primaryColumns: Set<string>;
+  let baseAvailable: Set<string>;
 
-  const primaryColumns = getColumns(datasets, primaryKey);
-  if (primaryColumns.size === 0) return warnings;
+  // Sub-specs with their own data are checked independently
+  const subData = spec.data as Record<string, unknown> | undefined;
+  if (inherited && !(subData && typeof subData.url === "string" && datasets[subData.url])) {
+    // Inherit parent's available fields (e.g., layer inheriting top-level transforms)
+    primaryKey = inherited.primaryKey;
+    primaryColumns = inherited.primaryColumns;
+    baseAvailable = inherited.available;
+  } else {
+    // Root call or sub-spec with its own data
+    const pk = getPrimaryDatasetKey(spec, datasets);
+    if (!pk) return warnings;
+    primaryKey = pk;
+    primaryColumns = getColumns(datasets, primaryKey);
+    if (primaryColumns.size === 0) return warnings;
+    baseAvailable = new Set(primaryColumns);
+  }
 
   const transforms = spec.transform as Array<Record<string, unknown>> | undefined;
-  const available = buildAvailableFields(primaryColumns, transforms);
+  const available = buildAvailableFields(baseAvailable, transforms);
   const aggregateGroupby = findAggregateGroupby(transforms);
 
-  const encFields = collectEncodingFields(spec);
+  // Only check THIS spec's own encoding fields (sub-specs are checked recursively)
+  const ownFields = getOwnEncodingFields(spec);
 
-  for (const field of encFields) {
+  for (const field of ownFields) {
     if (available.has(field)) continue;
 
     // Check if the field exists in the original dataset but was dropped by aggregate
-    if (aggregateGroupby !== null && primaryColumns.has(field)) {
-      if (hasWindowAfterAggregate(transforms)) {
-        warnings.push(
-          `Field "${field}" exists in the dataset but is not available after the aggregate transform. ` +
-          `This looks like a top-N ranking pattern (aggregate → window → filter). ` +
-          `Use "joinaggregate" instead of "aggregate" to preserve all original rows ` +
-          `while adding the computed field for ranking.`
-        );
+    if (primaryColumns.has(field)) {
+      if (aggregateGroupby !== null) {
+        // This spec's own aggregate dropped the field
+        if (hasWindowAfterAggregate(transforms)) {
+          warnings.push(
+            `Field "${field}" exists in the dataset but is not available after the aggregate transform. ` +
+            `This looks like a top-N ranking pattern (aggregate → window → filter). ` +
+            `Use "joinaggregate" instead of "aggregate" to preserve all original rows ` +
+            `while adding the computed field for ranking.`
+          );
+        } else {
+          warnings.push(
+            `Field "${field}" exists in the dataset but is not available after the aggregate transform. ` +
+            `Add "${field}" to the aggregate's "groupby" array to preserve it.`
+          );
+        }
       } else {
+        // Field is in dataset but not available — likely dropped by a parent aggregate
         warnings.push(
-          `Field "${field}" exists in the dataset but is not available after the aggregate transform. ` +
-          `Add "${field}" to the aggregate's "groupby" array to preserve it.`
+          `Field "${field}" exists in the dataset but is not available — likely dropped by an aggregate transform. ` +
+          `Use "joinaggregate" instead of "aggregate" to preserve all rows, or add "${field}" to "groupby".`
         );
       }
       continue;
@@ -629,6 +624,15 @@ function lintFieldReferences(
         `Field "${field}" not found in any loaded dataset or transform alias.`
       );
     }
+  }
+
+  // Recurse into sub-specs, passing current available fields for inheritance
+  for (const sub of getSubSpecs(spec)) {
+    warnings.push(...lintFieldReferences(sub, datasets, {
+      available,
+      primaryKey,
+      primaryColumns,
+    }));
   }
 
   return warnings;

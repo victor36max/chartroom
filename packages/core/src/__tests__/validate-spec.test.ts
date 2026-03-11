@@ -424,6 +424,74 @@ describe("validateSpec", () => {
       }
     });
 
+    it("no cardinality warning when field is filtered (string expression)", () => {
+      const manyEntities = Array.from({ length: 50 }, (_, i) => ({
+        entity: `entity_${i}`,
+        value: i * 10,
+      }));
+      const spec = {
+        mark: "line",
+        transform: [
+          { filter: "datum['entity'] == 'entity_0' || datum['entity'] == 'entity_1'" },
+        ],
+        encoding: {
+          x: { field: "value", type: "quantitative" },
+          y: { field: "value", type: "quantitative" },
+          color: { field: "entity", type: "nominal" },
+        },
+      };
+      const result = validateSpec(spec, { csv: manyEntities });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("entity") && w.includes("unique values"))).toBe(false);
+      }
+    });
+
+    it("no cardinality warning when field is filtered (predicate object)", () => {
+      const manyEntities = Array.from({ length: 50 }, (_, i) => ({
+        entity: `entity_${i}`,
+        value: i * 10,
+      }));
+      const spec = {
+        mark: "bar",
+        transform: [
+          { filter: { field: "entity", oneOf: ["entity_0", "entity_1", "entity_2"] } },
+        ],
+        encoding: {
+          x: { field: "entity", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: manyEntities });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("entity") && w.includes("unique values"))).toBe(false);
+      }
+    });
+
+    it("still warns on high cardinality when a different field is filtered", () => {
+      const manyEntities = Array.from({ length: 25 }, (_, i) => ({
+        entity: `entity_${i}`,
+        group: i < 10 ? "A" : "B",
+        value: i * 10,
+      }));
+      const spec = {
+        mark: "bar",
+        transform: [
+          { filter: "datum.group == 'A'" },
+        ],
+        encoding: {
+          x: { field: "entity", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: manyEntities });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("entity") && w.includes("25 unique values"))).toBe(true);
+      }
+    });
+
     it("warns when color encoding has more than 20 nominal values", () => {
       const manyCategories = Array.from({ length: 25 }, (_, i) => ({
         cat: `cat_${i}`,
@@ -502,6 +570,58 @@ describe("validateSpec", () => {
       expect(result.valid).toBe(true);
       if (result.valid) {
         expect(result.warnings.some(w => w.includes("missing"))).toBe(true);
+      }
+    });
+  });
+
+  describe("layer-level transform field references", () => {
+    it("no false warning when layer has its own transform creating a field", () => {
+      const spec = {
+        layer: [
+          { mark: "point", encoding: { x: { field: "category", type: "nominal" }, y: { field: "value", type: "quantitative" } } },
+          {
+            mark: { type: "line", color: "red" },
+            transform: [{ regression: "value", on: "category", as: ["category", "trend"] }],
+            encoding: { x: { field: "category", type: "nominal" }, y: { field: "trend", type: "quantitative" } },
+          },
+        ],
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("trend") && w.includes("not found"))).toBe(false);
+      }
+    });
+
+    it("no false warning when layer has its own calculate transform", () => {
+      const spec = {
+        layer: [
+          { mark: "bar", encoding: { x: { field: "category", type: "nominal" }, y: { field: "value", type: "quantitative" } } },
+          {
+            mark: { type: "text", dy: -8 },
+            transform: [{ calculate: "datum.value * 2", as: "doubled" }],
+            encoding: { x: { field: "category", type: "nominal" }, y: { field: "value", type: "quantitative" }, text: { field: "doubled", type: "quantitative" } },
+          },
+        ],
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("doubled") && w.includes("not found"))).toBe(false);
+      }
+    });
+
+    it("still warns when layer references truly unknown field", () => {
+      const spec = {
+        layer: [
+          { mark: "bar", encoding: { x: { field: "category", type: "nominal" }, y: { field: "value", type: "quantitative" } } },
+          { mark: "rule", encoding: { y: { field: "nonexistent", type: "quantitative" } } },
+        ],
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("nonexistent") && w.includes("not found"))).toBe(true);
       }
     });
   });
