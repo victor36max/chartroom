@@ -20,9 +20,10 @@ import { Select, SelectContent, SelectTrigger, SelectValue } from "@/components/
 import { Select as SelectPrimitive } from "radix-ui";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
-import { X, Plus, Settings } from "lucide-react";
+import { X, Plus, Settings, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { isAuthEnabled } from "@/lib/utils";
+import { TopupDialog } from "@/components/auth/topup-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { useBalance } from "@/hooks/use-balance";
 
@@ -51,6 +52,7 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
   const { balance, refetch: refreshBalance } = useBalance();
   const [input, setInput] = useState("");
   const [csvError, setCsvError] = useState<string | null>(null);
+  const [topupOpen, setTopupOpen] = useState(false);
   const datasetsRef = useRef(datasets);
   useEffect(() => {
     datasetsRef.current = datasets;
@@ -340,9 +342,16 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
         <p className="px-3 py-1 text-xs text-destructive border-t">{csvError}</p>
       )}
       {isAuthEnabled() && user && balance !== null && balance <= 0 && (
-        <p className="px-3 py-1 text-xs text-muted-foreground border-t">
-          No credits remaining. Add credits to continue.
-        </p>
+        <>
+          <div className="mx-3 my-2 flex items-center gap-2 rounded-md border px-3 py-2 text-sm text-muted-foreground">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span className="flex-1">No credits remaining.</span>
+            <Button size="sm" className="shrink-0 text-xs h-7" onClick={() => setTopupOpen(true)}>
+              Add credits
+            </Button>
+          </div>
+          <TopupDialog open={topupOpen} onOpenChange={setTopupOpen} />
+        </>
       )}
       <MessageInput
         input={input}
