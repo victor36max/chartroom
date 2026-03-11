@@ -94,7 +94,7 @@ npx @chartroom/mcp
   "mcpServers": {
     "chartroom": {
       "command": "npx",
-      "args": ["@chartroom/mcp"]
+      "args": ["@chartroom/mcp@latest"]
     }
   }
 }
