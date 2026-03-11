@@ -5,6 +5,7 @@ Verify these items BEFORE every `render_chart` call.
 
 ### Correctness (SHOULD — verify before every render)
 1. **Type matching** — prefer matching encoding types to data: categories -> nominal/ordinal, numbers -> quantitative, dates -> temporal. Vega-Lite can coerce, but explicit types prevent surprises.
+   - **Integer year columns** — if a column contains plain years (1990, 2020, …), prefer `"quantitative"` over `"temporal"`. Reserve `"temporal"` for actual date/datetime strings. This avoids unnecessary `timeUnit` wrappers and wrong axis labels.
    - **Date filtering** — when filtering temporal fields by range, use DateTime objects `{"year": 2024, "month": 6, "date": 1}`, NOT string dates. Or use `timeUnit` shorthand for whole-year/month filters. See `filter` docs.
 2. **Scatterplot aggregation** — for scatterplots with grouped data (e.g., many rows per stock symbol), use `transform` with explicit `groupby` — inline aggregate alone collapses everything to a single point.
    - **Large dataset scatter** — if dataset has >500 rows, a naive scatter will overplot. Either: aggregate by group first, use small opacity (0.2–0.3), bin into heatmap (`rect` mark), or explain the density issue to the user.
@@ -26,7 +27,7 @@ Verify these items BEFORE every `render_chart` call.
 10. **Text labels on charts** — when the user requests labels (on scatter plots, bars, etc.), use `layer` with a `text` mark. For scatter labels, use `dx`/`dy` offsets to avoid overlapping points.
    - **Transform field names** — in `window`, `regression`, `joinaggregate`, and `calculate` transforms, always use actual column names from the dataset (not abstract names like "x" or "y").
    - **Legend for layered lines** — when overlaying lines with different meanings (e.g., raw + smoothed), use `fold` to reshape both fields into one column, then encode `color` by the fold key. This produces an automatic legend. Do NOT use a top-level conditional `color` or hard-coded per-layer colors without a legend. See `composite-patterns` docs for the moving average overlay example.
-11. **Top/bottom N filtering** — use aggregate → window (rank) → filter transforms. Look up `filter` docs for the pattern.
+11. **Top/bottom N filtering** — use aggregate → window (dense_rank) → filter transforms. Always use `dense_rank` not `rank` (rank skips numbers on ties). For detail-row charts (line/area over time), use `joinaggregate` instead of `aggregate`. Look up `filter` docs for the pattern.
 
 ### Style (PREFER — unless user asks otherwise)
 12. **Stacked vs grouped** — stacking is default when color is added to bars/areas. Only use `xOffset` for explicitly grouped/side-by-side requests.

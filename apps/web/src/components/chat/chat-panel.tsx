@@ -14,11 +14,13 @@ import { captureChart } from "@/components/chart/chart-capture";
 import { validateSpec } from "@/lib/chart/validate-spec";
 import type { DatasetMap, ChartSpec } from "@/types";
 import { getModelTierLabels, type ModelTier } from "@/lib/agent/models";
+import type { ModelOverrides } from "@/hooks/use-model-overrides";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Select as SelectPrimitive } from "radix-ui";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { X, Plus } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { X, Plus, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { isAuthEnabled } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -35,12 +37,14 @@ interface ChatPanelProps {
   onChartSpec: (spec: ChartSpec) => void;
   tier: ModelTier;
   onTierChange: (tier: ModelTier) => void;
+  modelOverrides?: ModelOverrides;
+  onOpenModelSettings?: () => void;
   onStatusChange?: (status: string) => void;
   onLoadSampleData?: () => void;
 }
 
 export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function ChatPanel(
-  { datasets, onDatasetRemoved, onFilesSelected, onChartSpec, tier, onTierChange, onStatusChange, onLoadSampleData },
+  { datasets, onDatasetRemoved, onFilesSelected, onChartSpec, tier, onTierChange, modelOverrides = {}, onOpenModelSettings, onStatusChange, onLoadSampleData },
   ref
 ) {
   const { user } = useAuth();
@@ -51,6 +55,10 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
   useEffect(() => {
     datasetsRef.current = datasets;
   }, [datasets]);
+  const overridesRef = useRef(modelOverrides);
+  useEffect(() => {
+    overridesRef.current = modelOverrides;
+  }, [modelOverrides]);
 
   const datasetNames = Object.keys(datasets);
   const hasCSV = datasetNames.length > 0;
@@ -72,8 +80,12 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
       body: () => {
         const ds = datasetsRef.current;
         const dataContext = datasetsToContext(ds);
-        if (!dataContext) return { tier };
-        return { tier, dataContext };
+        const customModelId = overridesRef.current[tier] || undefined;
+        return {
+          tier,
+          ...(customModelId && { modelId: customModelId }),
+          ...(dataContext && { dataContext }),
+        };
       },
     }),
     sendAutomaticallyWhen: (messages) => {
@@ -205,7 +217,18 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
     [handleFilesSelected]
   );
 
-  const modelTierLabels = getModelTierLabels();
+  const baseLabels = getModelTierLabels();
+  const modelTierLabels = Object.fromEntries(
+    (["fast", "mid", "power"] as const).map((t) => [
+      t,
+      {
+        label: baseLabels[t].label,
+        subtitle: modelOverrides[t]
+          ? (modelOverrides[t].includes("/") ? modelOverrides[t].split("/").pop()! : modelOverrides[t])
+          : baseLabels[t].subtitle,
+      },
+    ])
+  ) as Record<ModelTier, { label: string; subtitle: string }>;
 
   return (
     <div className="flex flex-col h-full">
@@ -218,7 +241,13 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
           onChange={handleHeaderFileChange}
           className="hidden"
         />
-        <Select value={tier} onValueChange={(v) => onTierChange(v as ModelTier)}>
+        <Select value={tier} onValueChange={(v) => {
+          if (v === "__settings__") {
+            onOpenModelSettings?.();
+            return;
+          }
+          onTierChange(v as ModelTier);
+        }}>
           <SelectTrigger size="sm" className="w-[120px]">
             <SelectValue />
           </SelectTrigger>
@@ -233,6 +262,22 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
                 <span className="text-muted-foreground text-xs">{modelTierLabels[t].subtitle}</span>
               </SelectPrimitive.Item>
             ))}
+            {onOpenModelSettings && (
+              <>
+                <Separator className="my-1" />
+                <SelectPrimitive.Item
+                  value="__settings__"
+                  className="relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground text-muted-foreground"
+                >
+                  <SelectPrimitive.ItemText>
+                    <span className="flex items-center gap-1.5">
+                      <Settings className="h-3.5 w-3.5" />
+                      Configure
+                    </span>
+                  </SelectPrimitive.ItemText>
+                </SelectPrimitive.Item>
+              </>
+            )}
           </SelectContent>
         </Select>
         {hasCSV ? (

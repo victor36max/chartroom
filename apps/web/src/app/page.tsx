@@ -11,6 +11,8 @@ import { LoginModal } from "@/components/auth/login-modal";
 import { AccountDropdown } from "@/components/auth/account-dropdown";
 import { Button } from "@/components/ui/button";
 import { DEFAULT_TIER, type ModelTier } from "@/lib/agent/models";
+import { useModelOverrides } from "@/hooks/use-model-overrides";
+import { ModelSettingsDialog } from "@/components/chat/model-settings-dialog";
 import {
   parseCSV,
   isExcelFile,
@@ -27,6 +29,8 @@ export default function Home() {
   const [datasets, setDatasets] = useState<DatasetMap>({});
   const [currentChart, setCurrentChart] = useState<ChartSpec | null>(null);
   const [tier, setTier] = useState<ModelTier>(DEFAULT_TIER);
+  const { overrides, setOverride } = useModelOverrides();
+  const [modelSettingsOpen, setModelSettingsOpen] = useState(false);
   const [themeId, setThemeId] = useState<ThemeId>("default");
   const [isAIBusy, setIsAIBusy] = useState(false);
   const [mobileTab, setMobileTab] = useState<"chat" | "chart">("chat");
@@ -150,6 +154,8 @@ export default function Home() {
             onChartSpec={handleChartSpec}
             tier={tier}
             onTierChange={setTier}
+            modelOverrides={overrides}
+            onOpenModelSettings={() => setModelSettingsOpen(true)}
             onStatusChange={handleStatusChange}
             onLoadSampleData={handleLoadSampleData}
           />
@@ -159,6 +165,20 @@ export default function Home() {
         </div>
       </div>
       <BottomTabBar activeTab={mobileTab} onTabChange={setMobileTab} />
+      <ModelSettingsDialog
+        open={modelSettingsOpen}
+        onOpenChange={setModelSettingsOpen}
+        overrides={overrides}
+        onSave={(newOverrides) => {
+          for (const t of ["fast", "mid", "power"] as const) {
+            if (newOverrides[t]) {
+              setOverride(t, newOverrides[t]);
+            } else {
+              setOverride(t, "");
+            }
+          }
+        }}
+      />
       <SheetPickerDialog
         open={sheetPickerOpen}
         onOpenChange={setSheetPickerOpen}

@@ -109,7 +109,7 @@ Interpolation options: linear, monotone, step, step-before, step-after, basis, c
 \`\`\`
 
 **Gotchas:**
-- Use \`type: "temporal"\` for date fields, not "quantitative"
+- Use \`type: "temporal"\` for date-string fields (e.g. "2024-03-15"), not "quantitative". For plain integer year columns (e.g. 1990, 2020), prefer \`"quantitative"\` — no \`timeUnit\` needed and axis labels stay clean.
 - For multi-series, always add \`color\` encoding so lines are separated
 - \`order\` encoding controls point connection order (useful for connected scatter)
 - \`interpolate\` goes in the mark object, not in encoding`,
@@ -1165,6 +1165,7 @@ Add a layer with \`{ "mark": { "type": "text", "dy": -8 }, "encoding": { "text":
 
 ### Correctness (SHOULD — verify before every render)
 1. **Type matching** — prefer matching encoding types to data: categories -> nominal/ordinal, numbers -> quantitative, dates -> temporal. Vega-Lite can coerce, but explicit types prevent surprises.
+   - **Integer year columns** — if a column contains plain years (1990, 2020, …), prefer \`"quantitative"\` over \`"temporal"\`. Reserve \`"temporal"\` for actual date/datetime strings. This avoids unnecessary \`timeUnit\` wrappers and wrong axis labels.
    - **Date filtering** — when filtering temporal fields by range, use DateTime objects \`{"year": 2024, "month": 6, "date": 1}\`, NOT string dates. Or use \`timeUnit\` shorthand for whole-year/month filters. See \`filter\` docs.
 2. **Scatterplot aggregation** — for scatterplots with grouped data (e.g., many rows per stock symbol), use \`transform\` with explicit \`groupby\` — inline aggregate alone collapses everything to a single point.
    - **Large dataset scatter** — if dataset has >500 rows, a naive scatter will overplot. Either: aggregate by group first, use small opacity (0.2–0.3), bin into heatmap (\`rect\` mark), or explain the density issue to the user.

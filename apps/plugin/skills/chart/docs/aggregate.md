@@ -34,6 +34,25 @@ Combos: yearmonth, yearmonthdate, monthdate, hoursminutes
 - Inline aggregate (in encoding) works well for bars/lines — the categorical axis naturally defines the groups.
 - For **scatterplots**, use transform with explicit `groupby` — inline aggregate groups by ALL encoding channels simultaneously, which can collapse data to fewer points than expected (often just one global point).
 
+**`joinaggregate` — non-destructive aggregate:**
+`aggregate` is destructive — it collapses rows, only `groupby` fields and `as` aliases survive. `joinaggregate` adds computed fields while keeping ALL original rows.
+
+Use `joinaggregate` when you need a computed value for ranking/filtering but still need original detail rows (e.g., top-N line charts):
+```json
+{ "transform": [
+  {"joinaggregate": [{"op": "max", "field": "population", "as": "max_pop"}], "groupby": ["country"]},
+  {"window": [{"op": "dense_rank", "as": "rank"}], "sort": [{"field": "max_pop", "order": "descending"}]},
+  {"filter": "datum.rank <= 10"}
+],
+"mark": "line",
+"encoding": { "x": {"field": "year", "type": "quantitative"}, "y": {"field": "population", "type": "quantitative"}, "color": {"field": "country", "type": "nominal"} } }
+```
+If you used `aggregate` here instead, `year` and `population` would be destroyed — the chart would render nothing.
+
+**When to use which:**
+- `aggregate` — the chart only needs the aggregated values (bar chart of totals)
+- `joinaggregate` — the chart needs original rows but also a computed summary for filtering or labeling
+
 **Gotchas:**
 - Prefer inline `aggregate` in encoding over transform for simple bar/line cases
 - For scatter plots with aggregation, ALWAYS use transform + groupby

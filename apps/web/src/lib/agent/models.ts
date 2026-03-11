@@ -18,15 +18,10 @@ const MODEL_TIERS: Record<
   },
 };
 
-function modelSubtitle(tier: ModelTier): string {
-  const id = resolveModelId(tier);
-  return id.includes("/") ? id.split("/").pop()! : id;
-}
-
 export const getModelTierLabels = (): Record<ModelTier, { label: string; subtitle: string }> => ({
-  fast: { label: "Fast", subtitle: modelSubtitle("fast") },
-  mid: { label: "Standard", subtitle: modelSubtitle("mid") },
-  power: { label: "Power", subtitle: modelSubtitle("power") },
+  fast: { label: "Fast", subtitle: resolveModelId("fast") },
+  mid: { label: "Standard", subtitle: resolveModelId("mid") },
+  power: { label: "Power", subtitle: resolveModelId("power") },
 });
 
 export const DEFAULT_TIER: ModelTier = "mid";
@@ -34,4 +29,8 @@ export const DEFAULT_TIER: ModelTier = "mid";
 export function resolveModelId(tier: ModelTier): string {
   const config = MODEL_TIERS[tier];
   return config.modelId;
+}
+
+export function getDefaultModelId(tier: ModelTier): string {
+  return MODEL_TIERS[tier].modelId;
 }

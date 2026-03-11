@@ -103,7 +103,7 @@ export async function POST(req: Request) {
     userId = session.user.id;
   }
 
-  let body: { messages?: unknown; dataContext?: unknown; tier?: unknown };
+  let body: { messages?: unknown; dataContext?: unknown; tier?: unknown; modelId?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -117,6 +117,9 @@ export async function POST(req: Request) {
   const messages = body.messages as UIMessage[];
   const dataContext = typeof body.dataContext === "string" ? body.dataContext : undefined;
   const tier = (body.tier === "fast" || body.tier === "mid" || body.tier === "power" ? body.tier : "mid") as ModelTier;
+  const customModelId = typeof body.modelId === "string" && /^[a-zA-Z0-9][a-zA-Z0-9._:/-]{2,100}$/.test(body.modelId)
+    ? body.modelId
+    : undefined;
 
   // Extract dataset names from dataContext (contains `"url": "name"` patterns)
   const datasetNames: string[] = dataContext
@@ -129,7 +132,7 @@ export async function POST(req: Request) {
   const prunedMessages = pruneOldToolResults(modelMessages);
   const messagesWithImages = injectChartImages(prunedMessages);
 
-  const modelId = resolveModelId(tier);
+  const modelId = customModelId ?? resolveModelId(tier);
 
   let result;
   try {

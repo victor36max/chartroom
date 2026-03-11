@@ -53,7 +53,7 @@ Use DateTime objects — NOT date strings — in range predicates:
   "mark": "bar",
   "transform": [
     {"aggregate": [{"op": "sum", "field": "revenue", "as": "total"}], "groupby": ["product"]},
-    {"window": [{"op": "rank", "as": "rank"}], "sort": [{"field": "total", "order": "descending"}]},
+    {"window": [{"op": "dense_rank", "as": "rank"}], "sort": [{"field": "total", "order": "descending"}]},
     {"filter": "datum.rank <= 5"}
   ],
   "encoding": {
@@ -63,6 +63,27 @@ Use DateTime objects — NOT date strings — in range predicates:
 }
 ```
 For bottom N, change sort order to `"ascending"`.
+**IMPORTANT:** Always use `dense_rank`, not `rank`. With `rank`, tied rows (same sort value) all get rank 1, but the next group jumps to rank N+1 (e.g. 51 if there were 50 tied rows). With `dense_rank`, the next group gets rank 2 — no gaps. Using plain `rank` with `joinaggregate` (where many rows share the same value) will filter down to only 1 group instead of N.
+
+**Top N with detail rows (e.g., line chart of top 10 over time):**
+Use `joinaggregate` instead of `aggregate` to keep all original rows:
+```json
+{
+  "transform": [
+    {"joinaggregate": [{"op": "max", "field": "value", "as": "peak"}], "groupby": ["category"]},
+    {"window": [{"op": "dense_rank", "as": "rank"}], "sort": [{"field": "peak", "order": "descending"}]},
+    {"filter": "datum.rank <= 5"}
+  ],
+  "mark": "line",
+  "encoding": {
+    "x": { "field": "date", "type": "temporal" },
+    "y": { "field": "value", "type": "quantitative" },
+    "color": { "field": "category", "type": "nominal" }
+  }
+}
+```
+⚠️ Using `aggregate` here would destroy the `date` and `value` columns — the chart would render nothing.
+
 **CRITICAL — common mistake:** After aggregate, the original column is GONE. Every subsequent reference must use the `"as"` alias.
 - WRONG: `aggregate "as": "total"` then encoding `"field": "revenue"` ← broken, "revenue" no longer exists
 - WRONG: `aggregate "as": "total"` then window sort `"field": "revenue"` ← broken
