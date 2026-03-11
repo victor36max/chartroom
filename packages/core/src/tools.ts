@@ -9,9 +9,9 @@ export function createTools(datasetNames: string[]) {
   return {
     render_chart: tool({
       description:
-        "Render a chart using Vega-Lite. The chart will be displayed to the user and a screenshot will be returned for you to evaluate. Always use this tool to create or update charts.",
+        "Render a chart using a Vega-Lite v6 specification. The chart will be displayed to the user and a screenshot will be returned for you to evaluate. Always use this tool to create or update charts.",
       inputSchema: z.object({
-        spec: vlSpecSchema.describe("The Vega-Lite chart specification"),
+        spec: vlSpecSchema.describe("The Vega-Lite v6 chart specification"),
       }),
       // No execute — this is a client-side tool in web, overridden in eval
     }),
