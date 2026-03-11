@@ -16,13 +16,14 @@ import CodeMirror from "@uiw/react-codemirror";
 import { json } from "@codemirror/lang-json";
 import { VisualSpecEditor } from "./visual-spec-editor";
 import { TutorialCard } from "./tutorial-card";
-import type { DatasetMap, ChartSpec, ThemeId } from "@/types";
+import type { DatasetMap, ChartSpec, ThemeId, ParsedCSV } from "@/types";
 
 interface ChartPanelProps {
   datasets: DatasetMap;
   chartSpec: ChartSpec | null;
   onChartSpecEdited?: (spec: ChartSpec) => void;
   onFilesSelected?: (files: File[]) => void;
+  onDatasetChanged?: (name: string, data: ParsedCSV) => void;
   themeId: ThemeId;
   onThemeChange?: (themeId: ThemeId) => void;
   isLoading?: boolean;
@@ -44,7 +45,7 @@ const THEME_OPTIONS: { value: ThemeId; label: string }[] = [
 
 const jsonExtensions = [json()];
 
-export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSelected, themeId, onThemeChange, isLoading }: ChartPanelProps) {
+export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSelected, onDatasetChanged, themeId, onThemeChange, isLoading }: ChartPanelProps) {
   const datasetEntries = Object.entries(datasets);
   const hasData = datasetEntries.length > 0;
   const firstDataset = hasData ? datasetEntries[0][1] : null;
@@ -294,7 +295,7 @@ export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSele
                 ))}
               </div>
             )}
-            {datasets[activeDataset] && <DataTable csvData={datasets[activeDataset]} datasetName={activeDataset} />}
+            {datasets[activeDataset] && <DataTable csvData={datasets[activeDataset]} datasetName={activeDataset} onDatasetChanged={onDatasetChanged} />}
           </TabsContent>
         </div>
         {jsonPanelOpen && hasChart && (

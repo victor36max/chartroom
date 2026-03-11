@@ -122,7 +122,6 @@ Accordion-based UI for editing Vega-Lite specs without writing JSON:
 
 - CSV and Excel upload with metadata extraction (column types, samples, unique values, min/max)
 - Multiple dataset support with named datasets
-- 5,000-row in-memory limit
 - Data table preview (first 100 rows)
 
 #### API routes

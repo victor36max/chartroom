@@ -155,7 +155,7 @@ export default function Home() {
           />
         </div>
         <div className={`${mobileTab === "chart" ? "flex" : "hidden"} md:flex flex-1 flex-col overflow-hidden`}>
-          <ChartPanel datasets={datasets} chartSpec={currentChart} onChartSpecEdited={handleChartSpecEdited} onFilesSelected={handleFilesSelected} themeId={themeId} onThemeChange={setThemeId} isLoading={isAIBusy} />
+          <ChartPanel datasets={datasets} chartSpec={currentChart} onChartSpecEdited={handleChartSpecEdited} onFilesSelected={handleFilesSelected} onDatasetChanged={handleCSVParsed} themeId={themeId} onThemeChange={setThemeId} isLoading={isAIBusy} />
         </div>
       </div>
       <BottomTabBar activeTab={mobileTab} onTabChange={setMobileTab} />
