@@ -191,14 +191,13 @@ export function DataTable({ csvData, datasetName, onDatasetChanged }: DataTableP
       </div>
       <div ref={scrollRef} className="flex-1 overflow-auto min-h-0 text-xs">
         <table className="w-full border-collapse" style={{ tableLayout: "fixed" }}>
-          <colgroup>
-            <col style={{ width: 32 }} />
-            {columns.map((col) => (
-              <col key={col} style={{ width: 120 }} />
-            ))}
-          </colgroup>
-          <thead className="sticky top-0 z-10">
-            <tr>
+          <thead className="sticky top-0 z-10" style={{ display: "block" }}>
+            <tr
+              style={{
+                display: "grid",
+                gridTemplateColumns: `32px repeat(${columns.length}, minmax(120px, 1fr))`,
+              }}
+            >
               <th className="px-1 py-2 font-medium text-center bg-muted text-muted-foreground border-b">
                 #
               </th>
@@ -282,7 +281,7 @@ export function DataTable({ csvData, datasetName, onDatasetChanged }: DataTableP
                   className="group/row hover:bg-muted/30"
                   style={{
                     display: "grid",
-                    gridTemplateColumns: `32px repeat(${columns.length}, 120px)`,
+                    gridTemplateColumns: `32px repeat(${columns.length}, minmax(120px, 1fr))`,
                     position: "absolute",
                     top: 0,
                     left: 0,
