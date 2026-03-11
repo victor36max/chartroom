@@ -76,6 +76,23 @@ function lintTransforms(spec: Record<string, unknown>): string[] {
       }
     }
 
+    // Check for rank (not dense_rank) after joinaggregate — causes rank gaps
+    let seenJoinAggregate = false;
+    for (const t of transforms) {
+      if (Array.isArray(t.joinaggregate)) seenJoinAggregate = true;
+      if (seenJoinAggregate && Array.isArray(t.window)) {
+        for (const w of t.window as Array<Record<string, unknown>>) {
+          if (w.op === "rank") {
+            warnings.push(
+              `Window uses "rank" after a joinaggregate. With joinaggregate, many rows share the same sort value, ` +
+              `so "rank" skips numbers (e.g. 1, 1, 1, ..., 51) and top-N filters keep only 1 group. ` +
+              `Use "dense_rank" instead — it assigns consecutive ranks (1, 2, 3) without gaps.`
+            );
+          }
+        }
+      }
+    }
+
     // Check if encoding references original field instead of the alias
     if (aliasMap.size > 0) {
       const encFields = collectEncodingFields(spec);

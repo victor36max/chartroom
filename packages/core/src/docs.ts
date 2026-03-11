@@ -477,7 +477,7 @@ Use \`joinaggregate\` when you need a computed value for ranking/filtering but s
 \`\`\`json
 { "transform": [
   {"joinaggregate": [{"op": "max", "field": "population", "as": "max_pop"}], "groupby": ["country"]},
-  {"window": [{"op": "rank", "as": "rank"}], "sort": [{"field": "max_pop", "order": "descending"}]},
+  {"window": [{"op": "dense_rank", "as": "rank"}], "sort": [{"field": "max_pop", "order": "descending"}]},
   {"filter": "datum.rank <= 10"}
 ],
 "mark": "line",
@@ -614,7 +614,7 @@ Use DateTime objects — NOT date strings — in range predicates:
   "mark": "bar",
   "transform": [
     {"aggregate": [{"op": "sum", "field": "revenue", "as": "total"}], "groupby": ["product"]},
-    {"window": [{"op": "rank", "as": "rank"}], "sort": [{"field": "total", "order": "descending"}]},
+    {"window": [{"op": "dense_rank", "as": "rank"}], "sort": [{"field": "total", "order": "descending"}]},
     {"filter": "datum.rank <= 5"}
   ],
   "encoding": {
@@ -624,6 +624,7 @@ Use DateTime objects — NOT date strings — in range predicates:
 }
 \`\`\`
 For bottom N, change sort order to \`"ascending"\`.
+**IMPORTANT:** Always use \`dense_rank\`, not \`rank\`. With \`rank\`, tied rows (same sort value) all get rank 1, but the next group jumps to rank N+1 (e.g. 51 if there were 50 tied rows). With \`dense_rank\`, the next group gets rank 2 — no gaps. Using plain \`rank\` with \`joinaggregate\` (where many rows share the same value) will filter down to only 1 group instead of N.
 
 **Top N with detail rows (e.g., line chart of top 10 over time):**
 Use \`joinaggregate\` instead of \`aggregate\` to keep all original rows:
@@ -631,7 +632,7 @@ Use \`joinaggregate\` instead of \`aggregate\` to keep all original rows:
 {
   "transform": [
     {"joinaggregate": [{"op": "max", "field": "value", "as": "peak"}], "groupby": ["category"]},
-    {"window": [{"op": "rank", "as": "rank"}], "sort": [{"field": "peak", "order": "descending"}]},
+    {"window": [{"op": "dense_rank", "as": "rank"}], "sort": [{"field": "peak", "order": "descending"}]},
     {"filter": "datum.rank <= 5"}
   ],
   "mark": "line",
@@ -1185,7 +1186,7 @@ Add a layer with \`{ "mark": { "type": "text", "dy": -8 }, "encoding": { "text":
 10. **Text labels on charts** — when the user requests labels (on scatter plots, bars, etc.), use \`layer\` with a \`text\` mark. For scatter labels, use \`dx\`/\`dy\` offsets to avoid overlapping points.
    - **Transform field names** — in \`window\`, \`regression\`, \`joinaggregate\`, and \`calculate\` transforms, always use actual column names from the dataset (not abstract names like "x" or "y").
    - **Legend for layered lines** — when overlaying lines with different meanings (e.g., raw + smoothed), use \`fold\` to reshape both fields into one column, then encode \`color\` by the fold key. This produces an automatic legend. Do NOT use a top-level conditional \`color\` or hard-coded per-layer colors without a legend. See \`composite-patterns\` docs for the moving average overlay example.
-11. **Top/bottom N filtering** — use aggregate → window (rank) → filter transforms. Look up \`filter\` docs for the pattern.
+11. **Top/bottom N filtering** — use aggregate → window (dense_rank) → filter transforms. Always use \`dense_rank\` not \`rank\` (rank skips numbers on ties). For detail-row charts (line/area over time), use \`joinaggregate\` instead of \`aggregate\`. Look up \`filter\` docs for the pattern.
 
 ### Style (PREFER — unless user asks otherwise)
 12. **Stacked vs grouped** — stacking is default when color is added to bars/areas. Only use \`xOffset\` for explicitly grouped/side-by-side requests.

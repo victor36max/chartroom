@@ -697,6 +697,50 @@ describe("validateSpec", () => {
       }
     });
 
+    it("warns when rank is used after joinaggregate instead of dense_rank", () => {
+      const spec = {
+        mark: "line",
+        transform: [
+          { joinaggregate: [{ op: "max", field: "Population", as: "max_pop" }], groupby: ["Entity"] },
+          { window: [{ op: "rank", as: "rank" }], sort: [{ field: "max_pop", order: "descending" }] },
+          { filter: "datum.rank <= 2" },
+        ],
+        encoding: {
+          x: { field: "Year", type: "quantitative", axis: { format: "d" } },
+          y: { field: "Population", type: "quantitative" },
+          color: { field: "Entity", type: "nominal" },
+        },
+      };
+      const result = validateSpec(spec, { csv: POP_ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w =>
+          w.includes("dense_rank") && w.includes("rank")
+        )).toBe(true);
+      }
+    });
+
+    it("no warning when dense_rank is used after joinaggregate", () => {
+      const spec = {
+        mark: "line",
+        transform: [
+          { joinaggregate: [{ op: "max", field: "Population", as: "max_pop" }], groupby: ["Entity"] },
+          { window: [{ op: "dense_rank", as: "rank" }], sort: [{ field: "max_pop", order: "descending" }] },
+          { filter: "datum.rank <= 2" },
+        ],
+        encoding: {
+          x: { field: "Year", type: "quantitative", axis: { format: "d" } },
+          y: { field: "Population", type: "quantitative" },
+          color: { field: "Entity", type: "nominal" },
+        },
+      };
+      const result = validateSpec(spec, { csv: POP_ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("dense_rank"))).toBe(false);
+      }
+    });
+
     it("still suggests groupby when aggregate has no subsequent window", () => {
       const spec = {
         mark: "bar",
