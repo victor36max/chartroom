@@ -39,16 +39,6 @@ export async function deductBalance(params: {
   outputTokens: number;
 }) {
   return await getDb().transaction(async (tx) => {
-    const [row] = await tx
-      .select({ balanceUsd: profiles.balanceUsd })
-      .from(profiles)
-      .where(eq(profiles.id, params.userId))
-      .for("update");
-
-    if (!row || parseFloat(row.balanceUsd) < params.amount) {
-      throw new Error("Insufficient balance");
-    }
-
     const [updated] = await tx
       .update(profiles)
       .set({

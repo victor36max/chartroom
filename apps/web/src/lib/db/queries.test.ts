@@ -86,22 +86,20 @@ describe("deductBalance", () => {
     expect(balance).toBe(7);
   });
 
-  it("throws on insufficient balance", async () => {
+  it("allows balance to go negative", async () => {
     await createProfile(USER_ID, 1);
-    await expect(
-      deductBalance({
-        userId: USER_ID,
-        amount: 5,
-        modelId: "test-model",
-        tier: "fast",
-        inputTokens: 100,
-        outputTokens: 50,
-      })
-    ).rejects.toThrow("Insufficient balance");
+    const remaining = await deductBalance({
+      userId: USER_ID,
+      amount: 5,
+      modelId: "test-model",
+      tier: "fast",
+      inputTokens: 100,
+      outputTokens: 50,
+    });
 
-    // Balance unchanged
+    expect(remaining).toBe(-4);
     const balance = await getBalance(USER_ID);
-    expect(balance).toBe(1);
+    expect(balance).toBe(-4);
   });
 
   it("deducts exact balance to zero", async () => {
