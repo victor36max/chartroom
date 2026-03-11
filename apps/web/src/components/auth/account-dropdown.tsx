@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useAuth } from "./auth-provider";
+import { useAuth } from "@/hooks/use-auth";
+import { useBalance } from "@/hooks/use-balance";
 import { TopupDialog } from "./topup-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,8 @@ import {
 import { LogOut, CreditCard, Zap } from "lucide-react";
 
 export function AccountDropdown() {
-  const { user, balance, signOut } = useAuth();
+  const { user, signOut } = useAuth();
+  const { balance } = useBalance();
   const [topupOpen, setTopupOpen] = useState(false);
 
   if (!user) return null;

@@ -5,7 +5,8 @@ import { ChatPanel, type ChatPanelHandle } from "@/components/chat/chat-panel";
 import { ChartPanel } from "@/components/chart/chart-panel";
 import { BottomTabBar } from "@/components/layout/bottom-tab-bar";
 import { isAuthEnabled } from "@/lib/utils";
-import { useAuth } from "@/components/auth/auth-provider";
+import { useAuth } from "@/hooks/use-auth";
+import { useAuthUI } from "@/components/auth/auth-ui-provider";
 import { LoginModal } from "@/components/auth/login-modal";
 import { AccountDropdown } from "@/components/auth/account-dropdown";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,8 @@ import { SheetPickerDialog } from "@/components/data/sheet-picker-dialog";
 import type { ParsedCSV, DatasetMap, ChartSpec, ThemeId } from "@/types";
 
 export default function Home() {
-  const { user, isLoading: authLoading, openLogin } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const { openLogin } = useAuthUI();
   const [datasets, setDatasets] = useState<DatasetMap>({});
   const [currentChart, setCurrentChart] = useState<ChartSpec | null>(null);
   const [tier, setTier] = useState<ModelTier>(DEFAULT_TIER);

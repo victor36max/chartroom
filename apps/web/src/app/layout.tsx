@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans } from "next/font/google";
-import { AuthProvider } from "@/components/auth/auth-provider";
+import { Providers } from "@/components/providers";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -80,7 +80,7 @@ export default function RootLayout({
             }),
           }}
         />
-        <AuthProvider>{children}</AuthProvider>
+        <Providers>{children}</Providers>
         <Toaster />
       </body>
     </html>

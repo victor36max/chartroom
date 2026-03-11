@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -24,29 +25,22 @@ interface TopupDialogProps {
 }
 
 export function TopupDialog({ open, onOpenChange }: TopupDialogProps) {
-  const [loading, setLoading] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState("");
 
-  const handleTopup = async (cents: number) => {
-    setLoading(cents);
-    try {
+  const { mutate, isPending, variables } = useMutation({
+    mutationFn: async (cents: number) => {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount: cents }),
       });
       const data = await res.json();
-      if (data.url) {
-        window.location.assign(data.url);
-      } else {
-        toast.error(data.error ?? "Failed to start checkout");
-        setLoading(null);
-      }
-    } catch {
-      toast.error("Network error — please try again");
-      setLoading(null);
-    }
-  };
+      if (!data.url) throw new Error(data.error ?? "Failed to start checkout");
+      return data.url as string;
+    },
+    onSuccess: (url) => window.location.assign(url),
+    onError: (err) => toast.error(err.message),
+  });
 
   const handleCustomTopup = () => {
     const dollars = parseInt(customAmount, 10);
@@ -58,7 +52,7 @@ export function TopupDialog({ open, onOpenChange }: TopupDialogProps) {
       toast.error("Maximum amount is $500");
       return;
     }
-    handleTopup(dollars * 100);
+    mutate(dollars * 100);
   };
 
   return (
@@ -73,10 +67,10 @@ export function TopupDialog({ open, onOpenChange }: TopupDialogProps) {
               key={cents}
               variant="outline"
               className="flex-1 text-base font-medium py-5"
-              disabled={loading !== null}
-              onClick={() => handleTopup(cents)}
+              disabled={isPending}
+              onClick={() => mutate(cents)}
             >
-              {loading === cents ? "Redirecting..." : label}
+              {isPending && variables === cents ? "Redirecting..." : label}
             </Button>
           ))}
         </div>
@@ -99,15 +93,15 @@ export function TopupDialog({ open, onOpenChange }: TopupDialogProps) {
                 onChange={(e) => setCustomAmount(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleCustomTopup()}
                 className="pl-7 text-base"
-                disabled={loading !== null}
+                disabled={isPending}
               />
             </div>
             <Button
               onClick={handleCustomTopup}
-              disabled={loading !== null || !customAmount}
+              disabled={isPending || !customAmount}
               className="text-base"
             >
-              {loading === parseInt(customAmount, 10) * 100
+              {isPending && variables === parseInt(customAmount, 10) * 100
                 ? "Redirecting..."
                 : "Add"}
             </Button>

@@ -31,6 +31,10 @@ Always run `bun run lint`, `bun run build`, and `bun run test` to verify changes
 
 Always use shadcn/ui components instead of raw HTML elements. Never use raw `<button>`, `<input>`, `<label>`, `<select>`, `<textarea>`, or `<dialog>` when a shadcn equivalent exists. Available components are in `apps/web/src/components/ui/`. Only use raw HTML elements when no shadcn component supports the required pattern (e.g., drag-and-drop dropzones, hidden file inputs, sub-pixel animated indicators, or highly custom layouts that fight component constraints).
 
+## Async State Management
+
+Use React Query (`@tanstack/react-query`) for all async operations that involve managing loading/error state. Prefer `useQuery` for data fetching and `useMutation` for side effects. Avoid manual `useState`/`useEffect` patterns for async data. The `QueryClientProvider` is set up in `apps/web/src/components/providers.tsx`.
+
 ## Architecture
 
 Chartroom is a **Bun workspace monorepo** with shared packages and multiple apps. It lets users upload CSVs or Excel files and generate [Vega-Lite](https://vega.github.io/vega-lite/) charts via AI.

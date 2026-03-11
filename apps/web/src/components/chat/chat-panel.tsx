@@ -21,7 +21,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { isAuthEnabled } from "@/lib/utils";
-import { useAuth } from "@/components/auth/auth-provider";
+import { useAuth } from "@/hooks/use-auth";
+import { useBalance } from "@/hooks/use-balance";
 
 export interface ChatPanelHandle {
   sendSpecEdit: (spec: ChartSpec) => void;
@@ -42,7 +43,8 @@ export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function Ch
   { datasets, onDatasetRemoved, onFilesSelected, onChartSpec, tier, onTierChange, onStatusChange, onLoadSampleData },
   ref
 ) {
-  const { user, balance, refreshBalance } = useAuth();
+  const { user } = useAuth();
+  const { balance, refetch: refreshBalance } = useBalance();
   const [input, setInput] = useState("");
   const [csvError, setCsvError] = useState<string | null>(null);
   const datasetsRef = useRef(datasets);

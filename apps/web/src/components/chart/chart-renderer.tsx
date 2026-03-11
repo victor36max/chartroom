@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { renderVegaLite } from "@/lib/chart/render-vega";
 import { setCurrentVegaResult } from "./chart-capture";
 import { setExportView } from "@/lib/chart/export-chart";
@@ -17,6 +17,7 @@ interface ChartRendererProps {
 export function ChartRenderer({ spec, datasets, themeId = "default", onViewReady }: ChartRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const resultRef = useRef<Result | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -30,6 +31,7 @@ export function ChartRenderer({ spec, datasets, themeId = "default", onViewReady
           result.view.finalize();
           return;
         }
+        setError(null);
         resultRef.current = result;
         setCurrentVegaResult(result);
         setExportView(result);
@@ -37,11 +39,7 @@ export function ChartRenderer({ spec, datasets, themeId = "default", onViewReady
       })
       .catch((err) => {
         if (cancelled) return;
-        container.innerHTML = "";
-        const errorDiv = document.createElement("div");
-        errorDiv.className = "p-4 text-sm text-destructive";
-        errorDiv.textContent = `Chart error: ${err instanceof Error ? err.message : "Unknown error"}`;
-        container.appendChild(errorDiv);
+        setError(err instanceof Error ? err.message : "Unknown error");
       });
 
     return () => {
@@ -52,6 +50,14 @@ export function ChartRenderer({ spec, datasets, themeId = "default", onViewReady
       setExportView(null);
     };
   }, [spec, datasets, themeId, onViewReady]);
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center p-6 h-full">
+        <div className="p-4 text-sm text-destructive">Chart error: {error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center p-6 h-full">

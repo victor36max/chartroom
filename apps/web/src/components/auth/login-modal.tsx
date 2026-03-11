@@ -2,7 +2,7 @@
 
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { useAuth } from "./auth-provider";
+import { useAuthUI } from "./auth-ui-provider";
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 export function LoginModal() {
-  const { loginOpen, closeLogin } = useAuth();
+  const { loginOpen, closeLogin } = useAuthUI();
   const supabase = createClient();
 
   const signIn = async (provider: "google" | "github") => {
