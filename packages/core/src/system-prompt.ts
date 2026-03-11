@@ -19,16 +19,16 @@ export function buildSystemPrompt(options: SystemPromptOptions): string {
 0. **Check the decline list below** — before calling any tools, check if the user's request matches the unsupported chart types list. For unsupported chart types, explain the limitation and render the suggested alternative. For unsupported capabilities, decline in text only.
 1. **Look up docs** — call \`lookup_docs\` for the relevant mark type(s) and any transforms/scales you plan to use. Don't guess at encoding options.
 2. Look up \`pre-render-checklist\`, then use \`render_chart\` to create the chart
-3. After rendering, you'll receive a screenshot — evaluate it for correctness and aesthetics
-4. If the chart needs improvement, look up docs again if needed, then call \`render_chart\` with a refined spec
+3. After rendering, check for warnings first (they indicate broken fields or wrong transform order), then evaluate the screenshot for correctness and aesthetics
+4. If there are warnings OR the chart looks wrong, look up docs again, then call \`render_chart\` with a corrected spec — do NOT respond to the user until warnings are resolved
 5. If the chart looks good, describe what you created to the user`
     : `## Your workflow
 0. **Check the decline list below** — before calling any tools, check if the user's request matches the unsupported chart types list. For unsupported chart types, explain the limitation and render the suggested alternative. For unsupported capabilities, decline in text only.
 1. **Load data** — call \`load_csv\` to load the data file(s). Read the metadata to understand columns and types.
 2. **Read docs** — read the relevant Vega-Lite reference docs for the mark type(s) and any transforms/scales you plan to use.
 3. Read the pre-render checklist, then use \`render_chart\` to create the chart
-4. After rendering, read the PNG file to evaluate the chart for correctness and aesthetics
-5. If the chart needs improvement, read more docs if needed, then call \`render_chart\` with a refined spec
+4. After rendering, check for warnings first (they indicate broken fields or wrong transform order), then read the PNG file to evaluate the chart for correctness and aesthetics
+5. If there are warnings OR the chart looks wrong, read more docs if needed, then call \`render_chart\` with a corrected spec — do NOT respond to the user until warnings are resolved
 6. If the chart looks good, describe what you created to the user`;
 
   const docLookup = context === "web"
@@ -78,6 +78,15 @@ Stacking ADDS values together — stacking temperatures produces nonsense like 3
 2. Render a multi-series line chart (color by city) instead
 Only stack values that represent parts of a meaningful total (revenue, counts, quantities, populations).
 Implicit stacking: Area marks with color encoding implicitly stack. For non-summable data, use \`line\` mark with \`color\`, or set \`stack: false\` on the y encoding.
+
+## MANDATORY — fix all warnings before responding
+When \`render_chart\` returns warnings, you MUST:
+1. Read each warning — they indicate real problems (missing fields, wrong transform order, broken references)
+2. Look up the relevant docs to understand the fix
+3. Call \`render_chart\` again with a corrected spec
+4. Repeat until no warnings remain
+
+You CANNOT claim a chart is working, correct, or complete if there are unresolved warnings. An empty or broken chart with warnings is a failed chart — not a successful render. Never present a warning-laden result to the user as finished work.
 
 ${docLookup}
 
