@@ -172,6 +172,13 @@ function buildAvailableFields(
       }
     }
 
+    // JoinAggregate: non-destructive — adds as aliases while keeping all fields
+    if (Array.isArray(t.joinaggregate)) {
+      for (const agg of t.joinaggregate as Array<Record<string, unknown>>) {
+        if (typeof agg.as === "string") available.add(agg.as);
+      }
+    }
+
     // Window: adds as aliases
     if (Array.isArray(t.window)) {
       for (const w of t.window as Array<Record<string, unknown>>) {
@@ -415,6 +422,17 @@ function findAggregateGroupby(transforms: Array<Record<string, unknown>> | undef
   return null;
 }
 
+/** Check if transforms after the first aggregate include a window transform (ranking pattern) */
+function hasWindowAfterAggregate(transforms: Array<Record<string, unknown>> | undefined): boolean {
+  if (!Array.isArray(transforms)) return false;
+  let seenAggregate = false;
+  for (const t of transforms) {
+    if (Array.isArray(t.aggregate)) seenAggregate = true;
+    if (seenAggregate && Array.isArray(t.window)) return true;
+  }
+  return false;
+}
+
 /** Check that every encoding field is available in the primary dataset or created by transforms */
 function lintFieldReferences(
   spec: Record<string, unknown>,
@@ -439,10 +457,19 @@ function lintFieldReferences(
 
     // Check if the field exists in the original dataset but was dropped by aggregate
     if (aggregateGroupby !== null && primaryColumns.has(field)) {
-      warnings.push(
-        `Field "${field}" exists in the dataset but is not available after the aggregate transform. ` +
-        `Add "${field}" to the aggregate's "groupby" array to preserve it.`
-      );
+      if (hasWindowAfterAggregate(transforms)) {
+        warnings.push(
+          `Field "${field}" exists in the dataset but is not available after the aggregate transform. ` +
+          `This looks like a top-N ranking pattern (aggregate → window → filter). ` +
+          `Use "joinaggregate" instead of "aggregate" to preserve all original rows ` +
+          `while adding the computed field for ranking.`
+        );
+      } else {
+        warnings.push(
+          `Field "${field}" exists in the dataset but is not available after the aggregate transform. ` +
+          `Add "${field}" to the aggregate's "groupby" array to preserve it.`
+        );
+      }
       continue;
     }
 

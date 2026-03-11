@@ -638,4 +638,84 @@ describe("validateSpec", () => {
       expect(result.warnings.some(w => w.includes("total"))).toBe(true);
     }
   });
+
+  describe("joinaggregate support", () => {
+    const POP_ROWS = [
+      { Entity: "China", Year: 1990, "Population": 1000 },
+      { Entity: "China", Year: 2000, "Population": 1200 },
+      { Entity: "India", Year: 1990, "Population": 800 },
+      { Entity: "India", Year: 2000, "Population": 1000 },
+      { Entity: "USA", Year: 1990, "Population": 250 },
+      { Entity: "USA", Year: 2000, "Population": 280 },
+    ];
+
+    it("tracks joinaggregate fields in available fields (no false warning)", () => {
+      const spec = {
+        mark: "line",
+        transform: [
+          { joinaggregate: [{ op: "max", field: "Population", as: "max_pop" }], groupby: ["Entity"] },
+          { window: [{ op: "rank", as: "rank" }], sort: [{ field: "max_pop", order: "descending" }] },
+          { filter: "datum.rank <= 2" },
+        ],
+        encoding: {
+          x: { field: "Year", type: "quantitative", axis: { format: "d" } },
+          y: { field: "Population", type: "quantitative" },
+          color: { field: "Entity", type: "nominal" },
+        },
+      };
+      const result = validateSpec(spec, { csv: POP_ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Year"))).toBe(false);
+        expect(result.warnings.some(w => w.includes("Population"))).toBe(false);
+      }
+    });
+
+    it("suggests joinaggregate when aggregate is used in ranking pattern", () => {
+      const spec = {
+        mark: "line",
+        transform: [
+          { aggregate: [{ op: "max", field: "Population", as: "max_pop" }], groupby: ["Entity"] },
+          { window: [{ op: "rank", as: "rank" }], sort: [{ field: "max_pop", order: "descending" }] },
+          { filter: "datum.rank <= 2" },
+        ],
+        encoding: {
+          x: { field: "Year", type: "quantitative", axis: { format: "d" } },
+          y: { field: "Population", type: "quantitative" },
+          color: { field: "Entity", type: "nominal" },
+        },
+      };
+      const result = validateSpec(spec, { csv: POP_ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w =>
+          w.includes("Year") && w.includes("joinaggregate")
+        )).toBe(true);
+        expect(result.warnings.some(w =>
+          w.includes("Population") && w.includes("joinaggregate")
+        )).toBe(true);
+      }
+    });
+
+    it("still suggests groupby when aggregate has no subsequent window", () => {
+      const spec = {
+        mark: "bar",
+        transform: [
+          { aggregate: [{ op: "sum", field: "Population", as: "total_pop" }], groupby: ["Entity"] },
+        ],
+        encoding: {
+          x: { field: "Entity", type: "nominal" },
+          y: { field: "total_pop", type: "quantitative" },
+          color: { field: "Year", type: "ordinal" },
+        },
+      };
+      const result = validateSpec(spec, { csv: POP_ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w =>
+          w.includes("Year") && w.includes("groupby") && !w.includes("joinaggregate")
+        )).toBe(true);
+      }
+    });
+  });
 });

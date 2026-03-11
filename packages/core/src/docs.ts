@@ -470,6 +470,25 @@ Combos: yearmonth, yearmonthdate, monthdate, hoursminutes
 - Inline aggregate (in encoding) works well for bars/lines — the categorical axis naturally defines the groups.
 - For **scatterplots**, use transform with explicit \`groupby\` — inline aggregate groups by ALL encoding channels simultaneously, which can collapse data to fewer points than expected (often just one global point).
 
+**\`joinaggregate\` — non-destructive aggregate:**
+\`aggregate\` is destructive — it collapses rows, only \`groupby\` fields and \`as\` aliases survive. \`joinaggregate\` adds computed fields while keeping ALL original rows.
+
+Use \`joinaggregate\` when you need a computed value for ranking/filtering but still need original detail rows (e.g., top-N line charts):
+\`\`\`json
+{ "transform": [
+  {"joinaggregate": [{"op": "max", "field": "population", "as": "max_pop"}], "groupby": ["country"]},
+  {"window": [{"op": "rank", "as": "rank"}], "sort": [{"field": "max_pop", "order": "descending"}]},
+  {"filter": "datum.rank <= 10"}
+],
+"mark": "line",
+"encoding": { "x": {"field": "year", "type": "quantitative"}, "y": {"field": "population", "type": "quantitative"}, "color": {"field": "country", "type": "nominal"} } }
+\`\`\`
+If you used \`aggregate\` here instead, \`year\` and \`population\` would be destroyed — the chart would render nothing.
+
+**When to use which:**
+- \`aggregate\` — the chart only needs the aggregated values (bar chart of totals)
+- \`joinaggregate\` — the chart needs original rows but also a computed summary for filtering or labeling
+
 **Gotchas:**
 - Prefer inline \`aggregate\` in encoding over transform for simple bar/line cases
 - For scatter plots with aggregation, ALWAYS use transform + groupby
@@ -605,6 +624,26 @@ Use DateTime objects — NOT date strings — in range predicates:
 }
 \`\`\`
 For bottom N, change sort order to \`"ascending"\`.
+
+**Top N with detail rows (e.g., line chart of top 10 over time):**
+Use \`joinaggregate\` instead of \`aggregate\` to keep all original rows:
+\`\`\`json
+{
+  "transform": [
+    {"joinaggregate": [{"op": "max", "field": "value", "as": "peak"}], "groupby": ["category"]},
+    {"window": [{"op": "rank", "as": "rank"}], "sort": [{"field": "peak", "order": "descending"}]},
+    {"filter": "datum.rank <= 5"}
+  ],
+  "mark": "line",
+  "encoding": {
+    "x": { "field": "date", "type": "temporal" },
+    "y": { "field": "value", "type": "quantitative" },
+    "color": { "field": "category", "type": "nominal" }
+  }
+}
+\`\`\`
+⚠️ Using \`aggregate\` here would destroy the \`date\` and \`value\` columns — the chart would render nothing.
+
 **CRITICAL — common mistake:** After aggregate, the original column is GONE. Every subsequent reference must use the \`"as"\` alias.
 - WRONG: \`aggregate "as": "total"\` then encoding \`"field": "revenue"\` ← broken, "revenue" no longer exists
 - WRONG: \`aggregate "as": "total"\` then window sort \`"field": "revenue"\` ← broken
