@@ -29,7 +29,7 @@ Interpolation options: linear, monotone, step, step-before, step-after, basis, c
 ```
 
 **Gotchas:**
-- Use `type: "temporal"` for date-string fields (e.g. "2024-03-15"), not "quantitative". For plain integer year columns (e.g. 1990, 2020), prefer `"quantitative"` — no `timeUnit` needed and axis labels stay clean.
+- Use `type: "temporal"` for date-string fields (e.g. "2024-03-15"), not "quantitative". For plain integer year columns, use `"quantitative"` — see encoding docs for details.
 - For multi-series, always add `color` encoding so lines are separated
 - `order` encoding controls point connection order (useful for connected scatter)
 - `interpolate` goes in the mark object, not in encoding

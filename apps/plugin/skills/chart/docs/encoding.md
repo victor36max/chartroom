@@ -7,6 +7,8 @@
 - `ordinal` (O): categories, ordered (e.g. low/med/high, months)
 - `temporal` (T): dates/times
 
+**Integer year columns:** If a column contains plain years (1990, 2020, …), use `"quantitative"` with `"axis": {"format": "d"}` — NOT `"temporal"`. The `"d"` format displays clean integers (2020) instead of "2,020" or "2.020k". Reserve `"temporal"` for actual date/datetime strings (e.g. "2024-03-15").
+
 **Position channels:** x, y, x2, y2, xOffset, yOffset
 **Color channels:** color, fill, stroke, opacity
 **Size/shape:** size, shape, angle
