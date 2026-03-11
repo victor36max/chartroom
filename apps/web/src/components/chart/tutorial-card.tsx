@@ -1,11 +1,18 @@
 "use client";
 
 import { useState, useEffect, useCallback, type DragEvent, type ChangeEvent, useRef } from "react";
-import { ChevronLeft, ChevronRight, Upload } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Upload } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselPrevious,
+  CarouselNext,
+  type CarouselApi,
+} from "@/components/ui/carousel";
 
 const STORAGE_KEY = "chartroom-hide-tutorial";
 
@@ -84,13 +91,16 @@ function Dropzone({ onFilesSelected }: { onFilesSelected?: (files: File[]) => vo
   );
 }
 
+const totalSlides = STEPS.length + 1; // tutorial steps + dropzone
+
 export function TutorialCard({ onFilesSelected }: TutorialCardProps) {
   const [hidden] = useState(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem(STORAGE_KEY) === "true";
   });
-  const [step, setStep] = useState(0);
+  const [current, setCurrent] = useState(0);
   const [dontShow, setDontShow] = useState(hidden);
+  const [api, setApi] = useState<CarouselApi>();
   const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
 
   const setVideoRef = useCallback((index: number, el: HTMLVideoElement | null) => {
@@ -98,21 +108,34 @@ export function TutorialCard({ onFilesSelected }: TutorialCardProps) {
     else videoRefs.current.delete(index);
   }, []);
 
+  // Sync carousel selection to state + control video playback
   useEffect(() => {
-    const video = videoRefs.current.get(step);
-    if (video) {
-      video.currentTime = 0;
-      video.play();
-    }
-  }, [step]);
+    if (!api) return;
+    const onSelect = () => {
+      const selected = api.selectedScrollSnap();
+      setCurrent(selected);
 
-  // If user checked "don't show again", show only the dropzone
+      // Reset and play the active video, pause others
+      videoRefs.current.forEach((video, index) => {
+        if (index === selected) {
+          video.currentTime = 0;
+          video.play();
+        } else {
+          video.pause();
+        }
+      });
+    };
+
+    onSelect(); // sync on mount
+    api.on("select", onSelect);
+    return () => { api.off("select", onSelect); };
+  }, [api]);
+
   if (hidden) {
     return <Dropzone onFilesSelected={onFilesSelected} />;
   }
 
-  const isLastStep = step === STEPS.length;
-  const totalSteps = STEPS.length + 1; // tutorial steps + dropzone
+  const isLastSlide = current === STEPS.length;
 
   const handleDontShowChange = (checked: boolean) => {
     setDontShow(checked);
@@ -126,78 +149,63 @@ export function TutorialCard({ onFilesSelected }: TutorialCardProps) {
   return (
     <div className="flex flex-col items-center justify-center h-full w-full p-8">
       <div className="max-w-xl w-full space-y-4">
-      {/* Dropzone as last step */}
-          <div className={cn("aspect-4/3 w-full rounded-lg border-2 border-dashed border-muted-foreground/40 flex items-center justify-center", !isLastStep && "hidden")}>
-            <Dropzone onFilesSelected={onFilesSelected} />
-          </div>
-          {/* Tutorial media step */}
-          <div className={cn("relative aspect-4/3 w-full rounded-lg border bg-muted/30 overflow-hidden", isLastStep && "hidden")}>
+        <Carousel setApi={setApi} opts={{ loop: false }}>
+          <CarouselContent>
             {STEPS.map((s, i) => (
-              <video
-              key={s.media}
-              ref={(el) => setVideoRef(i, el)}
-              src={s.media}
-              preload="auto"
-              autoPlay={i === step}
-              loop
-              muted
-              playsInline
-              className={cn("absolute inset-0 w-full h-full object-cover", i !== step && "hidden")}
-            />
+              <CarouselItem key={s.media}>
+                <div className="relative aspect-4/3 w-full rounded-lg border bg-muted/30 overflow-hidden">
+                  <video
+                    ref={(el) => setVideoRef(i, el)}
+                    src={s.media}
+                    preload="auto"
+                    autoPlay={i === 0}
+                    loop
+                    muted
+                    playsInline
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                </div>
+              </CarouselItem>
             ))}
-          </div>
+            {/* Dropzone as last slide */}
+            <CarouselItem>
+              <div className="aspect-4/3 w-full rounded-lg border-2 border-dashed border-muted-foreground/40 flex items-center justify-center">
+                <Dropzone onFilesSelected={onFilesSelected} />
+              </div>
+            </CarouselItem>
+          </CarouselContent>
+          <CarouselPrevious className="left-2 lg:-left-12" />
+          <CarouselNext className="right-2 lg:-right-12" />
+        </Carousel>
 
         {/* Text */}
         <div className="text-center space-y-1">
           <p className="text-sm font-medium">
-            {isLastStep ? "Ready to start" : STEPS[step].title}
+            {isLastSlide ? "Ready to start" : STEPS[current].title}
           </p>
           <p className="text-xs text-muted-foreground">
-            {isLastStep
+            {isLastSlide
               ? "Drop a CSV file here or use the chat panel to upload."
-              : STEPS[step].description}
+              : STEPS[current].description}
           </p>
         </div>
 
-        {/* Navigation */}
-        <div className="flex items-center justify-center gap-3">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            onClick={() => setStep((s) => Math.max(0, s - 1))}
-            disabled={step === 0}
-            className="text-muted-foreground hover:text-foreground disabled:opacity-30"
-            aria-label="Previous step"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex gap-1.5">
-            {Array.from({ length: totalSteps }).map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setStep(i)}
-                className={`h-1.5 rounded-full transition-all ${
-                  i === step
-                    ? "w-4 bg-foreground"
-                    : "w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/50"
-                }`}
-                aria-label={`Go to step ${i + 1}`}
-              />
-            ))}
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            onClick={() => setStep((s) => Math.min(totalSteps - 1, s + 1))}
-            disabled={isLastStep}
-            className="text-muted-foreground hover:text-foreground disabled:opacity-30"
-            aria-label="Next step"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+        {/* Dot indicators */}
+        <div className="flex items-center justify-center gap-1.5">
+          {Array.from({ length: totalSlides }).map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => api?.scrollTo(i)}
+              className={cn(
+                "h-1.5 rounded-full transition-all",
+                i === current
+                  ? "w-4 bg-foreground"
+                  : "w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/50"
+              )}
+              aria-label={`Go to step ${i + 1}`}
+            />
+          ))}
         </div>
 
         {/* Don't show again */}
