@@ -28,7 +28,21 @@ export default function Home() {
   const { openLogin } = useAuthUI();
   const [datasets, setDatasets] = useState<DatasetMap>({});
   const [currentChart, setCurrentChart] = useState<ChartSpec | null>(null);
-  const [tier, setTier] = useState<ModelTier>(DEFAULT_TIER);
+  const [tier, setTierState] = useState<ModelTier>(() => {
+    if (typeof window === "undefined") return DEFAULT_TIER;
+    try {
+      const stored = localStorage.getItem("chartroom:model-tier");
+      if (stored === "fast" || stored === "mid" || stored === "power")
+        return stored;
+    } catch {}
+    return DEFAULT_TIER;
+  });
+  const setTier = useCallback((t: ModelTier) => {
+    setTierState(t);
+    try {
+      localStorage.setItem("chartroom:model-tier", t);
+    } catch {}
+  }, []);
   const { overrides, setOverride } = useModelOverrides();
   const [modelSettingsOpen, setModelSettingsOpen] = useState(false);
   const [themeId, setThemeId] = useState<ThemeId>("default");
