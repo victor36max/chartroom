@@ -60,6 +60,34 @@ function handlePaste(e: React.ClipboardEvent) {
   document.execCommand("insertText", false, text);
 }
 
+/** Check if the caret is at the very start of a contentEditable element. */
+function isCaretAtStart(el: HTMLElement): boolean {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return true;
+  const range = sel.getRangeAt(0);
+  return range.collapsed && range.startOffset === 0 && range.startContainer === el.firstChild || range.startContainer === el;
+}
+
+/** Check if the caret is at the very end of a contentEditable element. */
+function isCaretAtEnd(el: HTMLElement): boolean {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return true;
+  const range = sel.getRangeAt(0);
+  if (!range.collapsed) return false;
+  const text = el.textContent ?? "";
+  if (range.startContainer === el) return range.startOffset >= el.childNodes.length;
+  return range.startOffset >= text.length;
+}
+
+/** Focus a cell and select all its text. */
+function focusCell(cell: HTMLElement) {
+  cell.focus();
+  const range = document.createRange();
+  range.selectNodeContents(cell);
+  window.getSelection()?.removeAllRanges();
+  window.getSelection()?.addRange(range);
+}
+
 export function DataTable({ csvData, datasetName, onDatasetChanged }: DataTableProps) {
   const { data, metadata } = csvData;
   const columns = metadata.columns.map((c) => c.name);
@@ -308,6 +336,8 @@ export function DataTable({ csvData, datasetName, onDatasetChanged }: DataTableP
                   {columns.map((col, colIndex) => (
                     <td
                       key={col}
+                      data-row={rowIndex}
+                      data-col={colIndex}
                       className="px-2 py-2 whitespace-nowrap truncate outline-none focus:ring-2 focus:ring-primary focus:ring-inset focus:bg-primary/10 rounded-sm"
                       contentEditable={editable}
                       suppressContentEditableWarning
@@ -327,21 +357,45 @@ export function DataTable({ csvData, datasetName, onDatasetChanged }: DataTableP
                         if (e.key === "Tab") {
                           e.preventDefault();
                           e.currentTarget.blur();
-                          // Focus next/prev cell
                           const nextCol = e.shiftKey
                             ? colIndex > 0 ? colIndex - 1 : colIndex
                             : colIndex < columns.length - 1 ? colIndex + 1 : colIndex;
                           if (nextCol !== colIndex) {
                             const tr = e.currentTarget.parentElement;
-                            const nextTd = tr?.children[nextCol + 1]; // +1 for row number column
-                            if (nextTd instanceof HTMLElement) {
-                              nextTd.focus();
-                              // Select all text
-                              const range = document.createRange();
-                              range.selectNodeContents(nextTd);
-                              window.getSelection()?.removeAllRanges();
-                              window.getSelection()?.addRange(range);
-                            }
+                            const nextTd = tr?.children[nextCol + 1];
+                            if (nextTd instanceof HTMLElement) focusCell(nextTd);
+                          }
+                        }
+                        // Arrow key navigation
+                        if (e.key === "ArrowLeft" && isCaretAtStart(e.currentTarget) && colIndex > 0) {
+                          e.preventDefault();
+                          const tr = e.currentTarget.parentElement;
+                          const prevTd = tr?.children[colIndex]; // colIndex because children[0] is row number
+                          if (prevTd instanceof HTMLElement) focusCell(prevTd);
+                        }
+                        if (e.key === "ArrowRight" && isCaretAtEnd(e.currentTarget) && colIndex < columns.length - 1) {
+                          e.preventDefault();
+                          const tr = e.currentTarget.parentElement;
+                          const nextTd = tr?.children[colIndex + 2];
+                          if (nextTd instanceof HTMLElement) focusCell(nextTd);
+                        }
+                        if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                          const container = scrollRef.current;
+                          if (!container) return;
+                          const targetRow = e.key === "ArrowUp" ? rowIndex - 1 : rowIndex + 1;
+                          if (targetRow < 0 || targetRow >= data.length) return;
+                          e.preventDefault();
+                          e.currentTarget.blur();
+                          const target = container.querySelector<HTMLElement>(`td[data-row="${targetRow}"][data-col="${colIndex}"]`);
+                          if (target) {
+                            focusCell(target);
+                          } else {
+                            // Target row not rendered yet — scroll to it, then focus after virtualizer updates
+                            virtualizer.scrollToIndex(targetRow, { align: "auto" });
+                            requestAnimationFrame(() => {
+                              const el = container.querySelector<HTMLElement>(`td[data-row="${targetRow}"][data-col="${colIndex}"]`);
+                              if (el) focusCell(el);
+                            });
                           }
                         }
                       }}
