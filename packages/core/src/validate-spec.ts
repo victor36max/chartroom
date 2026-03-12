@@ -1414,6 +1414,56 @@ function lintDualAxisResolve(
   return warnings;
 }
 
+/** Known Vega-Lite encoding properties that should NOT appear inside a field string */
+const VL_ENCODING_PROPS = new Set([
+  "type", "timeUnit", "aggregate", "bin", "sort", "axis", "scale",
+  "title", "legend", "stack", "format", "band", "datum", "value",
+]);
+
+const MANGLED_FIELD_RE = /,\s*([a-zA-Z]+):/;
+
+/** Lint for field names that contain concatenated encoding properties (AI hallucination) */
+function lintMangledFieldNames(spec: Record<string, unknown>): string[] {
+  const warnings: string[] = [];
+  const enc = spec.encoding as Record<string, Record<string, unknown>> | undefined;
+  if (enc) {
+    for (const [channel, ch] of Object.entries(enc)) {
+      if (!ch || typeof ch !== "object" || typeof ch.field !== "string") continue;
+      const field = ch.field as string;
+      const match = MANGLED_FIELD_RE.exec(field);
+      if (!match) continue;
+
+      // Parse comma-separated segments and check if any key is a known VL property
+      const segments = field.split(",").map((s) => s.trim());
+      const mangledProps: Array<{ key: string; value: string }> = [];
+      for (let i = 1; i < segments.length; i++) {
+        const colonIdx = segments[i].indexOf(":");
+        if (colonIdx > 0) {
+          const key = segments[i].slice(0, colonIdx).trim();
+          const value = segments[i].slice(colonIdx + 1).trim();
+          if (VL_ENCODING_PROPS.has(key)) {
+            mangledProps.push({ key, value });
+          }
+        }
+      }
+      if (mangledProps.length === 0) continue;
+
+      const intendedField = segments[0];
+      const propsStr = mangledProps.map((p) => `"${p.key}": "${p.value}"`).join(", ");
+      warnings.push(
+        `Encoding channel "${channel}" has field "${field}" which appears to contain encoding properties ` +
+        `concatenated into the field name. Use separate object properties instead: ` +
+        `{ "field": "${intendedField}", ${propsStr} }.`
+      );
+    }
+  }
+
+  for (const sub of getSubSpecs(spec)) {
+    warnings.push(...lintMangledFieldNames(sub));
+  }
+  return warnings;
+}
+
 export function validateSpec(
   spec: Record<string, unknown>,
   datasets: Record<string, Record<string, unknown>[]>
@@ -1432,6 +1482,7 @@ export function validateSpec(
     const fullSpec = injectData(spec, datasets);
     const warnings: string[] = [];
     // Lint for common transform issues before compiling
+    warnings.push(...lintMangledFieldNames(spec));
     warnings.push(...lintTransforms(spec));
     warnings.push(...lintTransformOrder(spec, datasets));
     warnings.push(...lintFieldReferences(spec, datasets));

@@ -1992,4 +1992,110 @@ describe("validateSpec", () => {
       }
     });
   });
+
+  describe("lintMangledFieldNames", () => {
+    const DATE_ROWS = [
+      { date: "2024-01-01", revenue: 100, category: "A" },
+      { date: "2024-01-02", revenue: 200, category: "B" },
+    ];
+
+    it("warns when field contains concatenated encoding properties", () => {
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "date,timeUnit:yearmonthdate,type:temporal", type: "temporal" },
+          y: { field: "revenue", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: DATE_ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        const w = result.warnings.find(w => w.includes("concatenated into the field name"));
+        expect(w).toBeDefined();
+        expect(w).toContain('"field": "date"');
+        expect(w).toContain('"timeUnit": "yearmonthdate"');
+        expect(w).toContain('"type": "temporal"');
+      }
+    });
+
+    it("does not warn for normal field names", () => {
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "revenue", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: DATE_ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("concatenated into the field name"))).toBe(false);
+      }
+    });
+
+    it("does not false-positive on field names with commas but no VL properties", () => {
+      const rows = [{ "city, state": "NYC, NY", value: 1 }];
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "city, state", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: rows });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("concatenated into the field name"))).toBe(false);
+      }
+    });
+
+    it("detects mangled fields in layer sub-specs", () => {
+      const spec = {
+        data: { url: "csv" },
+        layer: [
+          {
+            mark: "bar",
+            encoding: {
+              x: { field: "date", type: "temporal", timeUnit: "yearmonthdate" },
+              y: { field: "revenue", type: "quantitative", aggregate: "sum" },
+            },
+          },
+          {
+            mark: "line",
+            encoding: {
+              x: { field: "date,timeUnit:yearmonthdate,type:temporal", type: "temporal" },
+              y: { field: "revenue", type: "quantitative", aggregate: "sum" },
+            },
+          },
+        ],
+      };
+      const result = validateSpec(spec, { csv: DATE_ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        const w = result.warnings.find(w => w.includes("concatenated into the field name"));
+        expect(w).toBeDefined();
+        expect(w).toContain('"field": "date"');
+      }
+    });
+
+    it("detects mangled fields in vconcat sub-specs", () => {
+      const spec = {
+        vconcat: [
+          {
+            mark: "bar",
+            data: { url: "csv" },
+            encoding: {
+              x: { field: "date,timeUnit:yearmonthdate,type:temporal", type: "temporal" },
+              y: { field: "revenue", type: "quantitative", aggregate: "sum" },
+            },
+          },
+        ],
+      };
+      const result = validateSpec(spec, { csv: DATE_ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("concatenated into the field name"))).toBe(true);
+      }
+    });
+  });
 });

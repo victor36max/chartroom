@@ -6,7 +6,7 @@ import { ChartRenderer } from "@/components/chart/chart-renderer";
 import { DataTable } from "@/components/data/data-table";
 import { exportChartAsPng, exportChartAsSvg } from "@/lib/chart/export-chart";
 import { validateSpec } from "@/lib/chart/validate-spec";
-import { Download, Check, Code, X, SlidersHorizontal, Palette, Loader2 } from "lucide-react";
+import { Download, Check, Code, X, SlidersHorizontal, Palette, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -27,6 +27,9 @@ interface ChartPanelProps {
   themeId: ThemeId;
   onThemeChange?: (themeId: ThemeId) => void;
   isLoading?: boolean;
+  specHistory?: ChartSpec[];
+  specIndex?: number;
+  onSelectSpec?: (index: number) => void;
 }
 
 const THEME_OPTIONS: { value: ThemeId; label: string }[] = [
@@ -45,7 +48,7 @@ const THEME_OPTIONS: { value: ThemeId; label: string }[] = [
 
 const jsonExtensions = [json()];
 
-export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSelected, onDatasetChanged, themeId, onThemeChange, isLoading }: ChartPanelProps) {
+export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSelected, onDatasetChanged, themeId, onThemeChange, isLoading, specHistory = [], specIndex = -1, onSelectSpec }: ChartPanelProps) {
   const datasetEntries = Object.entries(datasets);
   const hasData = datasetEntries.length > 0;
   const firstDataset = hasData ? datasetEntries[0][1] : null;
@@ -262,6 +265,33 @@ export function ChartPanel({ datasets, chartSpec, onChartSpecEdited, onFilesSele
                   <Loader2 className="h-4 w-4 animate-spin" />
                   <span className="text-sm">AI is working...</span>
                 </div>
+              </div>
+            )}
+            {specHistory.length > 1 && onSelectSpec && (
+              <div className="absolute top-2 left-2 z-10 flex items-center gap-0.5 bg-background/80 backdrop-blur-sm rounded-md border px-1 py-0.5">
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => onSelectSpec(specIndex - 1)}
+                  disabled={specIndex <= 0}
+                  className="text-muted-foreground hover:text-foreground"
+                  aria-label="Previous spec"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </Button>
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {specIndex + 1}/{specHistory.length}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => onSelectSpec(specIndex + 1)}
+                  disabled={specIndex >= specHistory.length - 1}
+                  className="text-muted-foreground hover:text-foreground"
+                  aria-label="Next spec"
+                >
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
               </div>
             )}
             {hasChart ? (

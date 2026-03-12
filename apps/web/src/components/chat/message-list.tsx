@@ -150,7 +150,9 @@ function MessageBubbleGroup({ message }: { message: UIMessage }) {
         {textParts.map((part, i) =>
           part.type === "text" ? (
             isUser ? (
-              <p key={i} className="whitespace-pre-wrap">{part.text}</p>
+              <div key={i} className="prose prose-sm prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-headings:my-2 prose-pre:my-2 prose-code:text-primary-foreground/90 prose-strong:text-primary-foreground prose-a:text-primary-foreground prose-headings:text-primary-foreground">
+                <ReactMarkdown>{part.text}</ReactMarkdown>
+              </div>
             ) : (
               <div key={i} className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-headings:my-2 prose-pre:my-2">
                 <ReactMarkdown>{part.text}</ReactMarkdown>

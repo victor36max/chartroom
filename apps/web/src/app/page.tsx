@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { ChatPanel, type ChatPanelHandle } from "@/components/chat/chat-panel";
 import { ChartPanel } from "@/components/chart/chart-panel";
 import { BottomTabBar } from "@/components/layout/bottom-tab-bar";
@@ -22,12 +23,15 @@ import {
 } from "@/lib/csv/parser";
 import { SheetPickerDialog } from "@/components/data/sheet-picker-dialog";
 import type { ParsedCSV, DatasetMap, ChartSpec, ThemeId } from "@/types";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 
 export default function Home() {
   const { user, isLoading: authLoading } = useAuth();
   const { openLogin } = useAuthUI();
   const [datasets, setDatasets] = useState<DatasetMap>({});
   const [currentChart, setCurrentChart] = useState<ChartSpec | null>(null);
+  const [specHistory, setSpecHistory] = useState<ChartSpec[]>([]);
+  const [specIndex, setSpecIndex] = useState(-1);
   const [tier, setTierState] = useState<ModelTier>(() => {
     if (typeof window === "undefined") return DEFAULT_TIER;
     try {
@@ -52,6 +56,13 @@ export default function Home() {
   const [pendingSheetNames, setPendingSheetNames] = useState<string[]>([]);
   const [sheetPickerOpen, setSheetPickerOpen] = useState(false);
   const chatRef = useRef<ChatPanelHandle>(null);
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+
+  const resetSpecHistory = useCallback(() => {
+    setSpecHistory([]);
+    setSpecIndex(-1);
+    setCurrentChart(null);
+  }, []);
 
   const handleStatusChange = useCallback((status: string) => {
     setIsAIBusy(status === "submitted" || status === "streaming");
@@ -59,7 +70,8 @@ export default function Home() {
 
   const handleCSVParsed = useCallback((name: string, parsed: ParsedCSV) => {
     setDatasets((prev) => ({ ...prev, [name]: parsed }));
-  }, []);
+    resetSpecHistory();
+  }, [resetSpecHistory]);
 
   const handleDatasetRemoved = useCallback((name: string) => {
     setDatasets((prev) => {
@@ -67,7 +79,8 @@ export default function Home() {
       delete next[name];
       return next;
     });
-  }, []);
+    resetSpecHistory();
+  }, [resetSpecHistory]);
 
   const handleFilesSelected = useCallback(async (files: File[]) => {
     if (isAuthEnabled() && !user) {
@@ -122,13 +135,22 @@ export default function Home() {
 
   const handleChartSpec = useCallback((spec: ChartSpec) => {
     setCurrentChart(spec);
+    setSpecHistory((prev) => [...prev, spec]);
+    setSpecIndex((prev) => prev + 1);
     setMobileTab("chart");
   }, []);
 
+  const handleSelectSpec = useCallback((index: number) => {
+    setSpecIndex(index);
+    setCurrentChart(specHistory[index]);
+  }, [specHistory]);
+
   const handleChartSpecEdited = useCallback((spec: ChartSpec) => {
     setCurrentChart(spec);
+    setSpecHistory((prev) => [...prev.slice(0, specIndex + 1), spec]);
+    setSpecIndex((prev) => prev + 1);
     chatRef.current?.sendSpecEdit(spec);
-  }, []);
+  }, [specIndex]);
 
   return (
     <div className="flex h-dvh flex-col">
@@ -158,10 +180,11 @@ export default function Home() {
         </div>
         {isAuthEnabled() && <LoginModal />}
       </header>
-      <div className="flex flex-1 flex-col md:flex-row overflow-hidden">
-        <div className={`${mobileTab === "chat" ? "flex" : "hidden"} md:flex flex-col flex-1 md:flex-none md:w-[420px] md:min-w-[320px] md:border-r overflow-hidden`}>
+      {/* Mobile: always in DOM, hidden via CSS on desktop */}
+      <div className="flex flex-1 flex-col md:hidden overflow-hidden">
+        <div className={`${mobileTab === "chat" ? "flex" : "hidden"} flex-col flex-1 overflow-hidden`}>
           <ChatPanel
-            ref={chatRef}
+            ref={!isDesktop ? chatRef : undefined}
             datasets={datasets}
             onDatasetRemoved={handleDatasetRemoved}
             onFilesSelected={handleFilesSelected}
@@ -174,11 +197,38 @@ export default function Home() {
             onLoadSampleData={handleLoadSampleData}
           />
         </div>
-        <div className={`${mobileTab === "chart" ? "flex" : "hidden"} md:flex flex-1 flex-col overflow-hidden`}>
-          <ChartPanel datasets={datasets} chartSpec={currentChart} onChartSpecEdited={handleChartSpecEdited} onFilesSelected={handleFilesSelected} onDatasetChanged={handleCSVParsed} themeId={themeId} onThemeChange={setThemeId} isLoading={isAIBusy} />
+        <div className={`${mobileTab === "chart" ? "flex" : "hidden"} flex-1 flex-col overflow-hidden`}>
+          <ChartPanel datasets={datasets} chartSpec={currentChart} onChartSpecEdited={handleChartSpecEdited} onFilesSelected={handleFilesSelected} onDatasetChanged={handleCSVParsed} themeId={themeId} onThemeChange={setThemeId} isLoading={isAIBusy} specHistory={specHistory} specIndex={specIndex} onSelectSpec={handleSelectSpec} />
         </div>
       </div>
       <BottomTabBar activeTab={mobileTab} onTabChange={setMobileTab} />
+      {/* Desktop: conditionally rendered so ResizablePanelGroup measures correctly */}
+      {isDesktop && (
+        <ResizablePanelGroup
+          orientation="horizontal"
+          className="flex-1 overflow-hidden"
+        >
+          <ResizablePanel id="chat" defaultSize="25%" minSize="300px" maxSize="50%" className="flex flex-col overflow-hidden">
+            <ChatPanel
+              ref={chatRef}
+              datasets={datasets}
+              onDatasetRemoved={handleDatasetRemoved}
+              onFilesSelected={handleFilesSelected}
+              onChartSpec={handleChartSpec}
+              tier={tier}
+              onTierChange={setTier}
+              modelOverrides={overrides}
+              onOpenModelSettings={() => setModelSettingsOpen(true)}
+              onStatusChange={handleStatusChange}
+              onLoadSampleData={handleLoadSampleData}
+            />
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel id="chart" defaultSize="75%" className="flex flex-col overflow-hidden">
+            <ChartPanel datasets={datasets} chartSpec={currentChart} onChartSpecEdited={handleChartSpecEdited} onFilesSelected={handleFilesSelected} onDatasetChanged={handleCSVParsed} themeId={themeId} onThemeChange={setThemeId} isLoading={isAIBusy} specHistory={specHistory} specIndex={specIndex} onSelectSpec={handleSelectSpec} />
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      )}
       <ModelSettingsDialog
         open={modelSettingsOpen}
         onOpenChange={setModelSettingsOpen}
