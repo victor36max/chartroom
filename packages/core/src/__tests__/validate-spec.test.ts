@@ -1576,5 +1576,146 @@ describe("validateSpec", () => {
         expect(result.warnings.some(w => w.includes("format") && w.includes("$,,.0f"))).toBe(true);
       }
     });
+
+    it("validates format strings in tooltip arrays", () => {
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+          tooltip: [
+            { field: "category", type: "nominal" },
+            { field: "value", type: "quantitative", format: "abc" },
+          ],
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("tooltip[1]") && w.includes("abc"))).toBe(true);
+      }
+    });
+  });
+
+  describe("tooltip array field validation", () => {
+    it("warns when tooltip array references non-existent field", () => {
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+          tooltip: [
+            { field: "category", type: "nominal" },
+            { field: "nonexistent", type: "quantitative" },
+          ],
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("nonexistent"))).toBe(true);
+      }
+    });
+  });
+
+  describe("predicate filter field checking", () => {
+    it("warns when object-predicate filter references unavailable field", () => {
+      const spec = {
+        mark: "bar",
+        transform: [
+          { filter: { field: "rank", oneOf: [1, 2, 3] } },
+        ],
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("rank") && w.includes("not available"))).toBe(true);
+      }
+    });
+
+    it("no warning for predicate filter on existing field", () => {
+      const spec = {
+        mark: "bar",
+        transform: [
+          { filter: { field: "category", equal: "A" } },
+        ],
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("not available"))).toBe(false);
+      }
+    });
+  });
+
+  describe("NON_SUMMABLE_PATTERN compound field names", () => {
+    it("does not warn for compound summable fields like average_count", () => {
+      const data = [
+        { city: "A", average_count: 10 },
+        { city: "B", average_count: 20 },
+      ];
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "city", type: "nominal" },
+          y: { field: "average_count", type: "quantitative" },
+          color: { field: "city", type: "nominal" },
+        },
+      };
+      const result = validateSpec(spec, { csv: data });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("non-summable"))).toBe(false);
+      }
+    });
+
+    it("still warns for pure non-summable fields like temperature", () => {
+      const data = [
+        { city: "A", temperature: 30 },
+        { city: "B", temperature: 25 },
+      ];
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "city", type: "nominal" },
+          y: { field: "temperature", type: "quantitative" },
+          color: { field: "city", type: "nominal" },
+        },
+      };
+      const result = validateSpec(spec, { csv: data });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("non-summable"))).toBe(true);
+      }
+    });
+  });
+
+  describe("repeat spec field validation", () => {
+    it("does not warn for repeat variable field references", () => {
+      const spec = {
+        repeat: { column: ["value", "category"] },
+        spec: {
+          mark: "bar",
+          encoding: {
+            x: { field: { repeat: "column" }, type: "nominal" },
+            y: { aggregate: "count", type: "quantitative" },
+          },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      // repeat field refs are objects, not strings — getOwnEncodingFields skips them
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("not found"))).toBe(false);
+      }
+    });
   });
 });

@@ -40,7 +40,13 @@ function getOwnEncodingFields(spec: Record<string, unknown>): string[] {
   const enc = spec.encoding as Record<string, Record<string, unknown>> | undefined;
   if (enc) {
     for (const ch of Object.values(enc)) {
-      if (ch && typeof ch === "object" && typeof ch.field === "string") {
+      if (Array.isArray(ch)) {
+        for (const item of ch) {
+          if (item && typeof item === "object" && typeof item.field === "string") {
+            fields.push(item.field);
+          }
+        }
+      } else if (ch && typeof ch === "object" && typeof ch.field === "string") {
         fields.push(ch.field);
       }
     }
@@ -48,14 +54,6 @@ function getOwnEncodingFields(spec: Record<string, unknown>): string[] {
   return fields;
 }
 
-/** Collect all field references from encoding channels (including nested compositions) */
-function collectEncodingFields(spec: Record<string, unknown>): string[] {
-  const fields = getOwnEncodingFields(spec);
-  for (const sub of getSubSpecs(spec)) {
-    fields.push(...collectEncodingFields(sub));
-  }
-  return fields;
-}
 
 /** Extract datum.fieldName references from a filter expression string */
 function extractDatumRefs(expr: string): string[] {
@@ -92,6 +90,14 @@ function lintTransformOrder(
             `Move the transform that creates "${ref}" before this filter.`
           );
         }
+      }
+    } else if (t.filter && typeof t.filter === "object") {
+      const pred = t.filter as Record<string, unknown>;
+      if (typeof pred.field === "string" && !available.has(pred.field)) {
+        warnings.push(
+          `Filter references field "${pred.field}" but it is not available at this point in the transform pipeline. ` +
+          `Move the transform that creates "${pred.field}" before this filter.`
+        );
       }
     }
 
@@ -212,7 +218,7 @@ function lintTransforms(spec: Record<string, unknown>): string[] {
 
     // Check if encoding references original field instead of the alias
     if (aliasMap.size > 0) {
-      const encFields = collectEncodingFields(spec);
+      const encFields = getOwnEncodingFields(spec);
       for (const field of encFields) {
         const alias = aliasMap.get(field);
         if (alias) {
@@ -306,12 +312,20 @@ function applyTransformFields(available: Set<string>, t: Record<string, unknown>
   if ((typeof t.regression === "string" || typeof t.loess === "string") && Array.isArray(t.as)) {
     for (const a of t.as as string[]) available.add(a);
   }
-  // Bin: adds as or bin_<field> variants
+  // Bin: adds as or auto-generated bin_<field> variants
   if (t.bin !== undefined && typeof t.field === "string") {
     if (typeof t.as === "string") {
       available.add(t.as);
     } else if (Array.isArray(t.as)) {
       for (const a of t.as as string[]) available.add(a);
+    } else {
+      // No explicit "as" — Vega-Lite auto-generates bin field names
+      // Add common patterns so downstream references don't produce false warnings
+      const maxbins = (typeof t.bin === "object" && t.bin !== null)
+        ? (t.bin as Record<string, unknown>).maxbins ?? 10
+        : 10;
+      available.add(`bin_maxbins_${maxbins}_${t.field}`);
+      available.add(`bin_maxbins_${maxbins}_${t.field}_end`);
     }
   }
   // TimeUnit: adds as or <timeUnit>_<field>
@@ -402,45 +416,58 @@ function lintTemporalNumeric(
   if (!rows || rows.length === 0) return warnings;
 
   // Check for timeUnit on non-temporal data (any encoding channel except temporal type)
-  const allEnc = spec.encoding as Record<string, Record<string, unknown>> | undefined;
-  if (allEnc) {
-    for (const [, chSpec] of Object.entries(allEnc)) {
-      if (!chSpec || typeof chSpec !== "object") continue;
-      if (typeof chSpec.timeUnit !== "string" || typeof chSpec.field !== "string") continue;
-      // Skip temporal-typed channels (handled by the temporal-numeric check below)
-      if (chSpec.type === "temporal") continue;
-      // Skip fields created by calculate transforms
-      if (calculateFields.has(chSpec.field)) continue;
-
-      // Sample data values
-      const tuSamples: unknown[] = [];
-      for (const row of rows) {
-        const v = row[chSpec.field];
-        if (v != null && v !== "") {
-          tuSamples.push(v);
-          if (tuSamples.length >= 10) break;
+  // Recurse into sub-specs since they share the same dataset
+  function checkTimeUnitOnNonTemporal(s: Record<string, unknown>, calcFields: Set<string>): void {
+    // Collect calculate fields from this spec's transforms too
+    const localCalcFields = new Set(calcFields);
+    const localTransforms = s.transform as Array<Record<string, unknown>> | undefined;
+    if (Array.isArray(localTransforms)) {
+      for (const t of localTransforms) {
+        if (typeof t.calculate === "string" && typeof t.as === "string") {
+          localCalcFields.add(t.as);
         }
       }
-      if (tuSamples.length === 0) continue;
+    }
 
-      // Check if values are all plain numbers (not date-like)
-      const allPlainNumbers = tuSamples.every(isPlainNumber);
-      // Check if string values are non-date-parseable
-      const allNonDateStrings = tuSamples.every((v) => {
-        if (typeof v === "number") return true;
-        if (typeof v === "string") return isNaN(Date.parse(v));
-        return true;
-      });
+    const enc = s.encoding as Record<string, Record<string, unknown>> | undefined;
+    if (enc) {
+      for (const [, chSpec] of Object.entries(enc)) {
+        if (!chSpec || typeof chSpec !== "object") continue;
+        if (typeof chSpec.timeUnit !== "string" || typeof chSpec.field !== "string") continue;
+        if (chSpec.type === "temporal") continue;
+        if (localCalcFields.has(chSpec.field)) continue;
 
-      if (allPlainNumbers || allNonDateStrings) {
-        warnings.push(
-          `Encoding uses timeUnit "${chSpec.timeUnit}" on field "${chSpec.field}" ` +
-          `but data values are plain numbers/strings (e.g. ${tuSamples[0]}), not dates. ` +
-          `Remove timeUnit or convert data to date format.`
-        );
+        const tuSamples: unknown[] = [];
+        for (const row of rows!) {
+          const v = row[chSpec.field];
+          if (v != null && v !== "") {
+            tuSamples.push(v);
+            if (tuSamples.length >= 10) break;
+          }
+        }
+        if (tuSamples.length === 0) continue;
+
+        const allPlainNumbers = tuSamples.every(isPlainNumber);
+        const allNonDateStrings = tuSamples.every((v) => {
+          if (typeof v === "number") return true;
+          if (typeof v === "string") return isNaN(Date.parse(v));
+          return true;
+        });
+
+        if (allPlainNumbers || allNonDateStrings) {
+          warnings.push(
+            `Encoding uses timeUnit "${chSpec.timeUnit}" on field "${chSpec.field}" ` +
+            `but data values are plain numbers/strings (e.g. ${tuSamples[0]}), not dates. ` +
+            `Remove timeUnit or convert data to date format.`
+          );
+        }
       }
     }
+    for (const sub of getSubSpecs(s)) {
+      checkTimeUnitOnNonTemporal(sub, localCalcFields);
+    }
   }
+  checkTimeUnitOnNonTemporal(spec, calculateFields);
 
   for (const { field, hasTimeUnit } of temporalChannels) {
     // Skip if timeUnit is set (user is handling the conversion)
@@ -473,6 +500,14 @@ function lintTemporalNumeric(
 
 /** Non-summable field name patterns — stacking these values produces misleading totals */
 const NON_SUMMABLE_PATTERN = /temperature|temp|rate|percent|pct|average|avg|mean|median|price|index|ratio|score/i;
+
+/** Summable keywords — if a field matches NON_SUMMABLE_PATTERN but also contains one of these,
+ *  it's likely a summable aggregate (e.g. "average_count", "price_total") and should NOT be flagged */
+const SUMMABLE_OVERRIDE_PATTERN = /count|total|sum|quantity|population|revenue|sales|amount|units|volume/i;
+
+function isNonSummableField(field: string): boolean {
+  return NON_SUMMABLE_PATTERN.test(field) && !SUMMABLE_OVERRIDE_PATTERN.test(field);
+}
 
 /** Check if stacking is enabled (not explicitly disabled) on a mark+channel */
 function isStackEnabled(mark: unknown, yChannel: Record<string, unknown> | null): boolean {
@@ -507,7 +542,7 @@ function lintStackingNonSummable(
     if (!isStackEnabled(mark, yInfo)) return;
 
     const field = yInfo.field;
-    if (typeof field === "string" && NON_SUMMABLE_PATTERN.test(field)) {
+    if (typeof field === "string" && isNonSummableField(field)) {
       warnings.push(
         `Field "${field}" on a stacked ${markType} looks non-summable ` +
         `(temperatures, rates, prices should not be added together). ` +
@@ -990,7 +1025,38 @@ function lintFormatStrings(spec: Record<string, unknown>): string[] {
 
   if (enc) {
     for (const [channel, chSpec] of Object.entries(enc)) {
-      if (!chSpec || typeof chSpec !== "object") continue;
+      if (!chSpec) continue;
+
+      // Handle tooltip arrays: validate each item's format
+      if (Array.isArray(chSpec)) {
+        for (let i = 0; i < chSpec.length; i++) {
+          const item = chSpec[i] as Record<string, unknown>;
+          if (!item || typeof item !== "object") continue;
+          if (hasCustomFormatType(item)) continue;
+          if (typeof item.format === "string") {
+            const isTmp = isTemporalChannel(item);
+            if (isTmp) {
+              const invalid = findInvalidTimeDirectives(item.format);
+              if (invalid.length > 0) {
+                warnings.push(
+                  `Invalid d3-time-format in ${channel}[${i}]: "${item.format}" contains unknown directive(s) ${invalid.join(", ")}. ` +
+                  `See https://d3js.org/d3-time-format for valid directives.`
+                );
+              }
+            } else {
+              if (!isValidD3Format(item.format)) {
+                warnings.push(
+                  `Invalid d3-format in ${channel}[${i}]: "${item.format}" is not a valid number format specifier. ` +
+                  `See https://d3js.org/d3-format for valid syntax.`
+                );
+              }
+            }
+          }
+        }
+        continue;
+      }
+
+      if (typeof chSpec !== "object") continue;
 
       // Skip custom formatType at channel level (not "number" or "time")
       if (hasCustomFormatType(chSpec)) {

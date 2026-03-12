@@ -77,7 +77,7 @@ Stacking ADDS values together — stacking temperatures produces nonsense like 3
 1. Explain that stacking temperatures is misleading because it adds values together
 2. Render a multi-series line chart (color by city) instead
 Only stack values that represent parts of a meaningful total (revenue, counts, quantities, populations).
-Implicit stacking: Area marks with color encoding implicitly stack. For non-summable data, use \`line\` mark with \`color\`, or set \`stack: false\` on the y encoding.
+Implicit stacking: Area marks with color encoding implicitly stack — this means they ADD values together. For non-summable data (temperatures, rates, prices), use \`line\` mark with \`color\` encoding instead of \`area\`. If you must use area, add \`"stack": false\` on the y encoding.
 
 ## MANDATORY — fix all warnings AND broken charts before responding
 When \`render_chart\` returns warnings, you MUST:
@@ -101,6 +101,9 @@ ${docLookup}
 2. Every \`field\` must reference an actual CSV column name (or a transform \`"as"\` alias).
 3. Look up \`pre-render-checklist\` docs and review before every render.
 4. **High-cardinality data** — if a categorical axis would show more than ~20 unique values, consider filtering to top/bottom N. Look up \`filter\` docs for the pattern. Mention any filtering in your response.
+
+## Column names with special characters
+Column names with spaces or special characters (e.g. "Order Date", "Cost (USD)") require bracket notation in filter expressions: \`datum["Order Date"]\`, not \`datum.Order Date\`. In encoding \`field\` properties, just use the name as-is: \`"field": "Order Date"\`.
 
 ## Default styling (applied automatically)
 Charts use clean Datawrapper-like defaults: system-ui font, horizontal grid lines, tableau10 colors, polished title typography. Do NOT include styling properties unless the user asks for a specific look.

@@ -32,7 +32,7 @@ const systemPrompt = buildSystemPrompt({ context: "plugin" });
 const TOPIC_GROUPS: Record<string, string[]> = {
   "Mark types": ["bar", "line", "area", "point", "rect", "rule", "text", "tick", "arc", "boxplot"],
   "Encoding & scales": ["encoding", "color-scale", "position-scales", "styling"],
-  "Transforms": ["aggregate", "stack", "fold", "filter", "calculate", "lookup"],
+  "Transforms": ["aggregate", "stack", "fold", "filter", "calculate", "lookup", "window", "regression", "impute", "pivot"],
   "Composition": ["layer", "facet", "repeat", "concat"],
   "Patterns & checklists": ["layout-patterns", "composite-patterns", "editing-charts", "pre-render-checklist"],
 };

@@ -19,7 +19,7 @@ export interface CategoricalInfo {
   values: string[];
 }
 
-export type DateGranularity = "year" | "quarter" | "month" | "week" | "day" | "hour" | "minute";
+export type DateGranularity = "year" | "quarter" | "month" | "week" | "day" | "hour" | "minute" | "second";
 
 export interface ColumnMeta {
   name: string;

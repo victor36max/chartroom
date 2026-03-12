@@ -24,7 +24,8 @@ export function createTools(datasetNames: string[]) {
         "bar, line, area, point, rect, rule, text, tick, arc, boxplot, " +
         "encoding (channels and types), aggregate (aggregate/bin/timeUnit), " +
         "stack, fold (wide-to-long reshape), filter (includes top/bottom N with window), calculate, " +
-        "lookup (cross-dataset joins), " +
+        "lookup (cross-dataset joins), window (running totals/moving averages/ranking), " +
+        "regression (trend lines/loess smoothing), impute (fill missing values), pivot (long-to-wide), " +
         "layer (multi-mark), facet (small multiples), repeat, concat (hconcat/vconcat side-by-side panels), " +
         "color-scale, position-scales, styling, " +
         "layout-patterns (stacked/grouped/horizontal), composite-patterns (lollipop/pareto/dual-axis/trend-line), editing-charts",

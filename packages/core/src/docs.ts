@@ -16,6 +16,10 @@ export const TOPIC_IDS = [
   "filter",
   "calculate",
   "lookup",
+  "window",
+  "regression",
+  "impute",
+  "pivot",
   "layer",
   "facet",
   "repeat",
@@ -453,7 +457,7 @@ Operations: count, sum, mean, median, min, max, stdev, variance, distinct, valid
 
 **Bin (histogram):**
 \`\`\`json
-"x": { "bin": true, "field": "value", "type": "quantitative" }
+{ "mark": "bar", "encoding": { "x": { "bin": true, "field": "value", "type": "quantitative" }, "y": { "aggregate": "count", "type": "quantitative" } } }
 \`\`\`
 Options: \`{ "bin": { "maxbins": 20 } }\` or \`{ "bin": { "step": 5 } }\`
 
@@ -486,7 +490,7 @@ Combos: yearmonth, yearmonthdate, monthdate, hoursminutes
 - \`count\` aggregate doesn't need a \`field\`
 - bin creates a range — the y axis should use \`aggregate: "count"\`
 - timeUnit groups dates — use with temporal type
-- **Aggregate + lookup ordering:** If you need metadata from another dataset, aggregate first, then \`lookup\` — don't lookup first and use \`"op": "first"\` on string fields (can produce blank charts). See lookup docs.`,
+- **Aggregate + lookup ordering:** If you need metadata from another dataset, aggregate first, then \`lookup\`. Aggregating first reduces the dataset to one row per group, making the lookup efficient and preventing duplicate joins. Looking up first forces you to carry string fields through the aggregate with \`"op": "first"\`, which can produce blank charts. See lookup docs.`,
   },
 
   stack: {
@@ -732,6 +736,155 @@ Use \`joinaggregate\` instead of \`aggregate\` to keep all original rows:
   { "lookup": "symbol", "from": { "data": { "url": "companies.csv" }, "key": "symbol", "fields": ["company", "sector"] } }
 ]
 \`\`\``,
+  },
+
+  window: {
+    title: "Window Transform",
+    content: `Computes values over a sorted partition of data without reducing rows. Essential for running totals, moving averages, and ranking.
+
+**Running total:**
+\`\`\`json
+"transform": [{ "window": [{ "op": "sum", "field": "revenue", "as": "cumulative_revenue" }], "sort": [{ "field": "date", "order": "ascending" }] }]
+\`\`\`
+
+**Moving average (7-day):**
+\`\`\`json
+"transform": [{ "window": [{ "op": "mean", "field": "value", "as": "ma7" }], "frame": [-3, 3], "sort": [{ "field": "date", "order": "ascending" }] }]
+\`\`\`
+\`frame: [-3, 3]\` means 3 rows before and 3 rows after the current row (7-row window).
+
+**Ranking (top/bottom N):**
+\`\`\`json
+"transform": [
+  { "window": [{ "op": "dense_rank", "as": "rank" }], "sort": [{ "field": "total", "order": "descending" }] },
+  { "filter": "datum.rank <= 5" }
+]
+\`\`\`
+Always use \`dense_rank\` (not \`rank\`) — \`rank\` skips numbers on ties, \`dense_rank\` gives consecutive ranks.
+
+**Percent of total:**
+\`\`\`json
+"transform": [
+  { "joinaggregate": [{ "op": "sum", "field": "revenue", "as": "total" }] },
+  { "calculate": "datum.revenue / datum.total * 100", "as": "pct" }
+]
+\`\`\`
+
+**Partitioned window (per-group ranking):**
+\`\`\`json
+"transform": [{ "window": [{ "op": "dense_rank", "as": "rank" }], "sort": [{ "field": "score", "order": "descending" }], "groupby": ["category"] }]
+\`\`\`
+
+**Window operations:** row_number, rank, dense_rank, percent_rank, cume_dist, ntile, lag, lead, first_value, last_value, nth_value, count, sum, mean, min, max, stdev, variance
+
+**Gotchas:**
+- Window does NOT reduce rows — it adds computed fields to each row
+- \`sort\` is required for ordered operations (rank, running total, moving average)
+- \`frame\` controls the sliding window size: \`[-N, N]\` for symmetric, \`[null, 0]\` for cumulative up to current row
+- For top-N patterns, see \`filter\` docs for the complete aggregate → window → filter pipeline`,
+  },
+
+  regression: {
+    title: "Regression and Loess Transforms",
+    content: `Compute trend lines and smoothed curves from data.
+
+**Linear regression:**
+\`\`\`json
+"transform": [{ "regression": "y_field", "on": "x_field" }]
+\`\`\`
+Produces two rows (start and end points) with the regression line. Use with \`line\` mark.
+
+**Polynomial regression:**
+\`\`\`json
+"transform": [{ "regression": "y_field", "on": "x_field", "method": "poly", "order": 3 }]
+\`\`\`
+Methods: \`linear\`, \`log\`, \`exp\`, \`pow\`, \`quad\`, \`poly\`
+
+**Loess smoothing (local regression):**
+\`\`\`json
+"transform": [{ "loess": "y_field", "on": "x_field", "bandwidth": 0.3 }]
+\`\`\`
+\`bandwidth\` (0-1) controls smoothness: lower = more detail, higher = smoother.
+
+**Custom output field names:**
+\`\`\`json
+"transform": [{ "regression": "y_field", "on": "x_field", "as": ["x_out", "y_out"] }]
+\`\`\`
+
+**Common pattern — scatter with trend line (layered):**
+\`\`\`json
+{ "layer": [
+  { "mark": "point" },
+  { "mark": { "type": "line", "color": "red" }, "transform": [{ "regression": "y_field", "on": "x_field" }] }
+], "encoding": { "x": { "field": "x_field", "type": "quantitative" }, "y": { "field": "y_field", "type": "quantitative" } } }
+\`\`\`
+
+**Gotchas:**
+- Regression/loess transforms replace the data — use in a separate layer to keep original points
+- Default output fields have the same names as input fields
+- For grouped regression, add \`"groupby": ["category"]\``,
+  },
+
+  impute: {
+    title: "Impute Transform (fill missing values)",
+    content: `Fills in missing values in a dataset. Useful for time series with gaps.
+
+**Fill missing dates with zero:**
+\`\`\`json
+"transform": [{ "impute": "value", "key": "date", "value": 0 }]
+\`\`\`
+
+**Fill with method (mean, median, min, max):**
+\`\`\`json
+"transform": [{ "impute": "value", "key": "date", "method": "value", "value": 0 }]
+\`\`\`
+Methods: \`value\` (default, uses \`value\` property), \`mean\`, \`median\`, \`min\`, \`max\`
+
+**Grouped impute (fill per series):**
+\`\`\`json
+"transform": [{ "impute": "revenue", "key": "month", "groupby": ["product"], "value": 0 }]
+\`\`\`
+This ensures every product has a value for every month.
+
+**Gotchas:**
+- \`key\` is the field that defines the domain (usually a date or category axis)
+- \`impute\` is the field whose missing values get filled
+- Without \`groupby\`, imputation is global; with \`groupby\`, it's per-group
+- Impute only fills gaps in the key domain — it doesn't create new key values beyond the data range`,
+  },
+
+  pivot: {
+    title: "Pivot Transform (long-to-wide)",
+    content: `Converts long-format data to wide format — the reverse of fold.
+
+**Basic pivot:**
+\`\`\`json
+"transform": [{ "pivot": "category", "value": "amount" }]
+\`\`\`
+This creates one column per unique value in \`category\`, filled with the corresponding \`amount\`.
+
+**With groupby (pivot within groups):**
+\`\`\`json
+"transform": [{ "pivot": "metric", "value": "value", "groupby": ["date"] }]
+\`\`\`
+One row per date, with columns for each metric.
+
+**When to use pivot vs fold:**
+- \`fold\` — wide to long (multiple columns → key/value pairs). Use when you have \`revenue\`, \`profit\`, \`cost\` columns and want to plot them as series.
+- \`pivot\` — long to wide (key/value pairs → multiple columns). Use when you need to compute differences between categories (e.g., \`calculate: "datum.A - datum.B"\`).
+
+**Common pattern — difference between two categories:**
+\`\`\`json
+"transform": [
+  { "pivot": "group", "value": "score", "groupby": ["date"] },
+  { "calculate": "datum.Treatment - datum.Control", "as": "difference" }
+]
+\`\`\`
+
+**Gotchas:**
+- Pivot can create many columns — only pivot fields with low cardinality
+- Missing combinations become null values
+- The output column names are the unique values of the pivot field`,
   },
 
   layer: {
@@ -1164,7 +1317,7 @@ Add a layer with \`{ "mark": { "type": "text", "dy": -8 }, "encoding": { "text":
 
 ### Correctness (SHOULD — verify before every render)
 1. **Type matching** — prefer matching encoding types to data: categories -> nominal/ordinal, numbers -> quantitative, dates -> temporal. Vega-Lite can coerce, but explicit types prevent surprises.
-   - **Integer year columns** — if a column contains plain years (1990, 2020, …), prefer \`"quantitative"\` with \`"axis": {"format": "d"}\` over \`"temporal"\`. The \`"d"\` format displays clean integers (2020) instead of "2,020" or "2.020k". Reserve \`"temporal"\` for actual date/datetime strings.
+   - **Integer year columns** — use \`"quantitative"\` with \`"axis": {"format": "d"}\`, not \`"temporal"\`. See encoding docs for details.
 2. **Date filtering** — when filtering temporal fields by range, use DateTime objects \`{"year": 2024, "month": 6, "date": 1}\`, NOT string dates. Or use \`timeUnit\` shorthand for whole-year/month filters. See \`filter\` docs.
 3. **Scatterplot aggregation** — for scatterplots with grouped data (e.g., many rows per stock symbol), use \`transform\` with explicit \`groupby\` — inline aggregate alone collapses everything to a single point.
    - **Large dataset scatter** — if dataset has >500 rows, a naive scatter will overplot. Either: aggregate by group first, use small opacity (0.2–0.3), bin into heatmap (\`rect\` mark), or explain the density issue to the user.

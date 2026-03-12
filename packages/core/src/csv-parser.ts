@@ -2,7 +2,8 @@ import Papa from "papaparse";
 import type { ParsedCSV, ColumnMeta, DataMetadata, DatasetMap, DateGranularity } from "./types";
 
 // Matches common date formats: YYYY-MM-DD, YYYY-MM, YYYY-MM-DDTHH:mm, YYYY/MM/DD, MM/DD/YYYY
-const ISO_DATE_RE = /^(\d{4}[-/]\d{2}([-/]\d{2})?(T\d{2}:\d{2}(:\d{2})?)?|\d{1,2}\/\d{1,2}\/\d{4})$/;
+// Supports timezone suffix: Z, +HH:MM, -HH:MM
+const ISO_DATE_RE = /^(\d{4}[-/]\d{2}([-/]\d{2})?(T\d{2}:\d{2}(:\d{2})?(Z|[+-]\d{2}:\d{2})?)?|\d{1,2}\/\d{1,2}\/\d{4})$/;
 
 export function parseCSV(file: File): Promise<ParsedCSV> {
   return new Promise((resolve) => {
@@ -43,7 +44,7 @@ function inferType(values: unknown[]): ColumnMeta["type"] {
 
   const sample = nonNull.slice(0, 100);
 
-  if (sample.every((v) => typeof v === "number" || (typeof v === "string" && !isNaN(Number(v)) && v.trim() !== ""))) {
+  if (sample.every((v) => typeof v === "number" || (typeof v === "string" && !isNaN(Number(v)) && v.trim() !== "" && v !== "Infinity" && v !== "-Infinity"))) {
     return "number";
   }
 
@@ -64,7 +65,7 @@ function inferDateGranularity(sample: string): DateGranularity {
   // YYYY-MM (no day part)
   if (/^\d{4}[-/]\d{2}$/.test(sample)) return "month";
   // Has time with seconds (HH:MM:SS)
-  if (/T\d{2}:\d{2}:\d{2}/.test(sample)) return "minute";
+  if (/T\d{2}:\d{2}:\d{2}/.test(sample)) return "second";
   // Has time without seconds (HH:MM)
   if (/T\d{2}:\d{2}/.test(sample)) return "hour";
   // YYYY-MM-DD or MM/DD/YYYY (date only)
@@ -116,10 +117,22 @@ export function extractMetadata(data: Record<string, unknown>[]): DataMetadata {
       const dateStrings = (nonNull as string[]).slice().sort(
         (a, b) => new Date(a).getTime() - new Date(b).getTime()
       );
+      // Use the most specific granularity found across a sample of dates
+      const granularityRank: Record<DateGranularity, number> = {
+        year: 0, quarter: 1, month: 2, week: 3, day: 4, hour: 5, minute: 6, second: 7,
+      };
+      let bestGranularity = inferDateGranularity(dateStrings[0]);
+      const sampleDates = dateStrings.slice(0, 20);
+      for (const d of sampleDates) {
+        const g = inferDateGranularity(d);
+        if (granularityRank[g] > granularityRank[bestGranularity]) {
+          bestGranularity = g;
+        }
+      }
       col.dateRange = {
         min: dateStrings[0],
         max: dateStrings[dateStrings.length - 1],
-        granularity: inferDateGranularity(dateStrings[0]),
+        granularity: bestGranularity,
       };
     }
 
@@ -258,7 +271,7 @@ export function metadataToContext(metadata: DataMetadata): string {
 
   // Warn about high-cardinality categorical columns
   const highCardCols = metadata.columns.filter(
-    (c) => c.type === "string" && c.unique !== undefined && c.unique > 30
+    (c) => c.type === "string" && c.unique !== undefined && c.unique > 20
   );
   if (highCardCols.length > 0) {
     lines.push("");

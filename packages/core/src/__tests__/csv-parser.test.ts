@@ -326,3 +326,95 @@ describe("datasetsToContext", () => {
     expect(ctx).toContain("Join keys");
   });
 });
+
+// --- Date handling improvements ---
+
+describe("date detection improvements", () => {
+  it("detects ISO dates with timezone suffix Z", () => {
+    const data = [
+      { ts: "2024-01-15T10:30:00Z" },
+      { ts: "2024-02-20T14:00:00Z" },
+    ];
+    const meta = extractMetadata(data);
+    const tsCol = meta.columns.find((c) => c.name === "ts")!;
+    expect(tsCol.type).toBe("date");
+  });
+
+  it("detects ISO dates with timezone offset", () => {
+    const data = [
+      { ts: "2024-01-15T10:30:00+05:30" },
+      { ts: "2024-02-20T14:00:00-08:00" },
+    ];
+    const meta = extractMetadata(data);
+    const tsCol = meta.columns.find((c) => c.name === "ts")!;
+    expect(tsCol.type).toBe("date");
+  });
+
+  it("infers second granularity for dates with seconds", () => {
+    const data = [
+      { ts: "2024-01-15T10:30:45" },
+      { ts: "2024-01-15T10:31:20" },
+    ];
+    const meta = extractMetadata(data);
+    const tsCol = meta.columns.find((c) => c.name === "ts")!;
+    expect(tsCol.type).toBe("date");
+    expect(tsCol.dateRange?.granularity).toBe("second");
+  });
+
+  it("uses most-specific granularity for mixed date formats", () => {
+    const data = [
+      { d: "2024-01" },
+      { d: "2024-02-15" },
+    ];
+    const meta = extractMetadata(data);
+    const col = meta.columns.find((c) => c.name === "d")!;
+    expect(col.type).toBe("date");
+    // day is more specific than month, so granularity should be "day"
+    expect(col.dateRange?.granularity).toBe("day");
+  });
+});
+
+// --- Number type inference edge cases ---
+
+describe("number inference edge cases", () => {
+  it("does not classify 'Infinity' string as number", () => {
+    const data = [
+      { val: "Infinity" },
+      { val: "42" },
+      { val: "-Infinity" },
+    ];
+    const meta = extractMetadata(data);
+    const col = meta.columns.find((c) => c.name === "val")!;
+    expect(col.type).toBe("string");
+  });
+
+  it("classifies scientific notation as number", () => {
+    const data = [
+      { val: "1e5" },
+      { val: "2.3e-4" },
+      { val: "100" },
+    ];
+    const meta = extractMetadata(data);
+    const col = meta.columns.find((c) => c.name === "val")!;
+    expect(col.type).toBe("number");
+  });
+});
+
+// --- High-cardinality threshold ---
+
+describe("high-cardinality warning threshold", () => {
+  it("warns for string columns with >20 unique values", () => {
+    const data = Array.from({ length: 25 }, (_, i) => ({ name: `item_${i}` }));
+    const meta = extractMetadata(data);
+    const ctx = metadataToContext(meta);
+    expect(ctx).toContain("High-cardinality");
+    expect(ctx).toContain("25 unique values");
+  });
+
+  it("does not warn for string columns with <=20 unique values", () => {
+    const data = Array.from({ length: 20 }, (_, i) => ({ name: `item_${i}` }));
+    const meta = extractMetadata(data);
+    const ctx = metadataToContext(meta);
+    expect(ctx).not.toContain("High-cardinality");
+  });
+});
