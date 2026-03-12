@@ -718,6 +718,32 @@ function lintSpecPatterns(
       }
     }
 
+    // Also check if ALL sub-specs (layers) filter the same field —
+    // if so, treat it as filtered at the parent level too.
+    const subSpecs = getSubSpecs(spec);
+    if (subSpecs.length > 0) {
+      const perSubFiltered = subSpecs.map((sub) => {
+        const subFields = new Set<string>();
+        const subTransforms = sub.transform as Array<Record<string, unknown>> | undefined;
+        if (Array.isArray(subTransforms)) {
+          for (const t of subTransforms) {
+            if (typeof t.filter === "string") {
+              for (const ref of extractDatumRefs(t.filter)) subFields.add(ref);
+            } else if (t.filter && typeof t.filter === "object") {
+              const pred = t.filter as Record<string, unknown>;
+              if (typeof pred.field === "string") subFields.add(pred.field);
+            }
+          }
+        }
+        return subFields;
+      });
+      for (const field of perSubFiltered[0]) {
+        if (perSubFiltered.every((s) => s.has(field))) {
+          filteredFields.add(field);
+        }
+      }
+    }
+
     for (const [channel, chSpec] of Object.entries(enc)) {
       if (!chSpec || typeof chSpec !== "object") continue;
       const chType = (chSpec as Record<string, unknown>).type;

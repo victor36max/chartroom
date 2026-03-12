@@ -469,6 +469,41 @@ describe("validateSpec", () => {
       }
     });
 
+    it("no cardinality warning when all layers filter the same field", () => {
+      const manyEntities = Array.from({ length: 50 }, (_, i) => ({
+        entity: `entity_${i}`,
+        value: i * 10,
+        projected: i * 12,
+      }));
+      const spec = {
+        encoding: {
+          x: { field: "value", type: "quantitative" },
+          color: { field: "entity", type: "nominal" },
+        },
+        layer: [
+          {
+            mark: "line",
+            transform: [
+              { filter: { field: "entity", oneOf: ["entity_0", "entity_1"] } },
+            ],
+            encoding: { y: { field: "value", type: "quantitative" } },
+          },
+          {
+            mark: { type: "line", strokeDash: [4, 4] },
+            transform: [
+              { filter: { field: "entity", oneOf: ["entity_0", "entity_1"] } },
+            ],
+            encoding: { y: { field: "projected", type: "quantitative" } },
+          },
+        ],
+      };
+      const result = validateSpec(spec, { csv: manyEntities });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("entity") && w.includes("unique values"))).toBe(false);
+      }
+    });
+
     it("still warns on high cardinality when a different field is filtered", () => {
       const manyEntities = Array.from({ length: 25 }, (_, i) => ({
         entity: `entity_${i}`,
