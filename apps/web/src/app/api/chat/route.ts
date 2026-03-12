@@ -3,7 +3,6 @@ import {
   convertToModelMessages,
   UIMessage,
   stepCountIs,
-  type ModelMessage,
 } from "ai";
 import { after } from "next/server";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
@@ -13,74 +12,13 @@ const openrouter = createOpenRouter({
 });
 import { buildSystemPrompt } from "@/lib/agent/system-prompt";
 import { createTools } from "@/lib/agent/tools";
-import { pruneOldToolResults } from "@/lib/agent/prune-context";
+import { pruneContext } from "@/lib/agent/prune-context";
 import { resolveModelId, type ModelTier } from "@/lib/agent/models";
 import { createClient } from "@/lib/supabase/server";
 import { getBalance, deductBalance } from "@/lib/db/queries";
 import { isAuthEnabled, getMarkupMultiplier } from "@/lib/utils";
 
 export const maxDuration = 60;
-
-
-function injectChartImages(messages: ModelMessage[]): ModelMessage[] {
-  return messages.map((msg) => {
-    if (msg.role !== "tool") return msg;
-
-    return {
-      ...msg,
-      content: msg.content.map((part) => {
-        if (part.type !== "tool-result") return part;
-
-        // Check if this is a render_chart result with an image
-        try {
-          const output = part.output;
-          const raw = typeof output === "object" && output !== null && "type" in output
-            ? (output as { type: string; value?: unknown }).value
-            : output;
-          const parsed =
-            typeof raw === "string" ? JSON.parse(raw) : raw;
-
-          if (parsed?.image && typeof parsed.image === "string") {
-            const warningText = Array.isArray(parsed.warnings) && parsed.warnings.length > 0
-              ? `\n\nVega-Lite warnings:\n${parsed.warnings.map((w: string) => `- ${w}`).join("\n")}\n\nPlease fix these warnings.`
-              : "";
-            return {
-              ...part,
-              output: {
-                type: "content" as const,
-                value: [
-                  {
-                    type: "text" as const,
-                    text: `Chart rendered successfully.${warningText} Here is a screenshot for evaluation:`,
-                  },
-                  {
-                    type: "file-data" as const,
-                    data: parsed.image,
-                    mediaType: "image/png",
-                  },
-                ],
-              },
-            };
-          }
-
-          if (parsed?.success === false && parsed?.error) {
-            return {
-              ...part,
-              output: {
-                type: "text" as const,
-                value: `Chart rendering failed with error: ${parsed.error}\nPlease fix the chart spec and try again.`,
-              },
-            };
-          }
-        } catch {
-          // Not JSON, leave as-is
-        }
-
-        return part;
-      }),
-    };
-  });
-}
 
 export async function POST(req: Request) {
   let userId: string | null = null;
@@ -129,8 +67,7 @@ export async function POST(req: Request) {
   const tools = createTools(datasetNames);
 
   const modelMessages = await convertToModelMessages(messages);
-  const prunedMessages = pruneOldToolResults(modelMessages);
-  const messagesWithImages = injectChartImages(prunedMessages);
+  const finalMessages = pruneContext(modelMessages);
 
   const modelId = customModelId ?? resolveModelId(tier);
 
@@ -139,7 +76,7 @@ export async function POST(req: Request) {
     result = streamText({
       model: openrouter(modelId),
       system: buildSystemPrompt(dataContext),
-      messages: messagesWithImages,
+      messages: finalMessages,
       tools,
       stopWhen: stepCountIs(10),
     });

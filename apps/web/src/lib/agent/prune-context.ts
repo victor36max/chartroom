@@ -1,1 +1,1 @@
-export { pruneOldToolResults } from "@chartroom/core";
+export { pruneContext } from "@chartroom/core";

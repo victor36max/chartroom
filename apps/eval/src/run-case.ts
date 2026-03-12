@@ -3,7 +3,7 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import {
   buildSystemPrompt,
   createTools,
-  pruneOldToolResults,
+  pruneContext,
   extractMetadata,
   datasetsToContext,
   validateSpec,
@@ -144,7 +144,7 @@ export async function runCase(
     let succeeded = false;
     for (let attempt = 0; attempt < 3 && !succeeded; attempt++) {
       try {
-        const prunedMessages = pruneOldToolResults(conversationMessages);
+        const prunedMessages = pruneContext(conversationMessages);
         const result = await Promise.race([
           generateText({
             model,

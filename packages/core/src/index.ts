@@ -53,4 +53,4 @@ export { TOPIC_IDS, lookupDocs, DOC_CHUNKS, type TopicId } from "./docs";
 
 // AI tools (requires `ai` peer dependency)
 export { createTools } from "./tools";
-export { pruneOldToolResults } from "./prune-context";
+export { pruneContext, pruneOldToolResults } from "./prune-context";
