@@ -1363,4 +1363,152 @@ describe("validateSpec", () => {
       }
     });
   });
+
+  describe("lintFormatStrings", () => {
+    it("warns on invalid d3-format string (double comma)", () => {
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative", format: "$,,.0f" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("format") && w.includes("$,,.0f"))).toBe(true);
+      }
+    });
+
+    it("accepts valid d3-format strings", () => {
+      const formats = ["$,.0f", ".2f", ".2e", "d", ".1%", "+$,.2f", ",.0f", ".2s", "08d"];
+      for (const fmt of formats) {
+        const spec = {
+          mark: "bar",
+          encoding: {
+            x: { field: "category", type: "nominal" },
+            y: { field: "value", type: "quantitative", format: fmt },
+          },
+        };
+        const result = validateSpec(spec, { csv: ROWS });
+        expect(result.valid).toBe(true);
+        if (result.valid) {
+          expect(result.warnings.some(w => w.includes("format") && w.includes(fmt))).toBe(false);
+        }
+      }
+    });
+
+    it("warns on invalid d3-format in axis.format", () => {
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative", axis: { format: "$$" } },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("format") && w.includes("$$"))).toBe(true);
+      }
+    });
+
+    it("warns on invalid d3-time-format directive", () => {
+      const spec = {
+        mark: "line",
+        encoding: {
+          x: { field: "category", type: "temporal", format: "%Y-%K-%Z" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("format") && w.includes("%K"))).toBe(true);
+      }
+    });
+
+    it("accepts valid d3-time-format strings", () => {
+      const formats = ["%Y-%m-%d", "%B of %Y", "%H:%M:%S", "%b %d, %Y"];
+      for (const fmt of formats) {
+        const spec = {
+          mark: "line",
+          encoding: {
+            x: { field: "category", type: "temporal", format: fmt },
+            y: { field: "value", type: "quantitative" },
+          },
+        };
+        const result = validateSpec(spec, { csv: ROWS });
+        expect(result.valid).toBe(true);
+        if (result.valid) {
+          expect(result.warnings.some(w => w.includes("format") && w.includes(fmt))).toBe(false);
+        }
+      }
+    });
+
+    it("skips validation when formatType is custom", () => {
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative", formatType: "myCustom", format: "anything goes" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Invalid d3-format") || w.includes("Invalid d3-time-format"))).toBe(false);
+      }
+    });
+
+    it("skips validation when format is an object (dynamic time format)", () => {
+      const spec = {
+        mark: "line",
+        encoding: {
+          x: { field: "category", type: "temporal", format: { year: "%Y", month: "%b %Y" } },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("format"))).toBe(false);
+      }
+    });
+
+    it("checks format in legend.format", () => {
+      const spec = {
+        mark: "point",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+          color: { field: "value", type: "quantitative", legend: { format: "abc!!" } },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("format") && w.includes("abc!!"))).toBe(true);
+      }
+    });
+
+    it("checks format strings in nested layer specs", () => {
+      const spec = {
+        layer: [
+          {
+            mark: "bar",
+            encoding: {
+              x: { field: "category", type: "nominal" },
+              y: { field: "value", type: "quantitative", format: "$,,.0f" },
+            },
+          },
+        ],
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("format") && w.includes("$,,.0f"))).toBe(true);
+      }
+    });
+  });
 });

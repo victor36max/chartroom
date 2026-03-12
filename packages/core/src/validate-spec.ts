@@ -914,6 +914,104 @@ function lintFieldReferences(
   return warnings;
 }
 
+/** d3-format specifier regex (from d3-format source) */
+const D3_FORMAT_RE = /^(?:(.)?([<>=^]))?([+\-( ])?([$#])?(0)?(\d+)?(,)?(\.\d+)?(~)?([a-z%])?$/i;
+
+/** Valid d3-time-format directives */
+const TIME_DIRECTIVES = new Set("aAbBcdefgGHIjLmMpqQsSuUVwWxXyYZ%".split(""));
+
+function isValidD3Format(fmt: string): boolean {
+  return D3_FORMAT_RE.test(fmt);
+}
+
+function findInvalidTimeDirectives(fmt: string): string[] {
+  const invalid: string[] = [];
+  for (let i = 0; i < fmt.length; i++) {
+    if (fmt[i] === "%" && i + 1 < fmt.length) {
+      const next = fmt[i + 1];
+      // Skip padding modifiers: %-d, %_d, %0d
+      if (next === "-" || next === "_" || next === "0") {
+        if (i + 2 < fmt.length && TIME_DIRECTIVES.has(fmt[i + 2])) {
+          i += 2;
+          continue;
+        }
+      }
+      if (!TIME_DIRECTIVES.has(next)) {
+        invalid.push(`%${next}`);
+      }
+      i++; // skip the directive char
+    }
+  }
+  return invalid;
+}
+
+/** Determine if a channel is temporal based on type or formatType */
+function isTemporalFormat(chSpec: Record<string, unknown>): boolean {
+  if (chSpec.formatType === "time") return true;
+  if (chSpec.type === "temporal") return true;
+  return false;
+}
+
+/** Lint format strings in encoding channels, axis.format, and legend.format */
+function lintFormatStrings(spec: Record<string, unknown>): string[] {
+  const warnings: string[] = [];
+  const enc = spec.encoding as Record<string, Record<string, unknown>> | undefined;
+
+  if (enc) {
+    for (const [channel, chSpec] of Object.entries(enc)) {
+      if (!chSpec || typeof chSpec !== "object") continue;
+
+      // Skip custom formatType (not "number" or "time")
+      if (typeof chSpec.formatType === "string" && chSpec.formatType !== "number" && chSpec.formatType !== "time") {
+        continue;
+      }
+
+      // Collect format strings to check: [format, source label]
+      const toCheck: Array<[string, string]> = [];
+
+      if (typeof chSpec.format === "string") {
+        toCheck.push([chSpec.format, `${channel} encoding`]);
+      }
+      const axis = chSpec.axis as Record<string, unknown> | undefined;
+      if (axis && typeof axis === "object" && typeof axis.format === "string") {
+        toCheck.push([axis.format, `${channel} axis`]);
+      }
+      const legend = chSpec.legend as Record<string, unknown> | undefined;
+      if (legend && typeof legend === "object" && typeof legend.format === "string") {
+        toCheck.push([legend.format, `${channel} legend`]);
+      }
+
+      const isTemporal = isTemporalFormat(chSpec);
+
+      for (const [fmt, source] of toCheck) {
+        if (isTemporal) {
+          const invalid = findInvalidTimeDirectives(fmt);
+          if (invalid.length > 0) {
+            warnings.push(
+              `Invalid d3-time-format in ${source}: "${fmt}" contains unknown directive(s) ${invalid.join(", ")}. ` +
+              `See https://d3js.org/d3-time-format for valid directives.`
+            );
+          }
+        } else {
+          if (!isValidD3Format(fmt)) {
+            warnings.push(
+              `Invalid d3-format in ${source}: "${fmt}" is not a valid number format specifier. ` +
+              `See https://d3js.org/d3-format for valid syntax.`
+            );
+          }
+        }
+      }
+    }
+  }
+
+  // Recurse into sub-specs
+  for (const sub of getSubSpecs(spec)) {
+    warnings.push(...lintFormatStrings(sub));
+  }
+
+  return warnings;
+}
+
 export function validateSpec(
   spec: Record<string, unknown>,
   datasets: Record<string, Record<string, unknown>[]>
@@ -939,6 +1037,7 @@ export function validateSpec(
     warnings.push(...lintSpecPatterns(spec, datasets));
     warnings.push(...lintStackingNonSummable(spec, datasets));
     warnings.push(...lintScaleIssues(spec, datasets));
+    warnings.push(...lintFormatStrings(spec));
     vl.compile(fullSpec as unknown as vl.TopLevelSpec, {
       logger: createWarningLogger(warnings),
     });

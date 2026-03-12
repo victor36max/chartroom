@@ -85,34 +85,33 @@ export async function POST(req: Request) {
     return Response.json({ error: "Failed to generate response" }, { status: 500 });
   }
 
-  // Track cost after stream completes
-  if (userId) {
-    const trackedUserId = userId;
-    after(async () => {
-      try {
-        const [usage, metadata] = await Promise.all([
-          result.totalUsage,
-          result.providerMetadata,
-        ]);
-        const openrouter = metadata?.openrouter as Record<string, unknown> | undefined;
-        const openrouterUsage = openrouter?.usage as Record<string, unknown> | undefined;
-        const rawCost = (openrouterUsage?.cost as number) ?? 0;
-        const cost = rawCost * getMarkupMultiplier();
-        if (cost > 0) {
-          await deductBalance({
-            userId: trackedUserId,
-            amount: cost,
-            modelId,
-            tier,
-            inputTokens: usage.inputTokens ?? 0,
-            outputTokens: usage.outputTokens ?? 0,
-          });
-        }
-      } catch (err) {
-        console.error("Failed to deduct balance:", err);
+  after(async () => {
+    try {
+      const [usage, metadata] = await Promise.all([
+        result.totalUsage,
+        result.providerMetadata,
+      ]);
+      const openrouter = metadata?.openrouter as Record<string, unknown> | undefined;
+      const openrouterUsage = openrouter?.usage as Record<string, unknown> | undefined;
+      const rawCost = (openrouterUsage?.cost as number) ?? 0;
+      const cost = rawCost * getMarkupMultiplier();
+      
+      // TODO: Add structured logging for token usage
+      
+      if (cost > 0 && userId) {
+        await deductBalance({
+          userId,
+          amount: cost,
+          modelId,
+          tier,
+          inputTokens: usage.inputTokens ?? 0,
+          outputTokens: usage.outputTokens ?? 0,
+        });
       }
-    });
-  }
+    } catch (err) {
+      console.error("Failed to process token usage:", err);
+    }
+  });
 
   return result.toUIMessageStreamResponse();
 }
