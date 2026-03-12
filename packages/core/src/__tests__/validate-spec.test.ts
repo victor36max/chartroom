@@ -1492,6 +1492,37 @@ describe("validateSpec", () => {
       }
     });
 
+    it("skips validation when axis has its own custom formatType", () => {
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative", axis: { format: "anything", formatType: "myCustom" } },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Invalid d3-format") || w.includes("Invalid d3-time-format"))).toBe(false);
+      }
+    });
+
+    it("skips validation when legend has its own custom formatType", () => {
+      const spec = {
+        mark: "point",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+          color: { field: "value", type: "quantitative", legend: { format: "anything", formatType: "myCustom" } },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Invalid d3-format") || w.includes("Invalid d3-time-format"))).toBe(false);
+      }
+    });
+
     it("checks format strings in nested layer specs", () => {
       const spec = {
         layer: [

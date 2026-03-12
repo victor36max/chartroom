@@ -915,7 +915,7 @@ function lintFieldReferences(
 }
 
 /** d3-format specifier regex (from d3-format source) */
-const D3_FORMAT_RE = /^(?:(.)?([<>=^]))?([+\-( ])?([$#])?(0)?(\d+)?(,)?(\.\d+)?(~)?([a-z%])?$/i;
+const D3_FORMAT_RE = /^(?:(.)?([<>=^]))?([+\-( ])?([$#])?(0)?(\d+)?(,)?(\.\d+)?(~)?([bcdeEfgGnopsrXx%])?$/;
 
 /** Valid d3-time-format directives */
 const TIME_DIRECTIVES = new Set("aAbBcdefgGHIjLmMpqQsSuUVwWxXyYZ%".split(""));
@@ -945,11 +945,16 @@ function findInvalidTimeDirectives(fmt: string): string[] {
   return invalid;
 }
 
-/** Determine if a channel is temporal based on type or formatType */
-function isTemporalFormat(chSpec: Record<string, unknown>): boolean {
+/** Determine if a channel should use time-format validation */
+function isTemporalChannel(chSpec: Record<string, unknown>): boolean {
   if (chSpec.formatType === "time") return true;
   if (chSpec.type === "temporal") return true;
   return false;
+}
+
+/** Check if an object has a custom formatType (not "number" or "time") */
+function hasCustomFormatType(obj: Record<string, unknown>): boolean {
+  return typeof obj.formatType === "string" && obj.formatType !== "number" && obj.formatType !== "time";
 }
 
 /** Lint format strings in encoding channels, axis.format, and legend.format */
@@ -961,27 +966,26 @@ function lintFormatStrings(spec: Record<string, unknown>): string[] {
     for (const [channel, chSpec] of Object.entries(enc)) {
       if (!chSpec || typeof chSpec !== "object") continue;
 
-      // Skip custom formatType (not "number" or "time")
-      if (typeof chSpec.formatType === "string" && chSpec.formatType !== "number" && chSpec.formatType !== "time") {
+      // Skip custom formatType at channel level (not "number" or "time")
+      if (hasCustomFormatType(chSpec)) {
         continue;
       }
 
       // Collect format strings to check: [format, source label]
       const toCheck: Array<[string, string]> = [];
+      const isTemporal = isTemporalChannel(chSpec);
 
       if (typeof chSpec.format === "string") {
         toCheck.push([chSpec.format, `${channel} encoding`]);
       }
       const axis = chSpec.axis as Record<string, unknown> | undefined;
-      if (axis && typeof axis === "object" && typeof axis.format === "string") {
+      if (axis && typeof axis === "object" && typeof axis.format === "string" && !hasCustomFormatType(axis)) {
         toCheck.push([axis.format, `${channel} axis`]);
       }
       const legend = chSpec.legend as Record<string, unknown> | undefined;
-      if (legend && typeof legend === "object" && typeof legend.format === "string") {
+      if (legend && typeof legend === "object" && typeof legend.format === "string" && !hasCustomFormatType(legend)) {
         toCheck.push([legend.format, `${channel} legend`]);
       }
-
-      const isTemporal = isTemporalFormat(chSpec);
 
       for (const [fmt, source] of toCheck) {
         if (isTemporal) {
