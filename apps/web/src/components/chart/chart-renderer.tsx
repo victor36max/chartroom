@@ -51,17 +51,16 @@ export function ChartRenderer({ spec, datasets, themeId = "default", onViewReady
     };
   }, [spec, datasets, themeId, onViewReady]);
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center p-6 h-full">
-        <div className="p-4 text-sm text-destructive">Chart error: {error}</div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex items-center justify-center p-6 h-full">
-      <div ref={containerRef} id="chart-container" className="max-w-full max-h-full" />
+      {error && (
+        <div className="p-4 text-sm text-destructive">Chart error: {error}</div>
+      )}
+      <div
+        ref={containerRef}
+        id="chart-container"
+        className={`max-w-full max-h-full ${error ? "hidden" : ""}`}
+      />
     </div>
   );
 }
