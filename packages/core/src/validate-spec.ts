@@ -1018,6 +1018,111 @@ function hasCustomFormatType(obj: Record<string, unknown>): boolean {
   return typeof obj.formatType === "string" && obj.formatType !== "number" && obj.formatType !== "time";
 }
 
+/** Valid top-level keys for each Vega-Lite transform type */
+const TRANSFORM_KEYS: Record<string, Set<string>> = {
+  aggregate:     new Set(["aggregate", "groupby"]),
+  bin:           new Set(["bin", "field", "as"]),
+  calculate:     new Set(["calculate", "as"]),
+  density:       new Set(["density", "groupby", "cumulative", "counts", "bandwidth", "extent", "minsteps", "maxsteps", "steps", "as", "resolve"]),
+  extent:        new Set(["extent", "param"]),
+  filter:        new Set(["filter"]),
+  flatten:       new Set(["flatten", "as"]),
+  fold:          new Set(["fold", "as"]),
+  impute:        new Set(["impute", "key", "keyvals", "groupby", "method", "value", "frame"]),
+  joinaggregate: new Set(["joinaggregate", "groupby"]),
+  loess:         new Set(["loess", "on", "groupby", "bandwidth", "as"]),
+  lookup:        new Set(["lookup", "from", "as", "default"]),
+  pivot:         new Set(["pivot", "value", "groupby", "limit", "op"]),
+  quantile:      new Set(["quantile", "groupby", "probs", "step", "as"]),
+  regression:    new Set(["regression", "on", "groupby", "method", "order", "extent", "params", "as"]),
+  sample:        new Set(["sample"]),
+  stack:         new Set(["stack", "groupby", "offset", "sort", "as"]),
+  timeUnit:      new Set(["timeUnit", "field", "as"]),
+  window:        new Set(["window", "frame", "ignorePeers", "groupby", "sort"]),
+};
+
+/** Identifying keys used to detect which transform type an object is */
+const TRANSFORM_IDENTIFIERS: Array<{ key: string; check: (v: unknown) => boolean }> = [
+  { key: "aggregate",     check: (v) => Array.isArray(v) },
+  { key: "bin",           check: (v) => v === true || (typeof v === "object" && v !== null) },
+  { key: "calculate",     check: (v) => typeof v === "string" },
+  { key: "density",       check: (v) => typeof v === "string" },
+  { key: "filter",        check: (v) => v !== undefined },
+  { key: "flatten",       check: (v) => Array.isArray(v) },
+  { key: "fold",          check: (v) => Array.isArray(v) },
+  { key: "impute",        check: (v) => typeof v === "string" },
+  { key: "joinaggregate", check: (v) => Array.isArray(v) },
+  { key: "loess",         check: (v) => typeof v === "string" },
+  { key: "lookup",        check: (v) => typeof v === "string" },
+  { key: "pivot",         check: (v) => typeof v === "string" },
+  { key: "quantile",      check: (v) => typeof v === "string" },
+  { key: "regression",    check: (v) => typeof v === "string" },
+  { key: "sample",        check: (v) => typeof v === "number" },
+  { key: "stack",         check: (v) => typeof v === "string" },
+  { key: "timeUnit",      check: (v) => typeof v === "string" || (typeof v === "object" && v !== null) },
+  { key: "window",        check: (v) => Array.isArray(v) },
+  // extent must come after density/regression since those also have "extent" as a valid key
+  { key: "extent",        check: (v) => typeof v === "string" },
+];
+
+/** Lint for unrecognized top-level keys in transforms */
+function lintUnknownTransformKeys(spec: Record<string, unknown>): string[] {
+  const warnings: string[] = [];
+  const transforms = spec.transform as Array<Record<string, unknown>> | undefined;
+
+  if (Array.isArray(transforms)) {
+    for (const t of transforms) {
+      // Identify which transform type this is
+      let matched: string | null = null;
+      for (const { key, check } of TRANSFORM_IDENTIFIERS) {
+        if (key in t && check(t[key])) {
+          matched = key;
+          break;
+        }
+      }
+
+      if (!matched) {
+        // No identifying key matched — likely a completely malformed transform
+        const keys = Object.keys(t).join(", ");
+        // Check if it looks like a flat joinaggregate (common LLM mistake)
+        if (typeof t.op === "string" && typeof t.as === "string" && Array.isArray(t.groupby)) {
+          warnings.push(
+            `Transform has top-level "op", "as", and "groupby" but no "joinaggregate" wrapper. ` +
+            `Use { "joinaggregate": [{ "op": "${t.op}", "field": "${t.field ?? ""}", "as": "${t.as}" }], "groupby": ${JSON.stringify(t.groupby)} }.`
+          );
+        } else {
+          warnings.push(
+            `Unrecognized transform with keys: ${keys}. ` +
+            `Each transform must have an identifying key (e.g. "filter", "calculate", "joinaggregate", "window", "aggregate", "fold", "bin", etc.).`
+          );
+        }
+        continue;
+      }
+
+      // Check for unrecognized keys
+      const validKeys = TRANSFORM_KEYS[matched];
+      if (!validKeys) continue;
+      const extraKeys = Object.keys(t).filter((k) => !validKeys.has(k));
+      if (extraKeys.length > 0) {
+        const validList = [...validKeys].join(", ");
+        for (const k of extraKeys) {
+          warnings.push(
+            `Transform "${matched}" has unrecognized key "${k}". ` +
+            `Valid keys for ${matched} transforms are: ${validList}.`
+          );
+        }
+      }
+    }
+  }
+
+  // Recurse into sub-specs
+  for (const sub of getSubSpecs(spec)) {
+    warnings.push(...lintUnknownTransformKeys(sub));
+  }
+
+  return warnings;
+}
+
 /** Lint format strings in encoding channels, axis.format, and legend.format */
 function lintFormatStrings(spec: Record<string, unknown>): string[] {
   const warnings: string[] = [];
@@ -1134,6 +1239,7 @@ export function validateSpec(
     warnings.push(...lintStackingNonSummable(spec, datasets));
     warnings.push(...lintScaleIssues(spec, datasets));
     warnings.push(...lintFormatStrings(spec));
+    warnings.push(...lintUnknownTransformKeys(spec));
     vl.compile(fullSpec as unknown as vl.TopLevelSpec, {
       logger: createWarningLogger(warnings),
     });

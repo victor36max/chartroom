@@ -1698,6 +1698,72 @@ describe("validateSpec", () => {
     });
   });
 
+  describe("unknown transform keys", () => {
+    it("warns on flat joinaggregate (missing wrapper)", () => {
+      const spec = {
+        mark: "line",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+        },
+        transform: [
+          { op: "max", field: "value", as: "max_val", groupby: ["category"] },
+        ],
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes('"joinaggregate" wrapper'))).toBe(true);
+      }
+    });
+
+    it("warns on window transform with extra keys like op and field", () => {
+      const spec = {
+        mark: "line",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+        },
+        transform: [
+          {
+            window: [{ op: "dense_rank", as: "rank" }],
+            sort: [{ field: "value", order: "descending" }],
+            op: "dense_rank",
+            field: "value",
+          },
+        ],
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes('unrecognized key "op"'))).toBe(true);
+        expect(result.warnings.some(w => w.includes('unrecognized key "field"'))).toBe(true);
+      }
+    });
+
+    it("does not warn on valid transforms", () => {
+      const spec = {
+        mark: "line",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "max_val", type: "quantitative" },
+        },
+        transform: [
+          { joinaggregate: [{ op: "max", field: "value", as: "max_val" }], groupby: ["category"] },
+          { window: [{ op: "dense_rank", as: "rank" }], sort: [{ field: "max_val", order: "descending" }] },
+          { filter: "datum.rank <= 5" },
+          { calculate: "'prefix_' + datum.category", as: "label" },
+        ],
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("unrecognized"))).toBe(false);
+        expect(result.warnings.some(w => w.includes("joinaggregate"))).toBe(false);
+      }
+    });
+  });
+
   describe("repeat spec field validation", () => {
     it("does not warn for repeat variable field references", () => {
       const spec = {
