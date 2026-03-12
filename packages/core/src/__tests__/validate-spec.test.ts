@@ -311,12 +311,27 @@ describe("validateSpec", () => {
       }
     });
 
-    it("warns when point mark uses inline aggregate without transform groupby", () => {
+    it("no warning when point mark has non-aggregated grouping channel", () => {
       const spec = {
         mark: "point",
         encoding: {
           x: { field: "category", type: "nominal" },
           y: { aggregate: "mean", field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Point/scatter") && w.includes("inline aggregate"))).toBe(false);
+      }
+    });
+
+    it("warns when point mark uses only inline aggregates with no grouping channel", () => {
+      const spec = {
+        mark: "point",
+        encoding: {
+          x: { aggregate: "mean", field: "value", type: "quantitative" },
+          y: { aggregate: "max", field: "value", type: "quantitative" },
         },
       };
       const result = validateSpec(spec, { csv: ROWS });
@@ -662,7 +677,7 @@ describe("validateSpec", () => {
   });
 
   describe("layer-level scatter check", () => {
-    it("warns when point mark inside layer uses inline aggregate without transform groupby", () => {
+    it("no warning when point in layer has non-aggregated grouping channel", () => {
       const spec = {
         layer: [
           {
@@ -670,6 +685,25 @@ describe("validateSpec", () => {
             encoding: {
               x: { field: "category", type: "nominal" },
               y: { aggregate: "mean", field: "value", type: "quantitative" },
+            },
+          },
+        ],
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Point/scatter") && w.includes("inline aggregate"))).toBe(false);
+      }
+    });
+
+    it("warns when point in layer uses only inline aggregates with no grouping channel", () => {
+      const spec = {
+        layer: [
+          {
+            mark: "point",
+            encoding: {
+              x: { aggregate: "min", field: "value", type: "quantitative" },
+              y: { aggregate: "max", field: "value", type: "quantitative" },
             },
           },
         ],
@@ -2095,6 +2129,578 @@ describe("validateSpec", () => {
       expect(result.valid).toBe(true);
       if (result.valid) {
         expect(result.warnings.some(w => w.includes("concatenated into the field name"))).toBe(true);
+      }
+    });
+  });
+
+  describe("bin/timeUnit transform field validation", () => {
+    it("warns when bin transform references non-existent field", () => {
+      const spec = {
+        mark: "bar",
+        transform: [
+          { bin: true, field: "nonexistent", as: "binned" },
+        ],
+        encoding: {
+          x: { field: "binned", type: "quantitative" },
+          y: { aggregate: "count", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Bin transform") && w.includes("nonexistent"))).toBe(true);
+      }
+    });
+
+    it("warns when timeUnit transform references non-existent field", () => {
+      const spec = {
+        mark: "bar",
+        transform: [
+          { timeUnit: "year", field: "nonexistent", as: "year_field" },
+        ],
+        encoding: {
+          x: { field: "year_field", type: "temporal" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("TimeUnit transform") && w.includes("nonexistent"))).toBe(true);
+      }
+    });
+
+    it("does not warn when bin/timeUnit reference existing fields", () => {
+      const dateRows = [
+        { date: "2024-01-01", value: 10 },
+        { date: "2024-06-01", value: 20 },
+      ];
+      const spec = {
+        mark: "bar",
+        transform: [
+          { bin: true, field: "value", as: "binned_value" },
+          { timeUnit: "year", field: "date", as: "year_date" },
+        ],
+        encoding: {
+          x: { field: "binned_value", type: "quantitative" },
+          y: { aggregate: "count", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: dateRows });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Bin transform"))).toBe(false);
+        expect(result.warnings.some(w => w.includes("TimeUnit transform"))).toBe(false);
+      }
+    });
+  });
+
+  describe("bar with continuous x no bin", () => {
+    it("warns when bar has quantitative x and y without bin or aggregate", () => {
+      const numRows = [
+        { x: 1, y: 10 },
+        { x: 2, y: 20 },
+        { x: 3, y: 30 },
+      ];
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "x", type: "quantitative" },
+          y: { field: "y", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: numRows });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("single-pixel-wide bars"))).toBe(true);
+      }
+    });
+
+    it("does not warn when bar has bin on x", () => {
+      const numRows = [
+        { x: 1, y: 10 },
+        { x: 2, y: 20 },
+      ];
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "x", type: "quantitative", bin: true },
+          y: { aggregate: "count", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: numRows });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("single-pixel-wide bars"))).toBe(false);
+      }
+    });
+
+    it("does not warn when bar has aggregate on x", () => {
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative", aggregate: "sum" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("single-pixel-wide bars"))).toBe(false);
+      }
+    });
+  });
+
+  describe("text mark without text encoding", () => {
+    it("warns when text mark has no text encoding", () => {
+      const spec = {
+        mark: "text",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Text mark requires") && w.includes("text"))).toBe(true);
+      }
+    });
+
+    it("does not warn when text mark has text encoding", () => {
+      const spec = {
+        mark: "text",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+          text: { field: "category", type: "nominal" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Text mark requires"))).toBe(false);
+      }
+    });
+  });
+
+  describe("rect mark missing x or y", () => {
+    it("warns when rect mark is missing y encoding", () => {
+      const spec = {
+        mark: "rect",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          color: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Rect mark requires both x and y"))).toBe(true);
+      }
+    });
+
+    it("does not warn when rect mark uses y+y2 annotation band", () => {
+      const spec = {
+        mark: "rect",
+        encoding: {
+          y: { aggregate: "min", field: "value", type: "quantitative" },
+          y2: { aggregate: "max", field: "value" },
+          opacity: { value: 0.2 },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Rect mark requires both x and y"))).toBe(false);
+      }
+    });
+
+    it("does not warn when rect mark has both x and y", () => {
+      const gridRows = [
+        { a: "X", b: "Y", val: 5 },
+        { a: "X", b: "Z", val: 10 },
+      ];
+      const spec = {
+        mark: "rect",
+        encoding: {
+          x: { field: "a", type: "nominal" },
+          y: { field: "b", type: "nominal" },
+          color: { field: "val", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: gridRows });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Rect mark requires both x and y"))).toBe(false);
+      }
+    });
+  });
+
+  describe("quantitative on string data", () => {
+    it("warns when quantitative encoding is applied to string field", () => {
+      const stringRows = Array.from({ length: 20 }, (_, i) => ({
+        name: `person_${i}`,
+        score: i * 5,
+      }));
+      const spec = {
+        mark: "point",
+        encoding: {
+          x: { field: "name", type: "quantitative" },
+          y: { field: "score", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: stringRows });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("quantitative but contains mostly string"))).toBe(true);
+      }
+    });
+
+    it("does not warn when quantitative encoding is on numeric field", () => {
+      const spec = {
+        mark: "point",
+        encoding: {
+          x: { field: "value", type: "quantitative" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("quantitative but contains mostly string"))).toBe(false);
+      }
+    });
+  });
+
+  describe("line/area with unsorted temporal x", () => {
+    it("warns when line chart has unsorted temporal data", () => {
+      const unsortedRows = [
+        { date: "2024-03-01", value: 30 },
+        { date: "2024-01-01", value: 10 },
+        { date: "2024-02-01", value: 20 },
+      ];
+      const spec = {
+        mark: "line",
+        encoding: {
+          x: { field: "date", type: "temporal" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: unsortedRows });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("not sorted by date"))).toBe(true);
+      }
+    });
+
+    it("does not warn when temporal data is sorted", () => {
+      const sortedRows = [
+        { date: "2024-01-01", value: 10 },
+        { date: "2024-02-01", value: 20 },
+        { date: "2024-03-01", value: 30 },
+      ];
+      const spec = {
+        mark: "line",
+        encoding: {
+          x: { field: "date", type: "temporal" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: sortedRows });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("not sorted by date"))).toBe(false);
+      }
+    });
+
+    it("does not warn when sort is specified on encoding", () => {
+      const unsortedRows = [
+        { date: "2024-03-01", value: 30 },
+        { date: "2024-01-01", value: 10 },
+      ];
+      const spec = {
+        mark: "line",
+        encoding: {
+          x: { field: "date", type: "temporal", sort: true },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: unsortedRows });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("not sorted by date"))).toBe(false);
+      }
+    });
+  });
+
+  describe("count column confusion", () => {
+    const DATA_WITH_COUNT = [
+      { name: "A", count: 100 },
+      { name: "B", count: 200 },
+    ];
+
+    it("warns when encoding uses aggregate count and dataset has count column", () => {
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "name", type: "nominal" },
+          y: { aggregate: "count", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: DATA_WITH_COUNT });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("count") && w.includes("counts rows"))).toBe(true);
+      }
+    });
+
+    it("no warning when dataset does not have count column", () => {
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { aggregate: "count", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("counts rows"))).toBe(false);
+      }
+    });
+
+    it("warns on transform-level aggregate count on count field", () => {
+      const spec = {
+        mark: "bar",
+        transform: [
+          { aggregate: [{ op: "count", field: "count", as: "total" }], groupby: ["name"] },
+        ],
+        encoding: {
+          x: { field: "name", type: "nominal" },
+          y: { field: "total", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: DATA_WITH_COUNT });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("count op counts rows"))).toBe(true);
+      }
+    });
+  });
+
+  describe("calculate expression refs", () => {
+    it("warns when calculate references a field not yet available", () => {
+      const spec = {
+        mark: "bar",
+        transform: [
+          { calculate: "datum.computed * 2", as: "doubled" },
+          { calculate: "'hello'", as: "computed" },
+        ],
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "doubled", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("datum.computed") && w.includes("not available"))).toBe(true);
+      }
+    });
+
+    it("no warning when calculate references an available field", () => {
+      const spec = {
+        mark: "bar",
+        transform: [
+          { calculate: "datum.value * 2", as: "doubled" },
+        ],
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "doubled", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("datum.value") && w.includes("not available"))).toBe(false);
+      }
+    });
+  });
+
+  describe("empty groupby", () => {
+    it("warns when aggregate has empty groupby and encoding uses categorical field", () => {
+      const DATA = [
+        { category: "A", value: 10 },
+        { category: "B", value: 20 },
+        { category: "C", value: 30 },
+      ];
+      const spec = {
+        mark: "bar",
+        transform: [
+          { aggregate: [{ op: "sum", field: "value", as: "total" }], groupby: [] },
+        ],
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "total", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: DATA });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("empty groupby") && w.includes("category"))).toBe(true);
+      }
+    });
+
+    it("no warning when aggregate has non-empty groupby", () => {
+      const DATA = [
+        { category: "A", value: 10 },
+        { category: "B", value: 20 },
+      ];
+      const spec = {
+        mark: "bar",
+        transform: [
+          { aggregate: [{ op: "sum", field: "value", as: "total" }], groupby: ["category"] },
+        ],
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "total", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: DATA });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("empty groupby"))).toBe(false);
+      }
+    });
+  });
+
+  describe("joinaggregate missing as", () => {
+    it("warns when joinaggregate entry has no as", () => {
+      const spec = {
+        mark: "bar",
+        transform: [
+          { joinaggregate: [{ op: "sum", field: "value" }], groupby: ["category"] },
+        ],
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Joinaggregate") && w.includes("missing"))).toBe(true);
+      }
+    });
+
+    it("no warning when joinaggregate entry has as", () => {
+      const spec = {
+        mark: "bar",
+        transform: [
+          { joinaggregate: [{ op: "sum", field: "value", as: "total" }], groupby: ["category"] },
+        ],
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "total", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Joinaggregate") && w.includes("missing"))).toBe(false);
+      }
+    });
+  });
+
+  describe("all-null field", () => {
+    it("warns when encoded field has all null values", () => {
+      const DATA = [
+        { category: "A", value: null },
+        { category: "B", value: null },
+      ];
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: DATA });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("value") && w.includes("no non-null"))).toBe(true);
+      }
+    });
+
+    it("no warning when field has some non-null values", () => {
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("no non-null"))).toBe(false);
+      }
+    });
+  });
+
+  describe("single value quantitative", () => {
+    it("warns when quantitative field has only one unique value", () => {
+      const DATA = [
+        { category: "A", value: 42 },
+        { category: "B", value: 42 },
+        { category: "C", value: 42 },
+      ];
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: DATA });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("value") && w.includes("one unique value") && w.includes("42"))).toBe(true);
+      }
+    });
+
+    it("no warning when quantitative field has multiple values", () => {
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("one unique value"))).toBe(false);
+      }
+    });
+
+    it("no warning when quantitative field uses aggregate", () => {
+      const DATA = [
+        { category: "A", value: 42 },
+        { category: "B", value: 42 },
+      ];
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "value", type: "quantitative", aggregate: "count" },
+        },
+      };
+      const result = validateSpec(spec, { csv: DATA });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("one unique value"))).toBe(false);
       }
     });
   });

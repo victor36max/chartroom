@@ -29,3 +29,6 @@ Creates horizontal or vertical reference lines and ranges.
 ```json
 { "layer": [ { "mark": "bar", "encoding": { ... } }, { "mark": "rule", "encoding": { "y": { "datum": 100 }, "color": { "value": "red" } } } ] }
 ```
+
+**Gotchas:**
+- A rule mark in a layer that inherits shared categorical encoding renders lines at each category instead of a single reference line — move each layer's encoding inside the layer object. See `layer` docs.

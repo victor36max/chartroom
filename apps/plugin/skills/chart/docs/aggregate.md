@@ -48,3 +48,9 @@ Combos: yearmonth, yearmonthdate, monthdate, hoursminutes
 - bin creates a range — the y axis should use `aggregate: "count"`
 - timeUnit groups dates — use with temporal type
 - **Aggregate + lookup ordering:** If you need metadata from another dataset, aggregate first, then `lookup`. Aggregating first reduces the dataset to one row per group, making the lookup efficient and preventing duplicate joins. Looking up first forces you to carry string fields through the aggregate with `"op": "first"`, which can produce blank charts. See lookup docs.
+- Aggregate on a field without `as` makes the output field name unpredictable (e.g. `sum_revenue`). Always add `as`.
+- If a transform already aggregated a field, don't also put `aggregate` in the encoding — it double-aggregates. Remove the inline aggregate.
+- After aggregate, the original column is gone — use the `as` alias in encoding, not the original field name
+- Aggregate with empty `groupby: []` collapses all rows to one. Add categorical fields to groupby to preserve groups.
+- If dataset has a column named "count", `aggregate: "count"` still counts rows — it doesn't sum the column. Use `"aggregate": "sum", "field": "count"` to sum it.
+- `joinaggregate` entries without `as` produce no accessible field name — always include `as`

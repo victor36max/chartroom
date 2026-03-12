@@ -33,3 +33,4 @@ Interpolation options: linear, monotone, step, step-before, step-after, basis, c
 - For multi-series, always add `color` encoding so lines are separated
 - `order` encoding controls point connection order (useful for connected scatter)
 - `interpolate` goes in the mark object, not in encoding
+- If data isn't sorted by date, line marks produce zigzag lines — add `"sort": true` to the x encoding

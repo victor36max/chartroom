@@ -56,3 +56,4 @@ When labeling bars with a field from a lookup transform (e.g., manager name), th
 - Use `dy: -8` to position labels above bars
 - Use `dx: 7, align: "left"` to position labels to the right of scatter points
 - For lookup fields on aggregated charts, aggregate the text field too (min/max) so each bar gets one label
+- Text mark requires a `text` encoding channel — without it the chart renders nothing

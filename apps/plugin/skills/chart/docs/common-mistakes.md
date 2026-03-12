@@ -13,3 +13,7 @@
 8. **Missing resolve for dual axis** — add `"resolve": {"scale": {"y": "independent"}}` when layers use different y-fields.
 9. **Lookup referencing wrong dataset** — check `from.data.url` matches an available dataset name exactly.
 10. **Fold referencing non-existent columns** — check column names in fold array against metadata.
+11. **Mangled field names** — AI sometimes concatenates encoding properties into the field string (e.g., `"field": "revenue, type: quantitative"`). Field must be just the column name; `type`, `aggregate`, etc. are separate object properties.
+12. **Unknown transform keys** — each transform type has specific valid keys. Extra keys (e.g., `"field"` on an aggregate, `"groupby"` on a calculate) are silently ignored and produce wrong results.
+13. **Flat joinaggregate** — putting `op`, `as`, `groupby` at transform top level instead of wrapping in `"joinaggregate": [{ "op": ..., "as": ... }]`. The array wrapper is required.
+14. **Invalid format strings** — d3-format (`",.0f"`, `".1%"`) and d3-time-format (`"%Y-%m"`, `"%B %d"`) have specific syntax. Don't mix them (e.g., `"%Y"` is time-format, not number-format).

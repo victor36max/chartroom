@@ -53,3 +53,6 @@ Joins fields from a secondary dataset into the primary dataset. This is a left j
   { "lookup": "symbol", "from": { "data": { "url": "companies.csv" }, "key": "symbol", "fields": ["company", "sector"] } }
 ]
 ```
+- The `lookup` key field must exist in the current dataset at that point in the pipeline
+- Check that `from.data.url` matches an available dataset name exactly
+- The `from.key` field must exist in the target dataset — cross-check against its column names

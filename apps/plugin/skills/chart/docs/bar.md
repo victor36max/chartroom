@@ -39,3 +39,4 @@ Creates bar charts (vertical or horizontal).
 - For stacked bars, add `color` encoding (stacking is default)
 - For grouped bars, use `xOffset` channel
 - `width: { "step": 20 }` controls bar width in pixels
+- Bar with quantitative x AND y but no `bin` or `aggregate` produces single-pixel-wide bars — add `bin: true` to x, or aggregate one axis

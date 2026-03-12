@@ -32,7 +32,7 @@ Creates pie charts, donut charts, and radial plots.
 **Percentage of total / share:** Arc/pie charts naturally show proportions — prefer them when users ask for "percentage of total", "share", or "breakdown". Bar charts with percentage labels require a calculate transform instead.
 
 **Gotchas:**
-- Always use `theta` for the value, not x/y
+- Arc/pie mark requires a `theta` encoding — without it the chart renders as a full circle. Use `theta` for the value, not x/y
 - Always use `color` for the category
 - For labels, layer text with `radius` > outerRadius
 - `stack: true` on theta is needed for label positioning

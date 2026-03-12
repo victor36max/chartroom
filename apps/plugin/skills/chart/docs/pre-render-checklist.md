@@ -35,3 +35,6 @@ Verify these items BEFORE every `render_chart` call.
 20. **Null awareness** — check metadata null counts before using a column. Columns with >50% nulls should not be primary axes.
 21. **Scale safety** — check for zeros/negatives before using log scale. Use linear or symlog instead.
 22. **Verify field names** — cross-check every field in your spec against the metadata column list. Field names are case-sensitive.
+23. **All-null fields** — check metadata null counts; encoding an all-null field renders an empty chart.
+24. **Single-value quantitative** — a quantitative field with only one unique value shows a flat line or single point. Consider a different field or mark type.
+25. **Unsorted temporal data** — line/area with temporal x but unsorted data produces zigzag lines. Add `"sort": true` to the x encoding.

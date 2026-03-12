@@ -126,6 +126,36 @@ function lintTransformOrder(
       }
     }
 
+    // Check bin field reference
+    if (t.bin !== undefined && typeof t.field === "string" && !available.has(t.field)) {
+      const sample = [...available].slice(0, 5).join(", ");
+      warnings.push(
+        `Bin transform references field "${t.field}" but it doesn't exist at this point in the transform pipeline. ` +
+        `Available columns include: ${sample}.`
+      );
+    }
+
+    // Check timeUnit field reference
+    if (typeof t.timeUnit === "string" && typeof t.field === "string" && !available.has(t.field)) {
+      const sample = [...available].slice(0, 5).join(", ");
+      warnings.push(
+        `TimeUnit transform references field "${t.field}" but it doesn't exist at this point in the transform pipeline. ` +
+        `Available columns include: ${sample}.`
+      );
+    }
+
+    // Check calculate expression datum references
+    if (typeof t.calculate === "string") {
+      for (const ref of extractDatumRefs(t.calculate)) {
+        if (!available.has(ref)) {
+          warnings.push(
+            `Calculate expression references "datum.${ref}" but "${ref}" is not available at this point in the transform pipeline. ` +
+            `Move the transform that creates "${ref}" before this calculate.`
+          );
+        }
+      }
+    }
+
     // Update available fields after this transform
     applyTransformFields(available, t);
   }
@@ -694,11 +724,15 @@ function lintSpecPatterns(
       const hasInlineAggregate = Object.values(sEnc).some(
         (ch) => ch && typeof ch === "object" && typeof ch.aggregate === "string"
       );
+      // Check if any non-aggregated channel provides grouping (field without aggregate)
+      const hasGroupingChannel = Object.values(sEnc).some(
+        (ch) => ch && typeof ch === "object" && typeof ch.field === "string" && !ch.aggregate
+      );
       const transforms = (s.transform ?? spec.transform) as Array<Record<string, unknown>> | undefined;
       const hasTransformGroupby = Array.isArray(transforms) && transforms.some(
         (t) => Array.isArray(t.aggregate) && Array.isArray(t.groupby) && (t.groupby as string[]).length > 0
       );
-      if (hasInlineAggregate && !hasTransformGroupby) {
+      if (hasInlineAggregate && !hasGroupingChannel && !hasTransformGroupby) {
         warnings.push(
           `Point/scatter mark with inline aggregate may collapse all data to a single point. ` +
           `Use a transform with explicit "groupby" instead of inline aggregate in encoding.`
@@ -716,6 +750,87 @@ function lintSpecPatterns(
         `Arc/pie mark requires a "theta" encoding channel for angular extent. ` +
         `Without it the chart renders as a full circle.`
       );
+    }
+  }
+
+  // --- Bar with continuous x, no bin or aggregate ---
+  for (const s of specsToCheck) {
+    const sMarkType = getMarkType(s.mark);
+    const sEnc = s.encoding as Record<string, Record<string, unknown>> | undefined;
+    if (sMarkType === "bar" && sEnc) {
+      const xInfo = sEnc.x;
+      const yInfo = sEnc.y;
+      if (xInfo && yInfo &&
+          xInfo.type === "quantitative" && yInfo.type === "quantitative" &&
+          !xInfo.bin && !xInfo.aggregate &&
+          !yInfo.bin && !yInfo.aggregate) {
+        warnings.push(
+          `Bar mark with quantitative x and y but no bin or aggregate produces single-pixel-wide bars. ` +
+          `Add "bin": true to the x encoding, or use "aggregate" on one axis.`
+        );
+      }
+    }
+  }
+
+  // --- Text mark without text encoding ---
+  for (const s of specsToCheck) {
+    const sMarkType = getMarkType(s.mark);
+    const sEnc = s.encoding as Record<string, unknown> | undefined;
+    if (sMarkType === "text" && (!sEnc || !sEnc.text)) {
+      warnings.push(
+        `Text mark requires a "text" encoding channel to display values. ` +
+        `Without it the chart renders nothing.`
+      );
+    }
+  }
+
+  // --- Rect mark missing x or y encoding ---
+  for (const s of specsToCheck) {
+    const sMarkType = getMarkType(s.mark);
+    const sEnc = s.encoding as Record<string, unknown> | undefined;
+    if (sMarkType === "rect" && sEnc) {
+      // Allow rect with ranged pairs (x+x2 or y+y2 for annotation bands)
+      const hasXRange = !!(sEnc.x && sEnc.x2) || !!(sEnc.x2);
+      const hasYRange = !!(sEnc.y && sEnc.y2) || !!(sEnc.y2);
+      const hasBothAxes = !!(sEnc.x && sEnc.y);
+      if (!hasBothAxes && !hasXRange && !hasYRange) {
+        warnings.push(
+          `Rect mark requires both x and y encodings to form a grid. ` +
+          `Without both, it renders a single rectangle.`
+        );
+      }
+    }
+  }
+
+  // --- Line/area with unsorted temporal x ---
+  for (const s of specsToCheck) {
+    const sMarkType = getMarkType(s.mark);
+    const sEnc = s.encoding as Record<string, Record<string, unknown>> | undefined;
+    if ((sMarkType === "line" || sMarkType === "area") && sEnc) {
+      const xInfo = sEnc.x;
+      if (xInfo && xInfo.type === "temporal" && !xInfo.sort && typeof xInfo.field === "string") {
+        const pk = getPrimaryDatasetKey(spec, datasets);
+        const rows = pk ? datasets[pk] : undefined;
+        if (rows && rows.length > 1) {
+          const field = xInfo.field as string;
+          const sample = rows.slice(0, 20);
+          const dates = sample
+            .map((r) => { const v = r[field]; return v instanceof Date ? v.getTime() : new Date(String(v)).getTime(); })
+            .filter((d) => !isNaN(d));
+          if (dates.length > 1) {
+            let isSorted = true;
+            for (let i = 1; i < dates.length; i++) {
+              if (dates[i] < dates[i - 1]) { isSorted = false; break; }
+            }
+            if (!isSorted) {
+              warnings.push(
+                `Line/area mark with temporal x but data is not sorted by date. ` +
+                `Add "sort": true to the x encoding or sort the data to avoid zigzag lines.`
+              );
+            }
+          }
+        }
+      }
     }
   }
 
@@ -846,6 +961,20 @@ function lintSpecPatterns(
             `Field "${chField}" is encoded as ${chType} but contains ${uniqueCount} unique numeric values. ` +
             `This creates ${uniqueCount} discrete categories instead of a continuous axis. ` +
             `Use "quantitative" type, or bin the values.`
+          );
+        }
+      }
+
+      // Quantitative on mostly-string field
+      if (chType === "quantitative" && rows && rows.length > 0) {
+        const numericCount = rows.filter((r) => {
+          const v = r[chField];
+          return typeof v === "number" || (typeof v === "string" && v !== "" && !isNaN(Number(v)));
+        }).length;
+        if (numericCount / rows.length < 0.1) {
+          warnings.push(
+            `Field "${chField}" is encoded as quantitative but contains mostly string values. ` +
+            `Use "nominal" or "ordinal" type instead.`
           );
         }
       }
@@ -1464,6 +1593,207 @@ function lintMangledFieldNames(spec: Record<string, unknown>): string[] {
   return warnings;
 }
 
+/** Lint for count aggregate confusion when dataset has a column named "count" */
+function lintCountColumnConfusion(
+  spec: Record<string, unknown>,
+  datasets: Record<string, Record<string, unknown>[]>
+): string[] {
+  const warnings: string[] = [];
+  const pk = getPrimaryDatasetKey(spec, datasets);
+  const columns = pk ? getColumns(datasets, pk) : new Set<string>();
+
+  if (columns.has("count")) {
+    // Check encoding-level aggregate: "count"
+    const enc = spec.encoding as Record<string, Record<string, unknown>> | undefined;
+    if (enc) {
+      for (const [channel, chSpec] of Object.entries(enc)) {
+        if (!chSpec || typeof chSpec !== "object") continue;
+        if (chSpec.aggregate === "count") {
+          warnings.push(
+            `Encoding "${channel}" uses aggregate "count" but dataset has a column named "count". ` +
+            `The count aggregate counts rows — it does not sum the "count" column. ` +
+            `Use "aggregate": "sum", "field": "count" to sum it.`
+          );
+        }
+      }
+    }
+
+    // Check transform-level aggregate ops
+    const transforms = spec.transform as Array<Record<string, unknown>> | undefined;
+    if (Array.isArray(transforms)) {
+      for (const t of transforms) {
+        if (Array.isArray(t.aggregate)) {
+          for (const agg of t.aggregate as Array<Record<string, unknown>>) {
+            if (agg.op === "count" && agg.field === "count") {
+              warnings.push(
+                `Aggregate transform uses op "count" on field "count". ` +
+                `The count op counts rows — it ignores the field value. ` +
+                `Use "op": "sum", "field": "count" to sum the column.`
+              );
+            }
+          }
+        }
+        if (Array.isArray(t.joinaggregate)) {
+          for (const agg of t.joinaggregate as Array<Record<string, unknown>>) {
+            if (agg.op === "count" && agg.field === "count") {
+              warnings.push(
+                `Joinaggregate transform uses op "count" on field "count". ` +
+                `The count op counts rows — it ignores the field value. ` +
+                `Use "op": "sum", "field": "count" to sum the column.`
+              );
+            }
+          }
+        }
+      }
+    }
+  }
+
+  for (const sub of getSubSpecs(spec)) {
+    warnings.push(...lintCountColumnConfusion(sub, datasets));
+  }
+  return warnings;
+}
+
+/** Lint for aggregate with empty groupby collapsing all rows */
+function lintEmptyGroupby(
+  spec: Record<string, unknown>,
+  datasets: Record<string, Record<string, unknown>[]>
+): string[] {
+  const warnings: string[] = [];
+  const transforms = spec.transform as Array<Record<string, unknown>> | undefined;
+
+  if (Array.isArray(transforms)) {
+    for (const t of transforms) {
+      if (Array.isArray(t.aggregate) && Array.isArray(t.groupby) && (t.groupby as string[]).length === 0) {
+        // Empty groupby — check if encoding references categorical fields
+        const enc = spec.encoding as Record<string, Record<string, unknown>> | undefined;
+        if (enc) {
+          for (const [, chSpec] of Object.entries(enc)) {
+            if (!chSpec || typeof chSpec !== "object") continue;
+            if ((chSpec.type === "nominal" || chSpec.type === "ordinal") && typeof chSpec.field === "string") {
+              warnings.push(
+                `Aggregate transform has empty groupby — all rows collapse to a single row. ` +
+                `Categorical field "${chSpec.field}" in encoding will have only one value. ` +
+                `Add fields to groupby to preserve categories.`
+              );
+              break; // One warning is enough
+            }
+          }
+        }
+      }
+    }
+  }
+
+  for (const sub of getSubSpecs(spec)) {
+    warnings.push(...lintEmptyGroupby(sub, datasets));
+  }
+  return warnings;
+}
+
+/** Lint for joinaggregate entries missing "as" alias */
+function lintJoinaggregateMissingAs(spec: Record<string, unknown>): string[] {
+  const warnings: string[] = [];
+  const transforms = spec.transform as Array<Record<string, unknown>> | undefined;
+
+  if (Array.isArray(transforms)) {
+    for (const t of transforms) {
+      if (Array.isArray(t.joinaggregate)) {
+        for (const agg of t.joinaggregate as Array<Record<string, unknown>>) {
+          if (!agg.as) {
+            warnings.push(
+              `Joinaggregate op "${agg.op}" on field "${agg.field ?? "*"}" is missing "as" alias. ` +
+              `Without it, the computed value has no accessible name in encoding.`
+            );
+          }
+        }
+      }
+    }
+  }
+
+  for (const sub of getSubSpecs(spec)) {
+    warnings.push(...lintJoinaggregateMissingAs(sub));
+  }
+  return warnings;
+}
+
+/** Lint for encoded fields that are entirely null/empty in the dataset */
+function lintAllNullField(
+  spec: Record<string, unknown>,
+  datasets: Record<string, Record<string, unknown>[]>
+): string[] {
+  const warnings: string[] = [];
+  const pk = getPrimaryDatasetKey(spec, datasets);
+  if (!pk) return warnings;
+  const rows = datasets[pk];
+  if (!rows || rows.length === 0) return warnings;
+  const baseColumns = getColumns(datasets, pk);
+
+  const ownFields = getOwnEncodingFields(spec);
+  for (const field of ownFields) {
+    // Only check fields from the base dataset, not transform-created ones
+    if (!baseColumns.has(field)) continue;
+    const allNull = rows.every((r) => {
+      const v = r[field];
+      return v == null || v === "";
+    });
+    if (allNull) {
+      warnings.push(
+        `Field "${field}" in encoding has no non-null values in the dataset. The chart will render empty.`
+      );
+    }
+  }
+
+  for (const sub of getSubSpecs(spec)) {
+    warnings.push(...lintAllNullField(sub, datasets));
+  }
+  return warnings;
+}
+
+/** Lint for quantitative field with only one unique value */
+function lintSingleValueQuantitative(
+  spec: Record<string, unknown>,
+  datasets: Record<string, Record<string, unknown>[]>
+): string[] {
+  const warnings: string[] = [];
+  const pk = getPrimaryDatasetKey(spec, datasets);
+  if (!pk) return warnings;
+  const rows = datasets[pk];
+  if (!rows || rows.length === 0) return warnings;
+  const baseColumns = getColumns(datasets, pk);
+
+  const enc = spec.encoding as Record<string, Record<string, unknown>> | undefined;
+  if (enc) {
+    for (const [, chSpec] of Object.entries(enc)) {
+      if (!chSpec || typeof chSpec !== "object") continue;
+      if (chSpec.type !== "quantitative") continue;
+      if (typeof chSpec.field !== "string") continue;
+      if (typeof chSpec.aggregate === "string") continue; // aggregate changes cardinality
+      if (!baseColumns.has(chSpec.field)) continue; // skip transform-created fields
+
+      const uniqueValues = new Set<number>();
+      for (const r of rows) {
+        const v = r[chSpec.field];
+        if (v != null && v !== "") {
+          const n = typeof v === "number" ? v : Number(v);
+          if (!isNaN(n)) uniqueValues.add(n);
+        }
+      }
+      if (uniqueValues.size === 1) {
+        const [val] = uniqueValues;
+        warnings.push(
+          `Field "${chSpec.field}" encoded as quantitative has only one unique value (${val}). ` +
+          `The chart will show a flat line or single point.`
+        );
+      }
+    }
+  }
+
+  for (const sub of getSubSpecs(spec)) {
+    warnings.push(...lintSingleValueQuantitative(sub, datasets));
+  }
+  return warnings;
+}
+
 export function validateSpec(
   spec: Record<string, unknown>,
   datasets: Record<string, Record<string, unknown>[]>
@@ -1496,6 +1826,11 @@ export function validateSpec(
     warnings.push(...lintLookupReferences(spec, datasets));
     warnings.push(...lintFacetRepeatFields(spec, datasets));
     warnings.push(...lintDualAxisResolve(spec));
+    warnings.push(...lintCountColumnConfusion(spec, datasets));
+    warnings.push(...lintEmptyGroupby(spec, datasets));
+    warnings.push(...lintJoinaggregateMissingAs(spec));
+    warnings.push(...lintAllNullField(spec, datasets));
+    warnings.push(...lintSingleValueQuantitative(spec, datasets));
     vl.compile(fullSpec as unknown as vl.TopLevelSpec, {
       logger: createWarningLogger(warnings),
     });

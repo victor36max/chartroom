@@ -23,3 +23,6 @@ Creates heatmaps and 2D binned plots.
 "x": { "field": "date", "timeUnit": "date", "type": "ordinal" },
 "y": { "field": "date", "timeUnit": "day", "type": "ordinal" }
 ```
+
+**Gotchas:**
+- Rect mark requires both x and y encodings (or ranged x2/y2 pairs) — without both, it renders a single rectangle

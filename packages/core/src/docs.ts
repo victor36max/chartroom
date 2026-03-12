@@ -81,7 +81,8 @@ export const DOC_CHUNKS: Record<TopicId, DocChunk> = {
 - No barX/barY — orientation is automatic based on encoding types
 - For stacked bars, add \`color\` encoding (stacking is default)
 - For grouped bars, use \`xOffset\` channel
-- \`width: { "step": 20 }\` controls bar width in pixels`,
+- \`width: { "step": 20 }\` controls bar width in pixels
+- Bar with quantitative x AND y but no \`bin\` or \`aggregate\` produces single-pixel-wide bars — add \`bin: true\` to x, or aggregate one axis`,
   },
 
   line: {
@@ -117,7 +118,8 @@ Interpolation options: linear, monotone, step, step-before, step-after, basis, c
 - Use \`type: "temporal"\` for date-string fields (e.g. "2024-03-15"), not "quantitative". For plain integer year columns, use \`"quantitative"\` — see encoding docs for details.
 - For multi-series, always add \`color\` encoding so lines are separated
 - \`order\` encoding controls point connection order (useful for connected scatter)
-- \`interpolate\` goes in the mark object, not in encoding`,
+- \`interpolate\` goes in the mark object, not in encoding
+- If data isn't sorted by date, line marks produce zigzag lines — add \`"sort": true\` to the x encoding`,
   },
 
   area: {
@@ -143,7 +145,11 @@ Interpolation options: linear, monotone, step, step-before, step-after, basis, c
 
 **Mark properties:** \`{ "type": "area", "opacity": 0.7, "line": true, "interpolate": "monotone" }\`
 - \`line: true\` adds a line stroke on top of the area
-- \`opacity\` controls fill transparency`,
+- \`opacity\` controls fill transparency
+
+**Gotchas:**
+- If data isn't sorted by date, area marks produce zigzag fills — add \`"sort": true\` to the x encoding
+- Area marks with \`color\` encoding implicitly stack (add values together). Don't stack temperatures, rates, or prices — use \`line\` mark or add \`"stack": false\` on the y encoding`,
   },
 
   point: {
@@ -204,7 +210,10 @@ When each point represents an aggregate of many rows (e.g., one point per stock 
 \`\`\`json
 "x": { "field": "date", "timeUnit": "date", "type": "ordinal" },
 "y": { "field": "date", "timeUnit": "day", "type": "ordinal" }
-\`\`\``,
+\`\`\`
+
+**Gotchas:**
+- Rect mark requires both x and y encodings (or ranged x2/y2 pairs) — without both, it renders a single rectangle`,
   },
 
   rule: {
@@ -236,7 +245,10 @@ When each point represents an aggregate of many rows (e.g., one point per stock 
 **Common pattern — layer with bar chart:**
 \`\`\`json
 { "layer": [ { "mark": "bar", "encoding": { ... } }, { "mark": "rule", "encoding": { "y": { "datum": 100 }, "color": { "value": "red" } } } ] }
-\`\`\``,
+\`\`\`
+
+**Gotchas:**
+- A rule mark in a layer that inherits shared categorical encoding renders lines at each category instead of a single reference line — move each layer's encoding inside the layer object. See \`layer\` docs.`,
   },
 
   text: {
@@ -295,7 +307,8 @@ When labeling bars with a field from a lookup transform (e.g., manager name), th
 - Always layer text with the chart mark — text alone is rarely useful
 - Use \`dy: -8\` to position labels above bars
 - Use \`dx: 7, align: "left"\` to position labels to the right of scatter points
-- For lookup fields on aggregated charts, aggregate the text field too (min/max) so each bar gets one label`,
+- For lookup fields on aggregated charts, aggregate the text field too (min/max) so each bar gets one label
+- Text mark requires a \`text\` encoding channel — without it the chart renders nothing`,
   },
 
   tick: {
@@ -358,7 +371,7 @@ When labeling bars with a field from a lookup transform (e.g., manager name), th
 **Percentage of total / share:** Arc/pie charts naturally show proportions — prefer them when users ask for "percentage of total", "share", or "breakdown". Bar charts with percentage labels require a calculate transform instead.
 
 **Gotchas:**
-- Always use \`theta\` for the value, not x/y
+- Arc/pie mark requires a \`theta\` encoding — without it the chart renders as a full circle. Use \`theta\` for the value, not x/y
 - Always use \`color\` for the category
 - For labels, layer text with \`radius\` > outerRadius
 - \`stack: true\` on theta is needed for label positioning
@@ -440,7 +453,14 @@ Or shorthand: \`"mark": { "type": "bar", "tooltip": true }\`
 **Value (constant visual):** Fixed visual property:
 \`\`\`json
 "color": { "value": "steelblue" }
-\`\`\``,
+\`\`\`
+
+**Gotchas:**
+- Encoding a numeric field (>20 unique values) as \`nominal\` or \`ordinal\` creates N discrete categories instead of a continuous axis — use \`quantitative\` or bin the values
+- Encoding a mostly-string field as \`quantitative\` coerces values to NaN — use \`nominal\` or \`ordinal\`
+- \`shape\` channel only has 6 built-in shapes — values beyond 6 reuse shapes and become indistinguishable. Use \`color\` for >6 categories
+- Don't use \`timeUnit\` on fields with plain numbers or non-date strings — it produces garbage. Only use on actual date/datetime values
+- Don't use \`type: "temporal"\` on plain number fields (e.g. year integers like 2020) — Vega-Lite interprets them as milliseconds since epoch. Use \`"quantitative"\` with \`"axis": {"format": "d"}\``,
   },
 
   aggregate: {
@@ -491,7 +511,13 @@ Combos: yearmonth, yearmonthdate, monthdate, hoursminutes
 - \`count\` aggregate doesn't need a \`field\`
 - bin creates a range — the y axis should use \`aggregate: "count"\`
 - timeUnit groups dates — use with temporal type
-- **Aggregate + lookup ordering:** If you need metadata from another dataset, aggregate first, then \`lookup\`. Aggregating first reduces the dataset to one row per group, making the lookup efficient and preventing duplicate joins. Looking up first forces you to carry string fields through the aggregate with \`"op": "first"\`, which can produce blank charts. See lookup docs.`,
+- **Aggregate + lookup ordering:** If you need metadata from another dataset, aggregate first, then \`lookup\`. Aggregating first reduces the dataset to one row per group, making the lookup efficient and preventing duplicate joins. Looking up first forces you to carry string fields through the aggregate with \`"op": "first"\`, which can produce blank charts. See lookup docs.
+- Aggregate on a field without \`as\` makes the output field name unpredictable (e.g. \`sum_revenue\`). Always add \`as\`.
+- If a transform already aggregated a field, don't also put \`aggregate\` in the encoding — it double-aggregates. Remove the inline aggregate.
+- After aggregate, the original column is gone — use the \`as\` alias in encoding, not the original field name
+- Aggregate with empty \`groupby: []\` collapses all rows to one. Add categorical fields to groupby to preserve groups.
+- If dataset has a column named "count", \`aggregate: "count"\` still counts rows — it doesn't sum the column. Use \`"aggregate": "sum", "field": "count"\` to sum it.
+- \`joinaggregate\` entries without \`as\` produce no accessible field name — always include \`as\``,
   },
 
   stack: {
@@ -680,7 +706,8 @@ Use \`joinaggregate\` instead of \`aggregate\` to keep all original rows:
 **Gotchas:**
 - Use \`datum.fieldName\` to reference fields (not just field name)
 - The \`as\` property names the new field
-- Chain multiple calculates for complex derivations`,
+- Chain multiple calculates for complex derivations
+- Calculate expressions using \`datum.X\` can only reference fields available at that point in the pipeline — if it references a field created by a later transform, move the calculate after it`,
   },
 
   lookup: {
@@ -736,7 +763,10 @@ Use \`joinaggregate\` instead of \`aggregate\` to keep all original rows:
   { "aggregate": [{ "op": "mean", "field": "close", "as": "avg_close" }], "groupby": ["symbol"] },
   { "lookup": "symbol", "from": { "data": { "url": "companies.csv" }, "key": "symbol", "fields": ["company", "sector"] } }
 ]
-\`\`\``,
+\`\`\`
+- The \`lookup\` key field must exist in the current dataset at that point in the pipeline
+- Check that \`from.data.url\` matches an available dataset name exactly
+- The \`from.key\` field must exist in the target dataset — cross-check against its column names`,
   },
 
   window: {
@@ -782,7 +812,8 @@ Always use \`dense_rank\` (not \`rank\`) — \`rank\` skips numbers on ties, \`d
 - Window does NOT reduce rows — it adds computed fields to each row
 - \`sort\` is required for ordered operations (rank, running total, moving average)
 - \`frame\` controls the sliding window size: \`[-N, N]\` for symmetric, \`[null, 0]\` for cumulative up to current row
-- For top-N patterns, see \`filter\` docs for the complete aggregate → window → filter pipeline`,
+- For top-N patterns, see \`filter\` docs for the complete aggregate → window → filter pipeline
+- After \`joinaggregate\`, many rows share sort values — \`rank\` skips numbers (1,1,1,...,51) causing top-N filters to keep only 1 group. Use \`dense_rank\` for consecutive ranks (1,2,3).`,
   },
 
   regression: {
@@ -1347,7 +1378,10 @@ Add a layer with \`{ "mark": { "type": "text", "dy": -8 }, "encoding": { "text":
 19. **Tooltip** — \`tooltip: true\` in mark properties for interactivity, or explicit tooltip encoding for custom tooltips.
 20. **Null awareness** — check metadata null counts before using a column. Columns with >50% nulls should not be primary axes.
 21. **Scale safety** — check for zeros/negatives before using log scale. Use linear or symlog instead.
-22. **Verify field names** — cross-check every field in your spec against the metadata column list. Field names are case-sensitive.`,
+22. **Verify field names** — cross-check every field in your spec against the metadata column list. Field names are case-sensitive.
+23. **All-null fields** — check metadata null counts; encoding an all-null field renders an empty chart.
+24. **Single-value quantitative** — a quantitative field with only one unique value shows a flat line or single point. Consider a different field or mark type.
+25. **Unsorted temporal data** — line/area with temporal x but unsorted data produces zigzag lines. Add \`"sort": true\` to the x encoding.`,
   },
   "common-mistakes": {
     title: "Common Mistakes",
@@ -1362,7 +1396,11 @@ Add a layer with \`{ "mark": { "type": "text", "dy": -8 }, "encoding": { "text":
 7. **Bin on string field** — bin requires numeric or temporal data. Check column type in metadata.
 8. **Missing resolve for dual axis** — add \`"resolve": {"scale": {"y": "independent"}}\` when layers use different y-fields.
 9. **Lookup referencing wrong dataset** — check \`from.data.url\` matches an available dataset name exactly.
-10. **Fold referencing non-existent columns** — check column names in fold array against metadata.`,
+10. **Fold referencing non-existent columns** — check column names in fold array against metadata.
+11. **Mangled field names** — AI sometimes concatenates encoding properties into the field string (e.g., \`"field": "revenue, type: quantitative"\`). Field must be just the column name; \`type\`, \`aggregate\`, etc. are separate object properties.
+12. **Unknown transform keys** — each transform type has specific valid keys. Extra keys (e.g., \`"field"\` on an aggregate, \`"groupby"\` on a calculate) are silently ignored and produce wrong results.
+13. **Flat joinaggregate** — putting \`op\`, \`as\`, \`groupby\` at transform top level instead of wrapping in \`"joinaggregate": [{ "op": ..., "as": ... }]\`. The array wrapper is required.
+14. **Invalid format strings** — d3-format (\`",.0f"\`, \`".1%"\`) and d3-time-format (\`"%Y-%m"\`, \`"%B %d"\`) have specific syntax. Don't mix them (e.g., \`"%Y"\` is time-format, not number-format).`,
   },
 };
 

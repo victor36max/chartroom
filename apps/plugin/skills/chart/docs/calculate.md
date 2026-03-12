@@ -29,3 +29,4 @@ Creates new computed fields from expressions.
 - Use `datum.fieldName` to reference fields (not just field name)
 - The `as` property names the new field
 - Chain multiple calculates for complex derivations
+- Calculate expressions using `datum.X` can only reference fields available at that point in the pipeline — if it references a field created by a later transform, move the calculate after it

@@ -43,3 +43,4 @@ Always use `dense_rank` (not `rank`) — `rank` skips numbers on ties, `dense_ra
 - `sort` is required for ordered operations (rank, running total, moving average)
 - `frame` controls the sliding window size: `[-N, N]` for symmetric, `[null, 0]` for cumulative up to current row
 - For top-N patterns, see `filter` docs for the complete aggregate → window → filter pipeline
+- After `joinaggregate`, many rows share sort values — `rank` skips numbers (1,1,1,...,51) causing top-N filters to keep only 1 group. Use `dense_rank` for consecutive ranks (1,2,3).

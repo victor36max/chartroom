@@ -49,3 +49,10 @@ Or shorthand: `"mark": { "type": "bar", "tooltip": true }`
 ```json
 "color": { "value": "steelblue" }
 ```
+
+**Gotchas:**
+- Encoding a numeric field (>20 unique values) as `nominal` or `ordinal` creates N discrete categories instead of a continuous axis — use `quantitative` or bin the values
+- Encoding a mostly-string field as `quantitative` coerces values to NaN — use `nominal` or `ordinal`
+- `shape` channel only has 6 built-in shapes — values beyond 6 reuse shapes and become indistinguishable. Use `color` for >6 categories
+- Don't use `timeUnit` on fields with plain numbers or non-date strings — it produces garbage. Only use on actual date/datetime values
+- Don't use `type: "temporal"` on plain number fields (e.g. year integers like 2020) — Vega-Lite interprets them as milliseconds since epoch. Use `"quantitative"` with `"axis": {"format": "d"}`

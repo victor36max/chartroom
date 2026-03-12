@@ -23,3 +23,7 @@ Creates area charts (filled region under a line).
 **Mark properties:** `{ "type": "area", "opacity": 0.7, "line": true, "interpolate": "monotone" }`
 - `line: true` adds a line stroke on top of the area
 - `opacity` controls fill transparency
+
+**Gotchas:**
+- If data isn't sorted by date, area marks produce zigzag fills — add `"sort": true` to the x encoding
+- Area marks with `color` encoding implicitly stack (add values together). Don't stack temperatures, rates, or prices — use `line` mark or add `"stack": false` on the y encoding
