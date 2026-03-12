@@ -28,6 +28,11 @@ export interface ColumnMeta {
   unique?: number;
   min?: number | string;
   max?: number | string;
+  nullCount?: number;
+  zeroCount?: number;
+  negativeCount?: number;
+  median?: number;
+  topValues?: Array<{ value: string; count: number }>;
   computed?: boolean;
   categorical?: CategoricalInfo;
   dateRange?: { min: string; max: string; granularity: DateGranularity };

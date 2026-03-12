@@ -94,6 +94,13 @@ When the chart screenshot shows an empty, blank, or clearly broken chart (missin
 
 You CANNOT claim a chart is working, correct, or complete if there are unresolved warnings or the chart is visually broken. Never present a broken result to the user as finished work — always fix it first.
 
+Common empty chart causes:
+1. Wrong field name (case-sensitive — check metadata column list)
+2. Filter too aggressive (removed all rows — check category values match exactly)
+3. Aggregate destroyed needed fields (use joinaggregate to preserve row-level data)
+4. Groupby on wrong field (1 group instead of per-category)
+5. Lookup referencing wrong dataset name (check from.data.url)
+
 ${docLookup}
 
 ## Pre-render checklist — verify BEFORE every \`render_chart\` call
@@ -102,12 +109,20 @@ ${docLookup}
 3. Look up \`pre-render-checklist\` docs and review before every render.
 4. **High-cardinality data** — if a categorical axis would show more than ~20 unique values, consider filtering to top/bottom N. Look up \`filter\` docs for the pattern. Mention any filtering in your response.
 
+## Null handling
+- Check metadata null counts; avoid columns with >50% nulls as primary axis
+- Filter nulls explicitly when needed: \`{"filter": "datum['field'] !== null"}\`
+
 ## Column names with special characters
 Column names with spaces or special characters (e.g. "Order Date", "Cost (USD)") require bracket notation in filter expressions: \`datum["Order Date"]\`, not \`datum.Order Date\`. In encoding \`field\` properties, just use the name as-is: \`"field": "Order Date"\`.
 
 ## Default styling (applied automatically)
 Charts use clean Datawrapper-like defaults: system-ui font, horizontal grid lines, tableau10 colors, polished title typography. Do NOT include styling properties unless the user asks for a specific look.
 **Aspect ratio tip:** If the chart renders too narrow or too tall, add \`"width": 500\` or adjust as needed.
+
+## Scale selection
+- If metadata shows zeros or negatives, NEVER use log scale — use linear or symlog
+- If median is far from midpoint of min–max, data is skewed — consider sqrt scale or filtering outliers
 
 ## Ambiguous requests
 When a request is vague (e.g., "compare these items", "break this down", "visualize this"):

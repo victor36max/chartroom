@@ -14,7 +14,7 @@ Operations: count, sum, mean, median, min, max, stdev, variance, distinct, valid
 
 **Bin (histogram):**
 ```json
-"x": { "bin": true, "field": "value", "type": "quantitative" }
+{ "mark": "bar", "encoding": { "x": { "bin": true, "field": "value", "type": "quantitative" }, "y": { "aggregate": "count", "type": "quantitative" } } }
 ```
 Options: `{ "bin": { "maxbins": 20 } }` or `{ "bin": { "step": 5 } }`
 
@@ -47,4 +47,4 @@ Combos: yearmonth, yearmonthdate, monthdate, hoursminutes
 - `count` aggregate doesn't need a `field`
 - bin creates a range — the y axis should use `aggregate: "count"`
 - timeUnit groups dates — use with temporal type
-- **Aggregate + lookup ordering:** If you need metadata from another dataset, aggregate first, then `lookup` — don't lookup first and use `"op": "first"` on string fields (can produce blank charts). See lookup docs.
+- **Aggregate + lookup ordering:** If you need metadata from another dataset, aggregate first, then `lookup`. Aggregating first reduces the dataset to one row per group, making the lookup efficient and preventing duplicate joins. Looking up first forces you to carry string fields through the aggregate with `"op": "first"`, which can produce blank charts. See lookup docs.

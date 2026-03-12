@@ -35,7 +35,7 @@ describe("extractMetadata", () => {
     const cityCol = meta.columns.find((c) => c.name === "city")!;
     expect(cityCol.type).toBe("string");
     expect(cityCol.unique).toBe(2);
-    expect(cityCol.sample).toEqual(["NYC", "LA", "NYC"]);
+    expect(cityCol.sample).toEqual(["NYC", "LA"]);
   });
 
   it("detects date columns (ISO YYYY-MM-DD)", () => {

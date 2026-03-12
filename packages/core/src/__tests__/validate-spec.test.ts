@@ -1764,6 +1764,214 @@ describe("validateSpec", () => {
     });
   });
 
+  describe("lintGroupbyFields", () => {
+    it("warns when groupby references non-existent field", () => {
+      const spec = {
+        mark: "bar",
+        transform: [
+          { aggregate: [{ op: "sum", field: "value", as: "total" }], groupby: ["nonexistent"] },
+        ],
+        encoding: {
+          x: { field: "nonexistent", type: "nominal" },
+          y: { field: "total", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("groupby") && w.includes("nonexistent"))).toBe(true);
+      }
+    });
+
+    it("does not warn for valid groupby field", () => {
+      const spec = {
+        mark: "bar",
+        transform: [
+          { aggregate: [{ op: "sum", field: "value", as: "total" }], groupby: ["category"] },
+        ],
+        encoding: {
+          x: { field: "category", type: "nominal" },
+          y: { field: "total", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("groupby") && w.includes("doesn't exist"))).toBe(false);
+      }
+    });
+  });
+
+  describe("lintLookupReferences", () => {
+    const products = [
+      { product_id: 1, name: "Widget" },
+      { product_id: 2, name: "Gadget" },
+    ];
+    const orders = [
+      { id: 1, product_id: 1, amount: 100 },
+      { id: 2, product_id: 2, amount: 200 },
+    ];
+
+    it("warns when lookup references non-existent dataset", () => {
+      const spec = {
+        data: { url: "orders.csv" },
+        mark: "bar",
+        transform: [
+          { lookup: "product_id", from: { data: { url: "wrong.csv" }, key: "product_id", fields: ["name"] } },
+        ],
+        encoding: {
+          x: { field: "name", type: "nominal" },
+          y: { field: "amount", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { "orders.csv": orders, "products.csv": products });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("wrong.csv") && w.includes("not loaded"))).toBe(true);
+      }
+    });
+
+    it("warns when from.key doesn't exist in referenced dataset", () => {
+      const spec = {
+        data: { url: "orders.csv" },
+        mark: "bar",
+        transform: [
+          { lookup: "product_id", from: { data: { url: "products.csv" }, key: "wrong_key", fields: ["name"] } },
+        ],
+        encoding: {
+          x: { field: "name", type: "nominal" },
+          y: { field: "amount", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { "orders.csv": orders, "products.csv": products });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("wrong_key") && w.includes("not found"))).toBe(true);
+      }
+    });
+
+    it("warns when from.fields don't exist in referenced dataset", () => {
+      const spec = {
+        data: { url: "orders.csv" },
+        mark: "bar",
+        transform: [
+          { lookup: "product_id", from: { data: { url: "products.csv" }, key: "product_id", fields: ["nonexistent"] } },
+        ],
+        encoding: {
+          x: { field: "nonexistent", type: "nominal" },
+          y: { field: "amount", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { "orders.csv": orders, "products.csv": products });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes('"nonexistent"') && w.includes("products.csv"))).toBe(true);
+      }
+    });
+  });
+
+  describe("lintFacetRepeatFields", () => {
+    it("warns when facet field doesn't exist", () => {
+      const spec = {
+        facet: { field: "nonexistent", type: "nominal" },
+        spec: {
+          mark: "bar",
+          encoding: {
+            x: { field: "category", type: "nominal" },
+            y: { field: "value", type: "quantitative" },
+          },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Facet") && w.includes("nonexistent"))).toBe(true);
+      }
+    });
+
+    it("does not warn for valid facet field", () => {
+      const spec = {
+        facet: { field: "category", type: "nominal" },
+        spec: {
+          mark: "bar",
+          encoding: {
+            y: { field: "value", type: "quantitative" },
+          },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Facet field"))).toBe(false);
+      }
+    });
+  });
+
+  describe("bin on non-numeric", () => {
+    it("warns when binning a string field", () => {
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "category", type: "nominal", bin: true },
+          y: { aggregate: "count", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Bin") && w.includes("category") && w.includes("string"))).toBe(true);
+      }
+    });
+
+    it("does not warn when binning a numeric field", () => {
+      const spec = {
+        mark: "bar",
+        encoding: {
+          x: { field: "value", type: "quantitative", bin: true },
+          y: { aggregate: "count", type: "quantitative" },
+        },
+      };
+      const result = validateSpec(spec, { csv: ROWS });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("Bin") && w.includes("string"))).toBe(false);
+      }
+    });
+  });
+
+  describe("lintDualAxisResolve", () => {
+    it("warns when layers use different y-fields without resolve", () => {
+      const spec = {
+        layer: [
+          { mark: "bar", encoding: { x: { field: "category", type: "nominal" }, y: { field: "value", type: "quantitative" } } },
+          { mark: "line", encoding: { x: { field: "category", type: "nominal" }, y: { field: "other_value", type: "quantitative" } } },
+        ],
+      };
+      const rows = [{ category: "A", value: 10, other_value: 100 }];
+      const result = validateSpec(spec, { csv: rows });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("resolve") && w.includes("independent"))).toBe(true);
+      }
+    });
+
+    it("does not warn when resolve is set", () => {
+      const spec = {
+        layer: [
+          { mark: "bar", encoding: { x: { field: "category", type: "nominal" }, y: { field: "value", type: "quantitative" } } },
+          { mark: "line", encoding: { x: { field: "category", type: "nominal" }, y: { field: "other_value", type: "quantitative" } } },
+        ],
+        resolve: { scale: { y: "independent" } },
+      };
+      const rows = [{ category: "A", value: 10, other_value: 100 }];
+      const result = validateSpec(spec, { csv: rows });
+      expect(result.valid).toBe(true);
+      if (result.valid) {
+        expect(result.warnings.some(w => w.includes("resolve") && w.includes("independent"))).toBe(false);
+      }
+    });
+  });
+
   describe("repeat spec field validation", () => {
     it("does not warn for repeat variable field references", () => {
       const spec = {

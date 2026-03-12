@@ -719,6 +719,29 @@ function lintSpecPatterns(
     }
   }
 
+  // --- Bin on non-numeric field ---
+  const binEnc = spec.encoding as Record<string, Record<string, unknown>> | undefined;
+  if (binEnc) {
+    const primaryKey = getPrimaryDatasetKey(spec, datasets);
+    const rows = primaryKey ? datasets[primaryKey] : undefined;
+    for (const [, chSpec] of Object.entries(binEnc)) {
+      if (!chSpec || typeof chSpec !== "object") continue;
+      if (chSpec.bin && typeof chSpec.field === "string" && rows && rows.length > 0) {
+        const field = chSpec.field as string;
+        const sample = rows.slice(0, 50);
+        const numericCount = sample.filter((r) => {
+          const v = r[field];
+          return typeof v === "number" || (typeof v === "string" && v !== "" && !isNaN(Number(v)));
+        }).length;
+        if (numericCount / sample.length < 0.5) {
+          warnings.push(
+            `Bin on field "${field}" but data values are strings. Bin requires numeric or temporal data.`
+          );
+        }
+      }
+    }
+  }
+
   // --- High cardinality checks (axis, shape, color) + same field x/y + nominal on numeric ---
   const enc = spec.encoding as Record<string, Record<string, unknown>> | undefined;
   if (enc) {
@@ -1213,6 +1236,184 @@ function lintFormatStrings(spec: Record<string, unknown>): string[] {
   return warnings;
 }
 
+/** Lint for groupby fields that don't exist at that point in the pipeline */
+function lintGroupbyFields(
+  spec: Record<string, unknown>,
+  datasets: Record<string, Record<string, unknown>[]>
+): string[] {
+  const warnings: string[] = [];
+  const transforms = spec.transform as Array<Record<string, unknown>> | undefined;
+
+  if (Array.isArray(transforms)) {
+    const pk = getPrimaryDatasetKey(spec, datasets);
+    const baseColumns = pk ? getColumns(datasets, pk) : new Set<string>();
+    const available = new Set(baseColumns);
+
+    for (const t of transforms) {
+      // Check groupby fields before applying this transform's effects
+      if (Array.isArray(t.aggregate) || Array.isArray(t.joinaggregate) || Array.isArray(t.window)) {
+        const groupby = t.groupby as string[] | undefined;
+        if (Array.isArray(groupby)) {
+          for (const field of groupby) {
+            if (!available.has(field)) {
+              const sample = [...available].slice(0, 8).join(", ");
+              warnings.push(
+                `Aggregate groupby references "${field}" but it doesn't exist. Available columns: ${sample}.`
+              );
+            }
+          }
+        }
+      }
+      applyTransformFields(available, t);
+    }
+  }
+
+  for (const sub of getSubSpecs(spec)) {
+    warnings.push(...lintGroupbyFields(sub, datasets));
+  }
+  return warnings;
+}
+
+/** Lint for lookup transforms referencing wrong datasets or non-existent keys/fields */
+function lintLookupReferences(
+  spec: Record<string, unknown>,
+  datasets: Record<string, Record<string, unknown>[]>
+): string[] {
+  const warnings: string[] = [];
+  const transforms = spec.transform as Array<Record<string, unknown>> | undefined;
+
+  if (Array.isArray(transforms)) {
+    const pk = getPrimaryDatasetKey(spec, datasets);
+    const baseColumns = pk ? getColumns(datasets, pk) : new Set<string>();
+    const available = new Set(baseColumns);
+
+    for (const t of transforms) {
+      if (t.lookup && t.from && typeof t.from === "object") {
+        // Check lookup field exists in current available set
+        if (typeof t.lookup === "string" && !available.has(t.lookup)) {
+          const sample = [...available].slice(0, 8).join(", ");
+          warnings.push(
+            `Lookup field "${t.lookup}" not found in current fields. Available: ${sample}.`
+          );
+        }
+
+        const from = t.from as Record<string, unknown>;
+        const fromData = from.data as Record<string, unknown> | undefined;
+        const fromUrl = fromData?.url as string | undefined;
+
+        if (fromUrl) {
+          if (!datasets[fromUrl]) {
+            const keys = Object.keys(datasets).join(", ");
+            warnings.push(
+              `Lookup references dataset "${fromUrl}" but it is not loaded. Available: ${keys}.`
+            );
+          } else {
+            const fromColumns = getColumns(datasets, fromUrl);
+            const fromKey = from.key as string | undefined;
+            if (fromKey && !fromColumns.has(fromKey)) {
+              const cols = [...fromColumns].slice(0, 8).join(", ");
+              warnings.push(
+                `Lookup join key "${fromKey}" not found in dataset "${fromUrl}". Available: ${cols}.`
+              );
+            }
+            const fromFields = from.fields as string[] | undefined;
+            if (Array.isArray(fromFields)) {
+              for (const f of fromFields) {
+                if (!fromColumns.has(f)) {
+                  const cols = [...fromColumns].slice(0, 8).join(", ");
+                  warnings.push(
+                    `Lookup field "${f}" not found in dataset "${fromUrl}". Available: ${cols}.`
+                  );
+                }
+              }
+            }
+          }
+        }
+      }
+      applyTransformFields(available, t);
+    }
+  }
+
+  for (const sub of getSubSpecs(spec)) {
+    warnings.push(...lintLookupReferences(sub, datasets));
+  }
+  return warnings;
+}
+
+/** Lint for facet fields that don't exist in the dataset */
+function lintFacetRepeatFields(
+  spec: Record<string, unknown>,
+  datasets: Record<string, Record<string, unknown>[]>
+): string[] {
+  const warnings: string[] = [];
+
+  const pk = getPrimaryDatasetKey(spec, datasets);
+  const baseColumns = pk ? getColumns(datasets, pk) : new Set<string>();
+  const transforms = spec.transform as Array<Record<string, unknown>> | undefined;
+  const available = buildAvailableFields(baseColumns, transforms);
+
+  // Check facet fields
+  const facet = spec.facet as Record<string, unknown> | undefined;
+  if (facet) {
+    const fieldsToCheck: string[] = [];
+    if (typeof facet.field === "string") fieldsToCheck.push(facet.field);
+    const row = facet.row as Record<string, unknown> | undefined;
+    if (row && typeof row.field === "string") fieldsToCheck.push(row.field);
+    const column = facet.column as Record<string, unknown> | undefined;
+    if (column && typeof column.field === "string") fieldsToCheck.push(column.field);
+    for (const field of fieldsToCheck) {
+      if (!available.has(field)) {
+        const sample = [...available].slice(0, 8).join(", ");
+        warnings.push(
+          `Facet field "${field}" not found in dataset. Available: ${sample}.`
+        );
+      }
+    }
+  }
+
+  for (const sub of getSubSpecs(spec)) {
+    warnings.push(...lintFacetRepeatFields(sub, datasets));
+  }
+  return warnings;
+}
+
+/** Lint for dual-axis layers missing resolve.scale.y */
+function lintDualAxisResolve(
+  spec: Record<string, unknown>,
+): string[] {
+  const warnings: string[] = [];
+  const layers = spec.layer as Array<Record<string, unknown>> | undefined;
+
+  if (Array.isArray(layers) && layers.length >= 2) {
+    // Collect quantitative y-fields from each layer
+    const quantYFields = new Set<string>();
+    for (const layer of layers) {
+      const enc = layer.encoding as Record<string, Record<string, unknown>> | undefined;
+      const ySpec = enc?.y;
+      if (ySpec && typeof ySpec.field === "string" && ySpec.type === "quantitative") {
+        quantYFields.add(ySpec.field);
+      }
+    }
+
+    if (quantYFields.size >= 2) {
+      const resolve = spec.resolve as Record<string, Record<string, unknown>> | undefined;
+      const scaleResolve = resolve?.scale as Record<string, unknown> | undefined;
+      if (!scaleResolve?.y) {
+        const fields = [...quantYFields];
+        warnings.push(
+          `Layers use different quantitative y-fields ("${fields[0]}", "${fields[1]}") but no resolve. ` +
+          `Add "resolve": {"scale": {"y": "independent"}} for dual axes.`
+        );
+      }
+    }
+  }
+
+  for (const sub of getSubSpecs(spec)) {
+    warnings.push(...lintDualAxisResolve(sub));
+  }
+  return warnings;
+}
+
 export function validateSpec(
   spec: Record<string, unknown>,
   datasets: Record<string, Record<string, unknown>[]>
@@ -1240,6 +1441,10 @@ export function validateSpec(
     warnings.push(...lintScaleIssues(spec, datasets));
     warnings.push(...lintFormatStrings(spec));
     warnings.push(...lintUnknownTransformKeys(spec));
+    warnings.push(...lintGroupbyFields(spec, datasets));
+    warnings.push(...lintLookupReferences(spec, datasets));
+    warnings.push(...lintFacetRepeatFields(spec, datasets));
+    warnings.push(...lintDualAxisResolve(spec));
     vl.compile(fullSpec as unknown as vl.TopLevelSpec, {
       logger: createWarningLogger(warnings),
     });

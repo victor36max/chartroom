@@ -34,7 +34,7 @@ const TOPIC_GROUPS: Record<string, string[]> = {
   "Encoding & scales": ["encoding", "color-scale", "position-scales", "styling"],
   "Transforms": ["aggregate", "stack", "fold", "filter", "calculate", "lookup", "window", "regression", "impute", "pivot"],
   "Composition": ["layer", "facet", "repeat", "concat"],
-  "Patterns & checklists": ["layout-patterns", "composite-patterns", "editing-charts", "pre-render-checklist"],
+  "Patterns & checklists": ["layout-patterns", "composite-patterns", "editing-charts", "pre-render-checklist", "common-mistakes"],
 };
 
 const docsSection = Object.entries(TOPIC_GROUPS)

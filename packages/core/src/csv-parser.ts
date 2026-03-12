@@ -90,26 +90,64 @@ export function extractMetadata(data: Record<string, unknown>[]): DataMetadata {
     const nonNull = values.filter((v) => v != null && v !== "");
     const uniqueSet = new Set(nonNull);
     const unique = uniqueSet.size;
-    const sample = nonNull.slice(0, 5);
 
+    // Spread sampling: pick values at 0%, 25%, 50%, 75%, 100% indices, deduplicated
+    const sample: unknown[] = [];
+    if (nonNull.length > 0) {
+      const indices = [0, Math.floor(nonNull.length / 4), Math.floor(nonNull.length / 2), Math.floor(3 * nonNull.length / 4), nonNull.length - 1];
+      const seen = new Set<unknown>();
+      for (const i of indices) {
+        const v = nonNull[i];
+        if (!seen.has(v)) { seen.add(v); sample.push(v); }
+      }
+    }
+
+    const nullCount = values.length - nonNull.length;
     const col: ColumnMeta = { name, type, sample, unique };
+    if (nullCount > 0) col.nullCount = nullCount;
 
     if (type === "string" && unique <= 20) {
       col.categorical = { values: ([...uniqueSet] as string[]).sort() };
     }
 
+    // topValues for high-cardinality strings (>20 unique)
+    if (type === "string" && unique > 20) {
+      const freq = new Map<string, number>();
+      for (const v of nonNull) {
+        const s = String(v);
+        freq.set(s, (freq.get(s) ?? 0) + 1);
+      }
+      col.topValues = [...freq.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([value, count]) => ({ value, count }));
+    }
+
     if (type === "number") {
       let min = Infinity;
       let max = -Infinity;
+      let zeroCount = 0;
+      let negativeCount = 0;
+      const nums: number[] = [];
       for (const v of nonNull) {
         if (typeof v === "number") {
           if (v < min) min = v;
           if (v > max) max = v;
+          if (v === 0) zeroCount++;
+          if (v < 0) negativeCount++;
+          nums.push(v);
         }
       }
       if (min !== Infinity) {
         col.min = min;
         col.max = max;
+      }
+      if (zeroCount > 0) col.zeroCount = zeroCount;
+      if (negativeCount > 0) col.negativeCount = negativeCount;
+      if (nums.length >= 3) {
+        nums.sort((a, b) => a - b);
+        const mid = Math.floor(nums.length / 2);
+        col.median = nums.length % 2 === 1 ? nums[mid] : (nums[mid - 1] + nums[mid]) / 2;
       }
     }
 
@@ -257,9 +295,18 @@ export function metadataToContext(metadata: DataMetadata): string {
   for (const col of metadata.columns) {
     let desc = `- ${col.name} (${col.type})`;
     if (col.unique !== undefined) desc += ` — ${col.unique} unique values`;
-    if (col.min !== undefined) desc += `, range: ${col.min}–${col.max}`;
+    if (col.min !== undefined) {
+      desc += `, range: ${col.min}–${col.max}`;
+      if (col.median !== undefined) desc += `, median: ${col.median}`;
+    }
+    if (col.zeroCount) desc += `, ${col.zeroCount} zeros`;
+    if (col.negativeCount) desc += `, ${col.negativeCount} negative`;
     if (col.dateRange) {
       desc += `, range: ${col.dateRange.min} to ${col.dateRange.max}, granularity: ${col.dateRange.granularity}`;
+    }
+    if (col.nullCount) {
+      const pct = Math.round((col.nullCount / metadata.rowCount) * 100);
+      desc += `, ${col.nullCount} nulls (${pct}%)`;
     }
     if (col.categorical) {
       desc += `: ${col.categorical.values.join(", ")}`;
@@ -277,7 +324,24 @@ export function metadataToContext(metadata: DataMetadata): string {
     lines.push("");
     lines.push("⚠ High-cardinality columns:");
     for (const col of highCardCols) {
-      lines.push(`  - ${col.name}: ${col.unique} unique values — too many for a categorical axis. Consider filtering to top/bottom N, binning, or using a different chart type.`);
+      let warn = `  - ${col.name}: ${col.unique} unique values — too many for a categorical axis. Consider filtering to top/bottom N, binning, or using a different chart type.`;
+      if (col.topValues) {
+        warn += ` Top values: ${col.topValues.map(tv => `"${tv.value}" (${tv.count})`).join(", ")}`;
+      }
+      lines.push(warn);
+    }
+  }
+
+  // Warn about columns with heavy nulls (>50%)
+  const heavyNullCols = metadata.columns.filter(
+    (c) => c.nullCount && c.nullCount / metadata.rowCount > 0.5
+  );
+  if (heavyNullCols.length > 0) {
+    lines.push("");
+    lines.push("⚠ Columns with heavy nulls (>50%):");
+    for (const col of heavyNullCols) {
+      const pct = Math.round((col.nullCount! / metadata.rowCount) * 100);
+      lines.push(`  - ${col.name}: ${pct}% null — avoid as primary axis, or filter nulls first`);
     }
   }
 

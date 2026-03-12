@@ -28,7 +28,8 @@ export function createTools(datasetNames: string[]) {
         "regression (trend lines/loess smoothing), impute (fill missing values), pivot (long-to-wide), " +
         "layer (multi-mark), facet (small multiples), repeat, concat (hconcat/vconcat side-by-side panels), " +
         "color-scale, position-scales, styling, " +
-        "layout-patterns (stacked/grouped/horizontal), composite-patterns (lollipop/pareto/dual-axis/trend-line), editing-charts",
+        "layout-patterns (stacked/grouped/horizontal), composite-patterns (lollipop/pareto/dual-axis/trend-line), editing-charts, " +
+        "pre-render-checklist, common-mistakes (top 10 failure modes)",
       inputSchema: z.object({
         topics: z
           .array(z.string())

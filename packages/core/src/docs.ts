@@ -31,6 +31,7 @@ export const TOPIC_IDS = [
   "composite-patterns",
   "editing-charts",
   "pre-render-checklist",
+  "common-mistakes",
 ] as const;
 
 export type TopicId = (typeof TOPIC_IDS)[number];
@@ -1343,7 +1344,25 @@ Add a layer with \`{ "mark": { "type": "text", "dy": -8 }, "encoding": { "text":
 16. **Strip plots** — prefer \`tick\` mark for strip/rug plots. Ticks show distribution density better than points.
 17. **Dense line charts** — consider \`interpolate: "monotone"\` for smoother rendering with many data points.
 18. **Part-of-whole** — prefer arc/pie chart for "percentage of total" or "share" requests.
-19. **Tooltip** — \`tooltip: true\` in mark properties for interactivity, or explicit tooltip encoding for custom tooltips.`,
+19. **Tooltip** — \`tooltip: true\` in mark properties for interactivity, or explicit tooltip encoding for custom tooltips.
+20. **Null awareness** — check metadata null counts before using a column. Columns with >50% nulls should not be primary axes.
+21. **Scale safety** — check for zeros/negatives before using log scale. Use linear or symlog instead.
+22. **Verify field names** — cross-check every field in your spec against the metadata column list. Field names are case-sensitive.`,
+  },
+  "common-mistakes": {
+    title: "Common Mistakes",
+    content: `# Common Mistakes — Top 10 Failure Modes
+
+1. **Field name typo** — case-sensitive match required. Cross-check every field against metadata column list.
+2. **Aggregate destroys fields** — use \`joinaggregate\` instead of \`aggregate\` when you need row-level data downstream.
+3. **Groupby on wrong/missing field** — check available columns; missing groupby collapses everything to 1 group.
+4. **Filter removes all data** — check that category values match exactly (case, whitespace, encoding).
+5. **Log scale on zeros/negatives** — use \`"linear"\` or \`"symlog"\` instead.
+6. **Temporal type on numeric year** — use \`"quantitative"\` with \`format: "d"\` for plain year numbers.
+7. **Bin on string field** — bin requires numeric or temporal data. Check column type in metadata.
+8. **Missing resolve for dual axis** — add \`"resolve": {"scale": {"y": "independent"}}\` when layers use different y-fields.
+9. **Lookup referencing wrong dataset** — check \`from.data.url\` matches an available dataset name exactly.
+10. **Fold referencing non-existent columns** — check column names in fold array against metadata.`,
   },
 };
 

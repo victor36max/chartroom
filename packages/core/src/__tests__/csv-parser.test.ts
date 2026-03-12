@@ -35,7 +35,7 @@ describe("extractMetadata", () => {
     const cityCol = meta.columns.find((c) => c.name === "city")!;
     expect(cityCol.type).toBe("string");
     expect(cityCol.unique).toBe(2);
-    expect(cityCol.sample).toEqual(["NYC", "LA", "NYC"]);
+    expect(cityCol.sample).toEqual(["NYC", "LA"]);
   });
 
   it("detects date columns (ISO YYYY-MM-DD)", () => {
@@ -324,6 +324,157 @@ describe("datasetsToContext", () => {
     expect(ctx).toContain("2 datasets");
     expect(ctx).toContain("product_id");
     expect(ctx).toContain("Join keys");
+  });
+});
+
+// --- New metadata fields (nullCount, zeroCount, negativeCount, median, topValues, spread sampling) ---
+
+describe("nullCount", () => {
+  it("counts nulls when present", () => {
+    const data = [
+      { val: 1 },
+      { val: null },
+      { val: 3 },
+      { val: null },
+    ];
+    const meta = extractMetadata(data);
+    const col = meta.columns.find((c) => c.name === "val")!;
+    expect(col.nullCount).toBe(2);
+  });
+
+  it("omits nullCount when no nulls", () => {
+    const data = [{ val: 1 }, { val: 2 }];
+    const meta = extractMetadata(data);
+    expect(meta.columns[0].nullCount).toBeUndefined();
+  });
+});
+
+describe("zeroCount and negativeCount", () => {
+  it("counts zeros and negatives in numeric columns", () => {
+    const data = [
+      { val: -5 },
+      { val: 0 },
+      { val: 0 },
+      { val: 10 },
+      { val: -3 },
+    ];
+    const meta = extractMetadata(data);
+    const col = meta.columns.find((c) => c.name === "val")!;
+    expect(col.zeroCount).toBe(2);
+    expect(col.negativeCount).toBe(2);
+  });
+
+  it("omits zeroCount/negativeCount when none", () => {
+    const data = [{ val: 1 }, { val: 2 }, { val: 3 }];
+    const meta = extractMetadata(data);
+    const col = meta.columns[0];
+    expect(col.zeroCount).toBeUndefined();
+    expect(col.negativeCount).toBeUndefined();
+  });
+});
+
+describe("median", () => {
+  it("computes median for odd count", () => {
+    const data = [{ val: 1 }, { val: 5 }, { val: 3 }];
+    const meta = extractMetadata(data);
+    expect(meta.columns[0].median).toBe(3);
+  });
+
+  it("computes median for even count", () => {
+    const data = [{ val: 1 }, { val: 2 }, { val: 3 }, { val: 4 }];
+    const meta = extractMetadata(data);
+    expect(meta.columns[0].median).toBe(2.5);
+  });
+
+  it("omits median when fewer than 3 values", () => {
+    const data = [{ val: 1 }, { val: 2 }];
+    const meta = extractMetadata(data);
+    expect(meta.columns[0].median).toBeUndefined();
+  });
+});
+
+describe("topValues", () => {
+  it("returns top 5 values for high-cardinality string columns", () => {
+    const data = [
+      ...Array.from({ length: 10 }, () => ({ country: "USA" })),
+      ...Array.from({ length: 8 }, () => ({ country: "China" })),
+      ...Array.from({ length: 6 }, () => ({ country: "India" })),
+      ...Array.from({ length: 4 }, () => ({ country: "UK" })),
+      ...Array.from({ length: 2 }, () => ({ country: "France" })),
+      ...Array.from({ length: 1 }, () => ({ country: "Germany" })),
+      // Add more unique values to exceed 20 unique threshold
+      ...Array.from({ length: 16 }, (_, i) => ({ country: `country_${i}` })),
+    ];
+    const meta = extractMetadata(data);
+    const col = meta.columns.find((c) => c.name === "country")!;
+    expect(col.topValues).toBeDefined();
+    expect(col.topValues!.length).toBe(5);
+    expect(col.topValues![0].value).toBe("USA");
+    expect(col.topValues![0].count).toBe(10);
+    expect(col.topValues![1].value).toBe("China");
+  });
+
+  it("omits topValues for low-cardinality strings", () => {
+    const data = [{ name: "A" }, { name: "B" }, { name: "C" }];
+    const meta = extractMetadata(data);
+    expect(meta.columns[0].topValues).toBeUndefined();
+  });
+});
+
+describe("spread sampling", () => {
+  it("samples from spread positions, not just first 5", () => {
+    const data = Array.from({ length: 100 }, (_, i) => ({ label: `item-${i}` }));
+    const meta = extractMetadata(data);
+    const col = meta.columns[0];
+    // Should include first and last items (spread sampling)
+    expect(col.sample).toContain("item-0");
+    expect(col.sample).toContain("item-99");
+    // Should NOT just be the first 5
+    expect(col.sample).not.toEqual(["item-0", "item-1", "item-2", "item-3", "item-4"]);
+  });
+});
+
+describe("metadataToContext new fields", () => {
+  it("includes median in numeric column description", () => {
+    const data = [{ val: 1 }, { val: 5 }, { val: 3 }];
+    const ctx = metadataToContext(extractMetadata(data));
+    expect(ctx).toContain("median: 3");
+  });
+
+  it("includes null count in column description", () => {
+    const data = [{ val: 1 }, { val: null }, { val: 3 }, { val: null }];
+    const ctx = metadataToContext(extractMetadata(data));
+    expect(ctx).toContain("2 nulls (50%)");
+  });
+
+  it("includes zero and negative counts", () => {
+    const data = [{ val: -5 }, { val: 0 }, { val: 10 }];
+    const ctx = metadataToContext(extractMetadata(data));
+    expect(ctx).toContain("1 zeros");
+    expect(ctx).toContain("1 negative");
+  });
+
+  it("includes topValues in high-cardinality warning", () => {
+    const data = [
+      ...Array.from({ length: 10 }, () => ({ city: "NYC" })),
+      ...Array.from({ length: 5 }, () => ({ city: "LA" })),
+      ...Array.from({ length: 20 }, (_, i) => ({ city: `city_${i}` })),
+    ];
+    const ctx = metadataToContext(extractMetadata(data));
+    expect(ctx).toContain("Top values:");
+    expect(ctx).toContain('"NYC"');
+  });
+
+  it("shows heavy null warning for columns with >50% nulls", () => {
+    const data = [
+      { val: 1 },
+      { val: null },
+      { val: null },
+      { val: null },
+    ];
+    const ctx = metadataToContext(extractMetadata(data));
+    expect(ctx).toContain("heavy nulls");
+    expect(ctx).toContain("75% null");
   });
 });
 

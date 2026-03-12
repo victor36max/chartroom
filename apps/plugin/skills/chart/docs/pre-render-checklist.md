@@ -5,7 +5,7 @@ Verify these items BEFORE every `render_chart` call.
 
 ### Correctness (SHOULD — verify before every render)
 1. **Type matching** — prefer matching encoding types to data: categories -> nominal/ordinal, numbers -> quantitative, dates -> temporal. Vega-Lite can coerce, but explicit types prevent surprises.
-   - **Integer year columns** — if a column contains plain years (1990, 2020, …), prefer `"quantitative"` with `"axis": {"format": "d"}` over `"temporal"`. The `"d"` format displays clean integers (2020) instead of "2,020" or "2.020k". Reserve `"temporal"` for actual date/datetime strings.
+   - **Integer year columns** — use `"quantitative"` with `"axis": {"format": "d"}`, not `"temporal"`. See encoding docs for details.
 2. **Date filtering** — when filtering temporal fields by range, use DateTime objects `{"year": 2024, "month": 6, "date": 1}`, NOT string dates. Or use `timeUnit` shorthand for whole-year/month filters. See `filter` docs.
 3. **Scatterplot aggregation** — for scatterplots with grouped data (e.g., many rows per stock symbol), use `transform` with explicit `groupby` — inline aggregate alone collapses everything to a single point.
    - **Large dataset scatter** — if dataset has >500 rows, a naive scatter will overplot. Either: aggregate by group first, use small opacity (0.2–0.3), bin into heatmap (`rect` mark), or explain the density issue to the user.
@@ -32,3 +32,6 @@ Verify these items BEFORE every `render_chart` call.
 17. **Dense line charts** — consider `interpolate: "monotone"` for smoother rendering with many data points.
 18. **Part-of-whole** — prefer arc/pie chart for "percentage of total" or "share" requests.
 19. **Tooltip** — `tooltip: true` in mark properties for interactivity, or explicit tooltip encoding for custom tooltips.
+20. **Null awareness** — check metadata null counts before using a column. Columns with >50% nulls should not be primary axes.
+21. **Scale safety** — check for zeros/negatives before using log scale. Use linear or symlog instead.
+22. **Verify field names** — cross-check every field in your spec against the metadata column list. Field names are case-sensitive.
