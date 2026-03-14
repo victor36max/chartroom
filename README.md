@@ -128,4 +128,29 @@ Once installed, use `/chart` in Claude Code for a guided chart generation workfl
 - **Database**: PostgreSQL + [Drizzle ORM](https://orm.drizzle.team) (optional)
 - **MCP**: [Model Context Protocol SDK](https://modelcontextprotocol.io)
 - **Testing**: [Vitest](https://vitest.dev)
+
+## Testing
+
+Tests are run with [Vitest](https://vitest.dev) across all packages.
+
+```bash
+bun run test
+```
+
+### Test setup
+
+Some tests (`@chartroom/web`) require a running PostgreSQL instance. Start one with:
+
+```bash
+sudo podman-compose up -d
+```
+
+This spins up a Postgres 16 container on port `5433` (see `docker-compose.yml`).
+
+### Test coverage
+
+| Package | Files | Tests |
+|---------|-------|-------|
+| `@chartroom/core` | 8 | 248 |
+| `@chartroom/web` | 5 | 61 |
 - **Build**: [tsup](https://tsup.egoist.dev)
