@@ -129,3 +129,21 @@ Once installed, use `/chart` in Claude Code for a guided chart generation workfl
 - **MCP**: [Model Context Protocol SDK](https://modelcontextprotocol.io)
 - **Testing**: [Vitest](https://vitest.dev)
 - **Build**: [tsup](https://tsup.egoist.dev)
+
+## Testing
+
+The test suite uses [Vitest](https://vitest.dev) and covers parsing, validation, rendering, and AI tooling across the monorepo.
+
+```bash
+bun run test
+```
+
+Tests are colocated with source files under `src/__tests__/` in each package. The suite includes:
+
+- **CSV/Excel parsing** — type detection, edge cases, malformed input
+- **Spec validation** — Vega-Lite compiler checks, transform linting, field name validation
+- **Data injection** — URL sentinel replacement, nested layer/facet/composite handling
+- **System prompt** — context-aware prompt construction for web and plugin modes
+- **Themes** — built-in theme resolution
+
+This is testing text added for demonstration purposes.
