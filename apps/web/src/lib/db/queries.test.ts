@@ -1,4 +1,5 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
+import { inArray } from "drizzle-orm";
 import {
   getBalance,
   upsertProfile,
@@ -6,9 +7,17 @@ import {
   deductBalance,
   processPayment,
 } from "./queries";
+import { db } from ".";
+import { profiles } from "./schema";
 
 const USER_ID = "00000000-0000-0000-0000-000000000001";
 const USER_ID_2 = "00000000-0000-0000-0000-000000000002";
+
+beforeEach(async () => {
+  await db()
+    .delete(profiles)
+    .where(inArray(profiles.id, [USER_ID, USER_ID_2]));
+});
 
 async function createProfile(id: string, balance: number = 0) {
   await upsertProfile({
